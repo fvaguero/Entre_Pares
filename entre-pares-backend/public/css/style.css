@@ -1,0 +1,223 @@
+/* Estilos generales */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+    background-color: #f9fafb;
+    color: #1f2937;
+    line-height: 1.5;
+}
+
+.contenedor {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Barra de navegación / Header */
+.barra-navegacion {
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.barra-navegacion .contenedor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4f46e5;
+}
+
+.enlaces-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.enlaces-nav a {
+    text-decoration: none;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.enlaces-nav a:hover {
+    color: #4f46e5;
+}
+
+/* Botones */
+.btn-principal {
+    background-color: #4f46e5;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    display: inline-block;
+}
+
+.btn-principal:hover {
+    background-color: #4338ca;
+}
+
+.btn-grande {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Sección Hero / Portada */
+.hero {
+    text-align: center;
+    padding: 5rem 1rem;
+}
+
+.etiqueta {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.hero h2 {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 1.5rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: #4b5563;
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+}
+
+/* Secciones y Grillas */
+.seccion-beneficios {
+    background-color: #ffffff;
+    padding: 4rem 1rem;
+    border-top: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.seccion-beneficios h3, .seccion-pasos h3 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 3rem;
+    color: #111827;
+}
+
+.grilla-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.tarjeta {
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+}
+
+.tarjeta-estudiante {
+    background-color: rgba(224, 231, 255, 0.3);
+}
+
+.tarjeta-estudiante h4 {
+    color: #312e81;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.tarjeta-tutor {
+    background-color: rgba(209, 250, 229, 0.3);
+}
+
+.tarjeta-tutor h4 {
+    color: #064e3b;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.tarjeta p {
+    color: #4b5563;
+    margin-bottom: 1.5rem;
+}
+
+.tarjeta ul {
+    list-style: none;
+    color: #374151;
+}
+
+.tarjeta ul li {
+    margin-bottom: 0.5rem;
+}
+
+/* Pasos */
+.seccion-pasos {
+    padding: 4rem 1rem;
+}
+
+.grilla-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    text-align: center;
+}
+
+.tarjeta-paso {
+    padding: 1.5rem;
+}
+
+.numero-paso {
+    width: 3rem;
+    height: 3rem;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin: 0 auto 1rem auto;
+}
+
+.tarjeta-paso h4 {
+    font-size: 1.125rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.tarjeta-paso p {
+    color: #4b5563;
+}
+
+/* Pie de página / Footer */
+footer {
+    background-color: #111827;
+    color: #9ca3af;
+    text-align: center;
+    padding: 2rem;
+}

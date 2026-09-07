@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Entre Pares</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
+        <div class="text-center mb-6">
+            <a href="index.html" class="text-indigo-600 font-bold text-sm hover:underline">← Volver al inicio</a>
+            <h2 class="text-2xl font-bold text-gray-900 mt-2">Iniciar Sesión</h2>
+            <p class="text-sm text-gray-500">Ingresá a tu cuenta institucional</p>
+        </div>
+
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Correo Institucional</label>
+                <input type="email" id="loginEmail" required placeholder="nombre@universidad.edu.ar" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            
+            <div class="text-right">
+                <a href="recuperar.html" class="text-xs text-indigo-600 hover:underline font-medium">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Ingresar</button>
+        </form>
+
+        <p id="loginMensaje" class="text-center text-sm mt-4 font-medium"></p>
+        
+        <p class="text-center text-sm text-gray-500 mt-6">
+            ¿No tenés cuenta? <a href="registro.html" class="text-indigo-600 font-medium hover:underline">Registrarme</a>
+        </p>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2'; 
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const loginForm = document.getElementById('loginForm');
+        const loginMensaje = document.getElementById('loginMensaje');
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+
+                loginMensaje.textContent = "Iniciando sesión...";
+                loginMensaje.className = "text-center text-sm mt-4 text-blue-600 font-medium";
+
+
+                const { data: authData, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    loginMensaje.textContent = "Error: " + error.message;
+                    loginMensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                    return;
+                }
+
+                loginMensaje.textContent = "¡Ingreso exitoso! Verificando rol...";
+                loginMensaje.className = "text-center text-sm mt-4 text-green-600 font-medium";
+
+                const { data: perfil, error: perfilError } = await supabaseClient
+                    .from('perfiles')
+                    .select('rol')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                if (perfilError) {
+                    loginMensaje.textContent = "Error al obtener el rol del usuario.";
+                    loginMensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                    return;
+                }
+                setTimeout(() => {
+                    if (perfil.rol === 'Tutor') {
+                        window.location.href = 'dashboard-tutor.html';
+                    } else {
+                        window.location.href = 'dashboard-estudiante.html';
+                    }
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>

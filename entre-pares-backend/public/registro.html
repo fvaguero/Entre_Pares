@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Entre Pares</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
+        <div class="text-center mb-6">
+            <a href="index.html" class="text-indigo-600 font-bold text-sm hover:underline">← Volver al inicio</a>
+            <h2 class="text-2xl font-bold text-gray-900 mt-2">Creá tu cuenta</h2>
+            <p class="text-sm text-gray-500">Usa tu correo institucional para registrarte</p>
+        </div>
+
+        <form id="registerForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                <input type="text" id="nombre" required placeholder="Ej: María Gómez" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">DNI</label>
+                <input type="text" id="dni" required placeholder="Ej: 40123456" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+                <input type="date" id="fecha_nacimiento" required class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Correo Institucional</label>
+                <input type="email" id="email" required placeholder="nombre@universidad.edu.ar" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                <input type="password" id="password" required placeholder="••••••••" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Rol en la plataforma</label>
+                <select id="rol" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="Estudiante">Estudiante</option>
+                    <option value="Tutor">Tutor Par</option>
+                </select>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Registrarse</button>
+        </form>
+
+        <p id="mensaje" class="text-center text-sm mt-4 font-medium"></p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
