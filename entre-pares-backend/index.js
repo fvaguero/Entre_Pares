@@ -13,7 +13,6 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Endpoint de Registro (HU-04, HU-06, HU-07, HU-09)
 app.post('/api/auth/registro', async (req, res) => {
     try {
         const { email, password, nombre, dni, fecha_nacimiento, ciudad, rol } = req.body;
