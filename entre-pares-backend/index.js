@@ -13,6 +13,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+
 app.post('/api/auth/registro', async (req, res) => {
     try {
         const { email, password, nombre, dni, fecha_nacimiento, ciudad, rol } = req.body;
@@ -27,7 +28,8 @@ app.post('/api/auth/registro', async (req, res) => {
                     fecha_nacimiento,
                     ciudad,
                     rol,
-                    estado_verificacion: rol === 'Tutor' ? 'Pendiente' : 'Aprobado'
+                    
+                    estado_verificacion: (rol === 'Tutor' || rol === 'Ambos') ? 'Pendiente' : 'Aprobado'
                 }
             }
         });
@@ -46,7 +48,6 @@ app.post('/api/auth/registro', async (req, res) => {
     }
 });
 
-// Endpoint de Login (HU-04)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -70,7 +71,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Endpoint de Recuperación de Contraseña (HU-08)
 app.post('/api/auth/recuperar', async (req, res) => {
     try {
         const { email } = req.body;
@@ -93,5 +93,5 @@ app.post('/api/auth/recuperar', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor backend de Entre Pares corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor backend de Entre Pares corriendo en el puerto ${PORT}`);
 });

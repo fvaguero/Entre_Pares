@@ -48,6 +48,8 @@
                 <select id="rol" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                     <option value="Estudiante">Estudiante</option>
                     <option value="Tutor">Tutor Par</option>
+                    <!-- Nueva opción agregada -->
+                    <option value="Ambos">Ambos (Estudiante y Tutor)</option>
                 </select>
             </div>
             <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Registrarse</button>
@@ -141,9 +143,15 @@
                         mensaje.textContent = "¡Registro exitoso! Redirigiendo a tu panel...";
                         mensaje.className = "text-center text-sm mt-4 text-green-600 font-medium";
 
+                        // Se guarda el rol en localStorage para habilitar el menú dual en los dashboards
+                        localStorage.setItem('usuarioRol', rol);
+
                         setTimeout(() => {
                             if (rol === 'Tutor') {
                                 window.location.href = 'dashboard-tutor.html';
+                            } else if (rol === 'Ambos') {
+                                // Redirige por defecto a la vista de estudiante si elige ambos roles
+                                window.location.href = 'dashboard-estudiante.html';
                             } else {
                                 window.location.href = 'dashboard-estudiante.html';
                             }
