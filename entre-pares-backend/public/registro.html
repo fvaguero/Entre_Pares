@@ -6,10 +6,12 @@
     <title>Registro - Entre Pares</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+<body class="bg-gray-50 flex items-center justify-center min-h-screen py-10">
 
-    <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
+    <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-lg">
         <div class="text-center mb-6">
             <a href="index.html" class="text-indigo-600 font-bold text-sm hover:underline">← Volver al inicio</a>
             <h2 class="text-2xl font-bold text-gray-900 mt-2">Creá tu cuenta</h2>
@@ -29,6 +31,20 @@
                 <label class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
                 <input type="date" id="fecha_nacimiento" required class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
+            
+            <div class="relative">
+                <label class="block text-sm font-medium text-gray-700">Ciudad / Zona</label>
+                <input type="text" id="ciudad" required autocomplete="off" placeholder="Empezá a escribir tu ciudad..." class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+    
+                <ul id="sugerencias" class="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto hidden"></ul>
+            </div>
+
+           
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">O seleccioná tu ubicación en el mapa</label>
+                <div id="map" class="w-full h-40 rounded-lg border border-gray-300 z-0"></div>
+            </div>
+
             <div>
                 <label class="block text-sm font-medium text-gray-700">Correo Institucional</label>
                 <input type="email" id="email" required placeholder="nombre@universidad.edu.ar" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -50,6 +66,133 @@
         <p id="mensaje" class="text-center text-sm mt-4 font-medium"></p>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputCiudad = document.getElementById('ciudad');
+            const listaSugerencias = document.getElementById('sugerencias');
+
+            const map = L.map('map').setView([-34.6037, -58.3816], 4);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            let marker = L.marker([-34.6037, -58.3816], { draggable: true }).addTo(map);
+
+            function actualizarUbicacion(lat, lon, nombreLugar) {
+                inputCiudad.value = nombreLugar;
+                map.setView([lat, lon], 13);
+                marker.setLatLng([lat, lon]);
+            }
+
+            marker.on('dragend', async (e) => {
+                const { lat, lng } = e.target.getLatLng();
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    inputCiudad.value = data.display_name;
+                }
+            });
+
+            map.on('click', async (e) => {
+                const { lat, lng } = e.latlng;
+                marker.setLatLng([lat, lng]);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    inputCiudad.value = data.display_name;
+                }
+            });
+
+            let timeoutId;
+            inputCiudad.addEventListener('input', () => {
+                clearTimeout(timeoutId);
+                const query = inputCiudad.value;
+                if (query.length < 3) {
+                    listaSugerencias.classList.add('hidden');
+                    return;
+                }
+
+                timeoutId = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ar`);
+                        const results = await res.json();
+
+                        listaSugerencias.innerHTML = '';
+                        if (results.length > 0) {
+                            listaSugerencias.classList.remove('hidden');
+                            results.forEach(place => {
+                                const li = document.createElement('li');
+                                li.textContent = place.display_name;
+                                li.className = "px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-none";
+                                li.addEventListener('click', () => {
+                                    actualizarUbicacion(place.lat, place.lon, place.display_name);
+                                    listaSugerencias.classList.add('hidden');
+                                });
+                                listaSugerencias.appendChild(li);
+                            });
+                        } else {
+                            listaSugerencias.classList.add('hidden');
+                        }
+                    } catch (err) {
+                        console.error("Error buscando sugerencias:", err);
+                    }
+                }, 300);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!inputCiudad.contains(e.target) && !listaSugerencias.contains(e.target)) {
+                    listaSugerencias.classList.add('hidden');
+                }
+            });
+
+            // 3. Envío del Formulario a Supabase
+            const form = document.getElementById('registerForm');
+            const mensaje = document.getElementById('mensaje');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const nombre = document.getElementById('nombre').value;
+                const dni = document.getElementById('dni').value;
+                const fecha_nacimiento = document.getElementById('fecha_nacimiento').value;
+                const ciudad = document.getElementById('ciudad').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const rol = document.getElementById('rol').value;
+
+                mensaje.textContent = "Registrando usuario...";
+                mensaje.className = "text-center text-sm mt-4 text-blue-600 font-medium";
+
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            nombre_completo: nombre,
+                            dni: dni,
+                            fecha_nacimiento: fecha_nacimiento,
+                            ciudad: ciudad,
+                            rol: rol
+                        }
+                    }
+                });
+
+                if (error) {
+                    mensaje.textContent = "Error: " + error.message;
+                    mensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                    return;
+                }
+
+                mensaje.textContent = "¡Registro exitoso! Revisa tu correo para verificar la cuenta.";
+                mensaje.className = "text-center text-sm mt-4 text-green-600 font-medium";
+                form.reset();
+            });
+        });
+    </script>
 </body>
 </html>
