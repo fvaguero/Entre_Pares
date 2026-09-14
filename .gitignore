@@ -1,5 +1,12 @@
 node_modules/
+**/node_modules/
+
+# Archivos de entorno y credenciales (tanto en la raíz como en subcarpetas)
 .env
+**/ .env
+entre-pares-backend/.env
+
+# Archivos del sistema y editores
 .DS_Store
 Thumbs.db
 .vscode/
