@@ -13,7 +13,6 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-
 app.post('/api/auth/registro', async (req, res) => {
     try {
         const { email, password, nombre, dni, fecha_nacimiento, ciudad, rol } = req.body;
@@ -28,7 +27,6 @@ app.post('/api/auth/registro', async (req, res) => {
                     fecha_nacimiento,
                     ciudad,
                     rol,
-                    
                     estado_verificacion: (rol === 'Tutor' || rol === 'Ambos') ? 'Pendiente' : 'Aprobado'
                 }
             }
@@ -86,6 +84,25 @@ app.post('/api/auth/recuperar', async (req, res) => {
             message: "Correo de recuperación enviado con éxito", 
             data 
         });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Endpoint para obtener la lista de tutores aprobados para el mapa (HU-10 / HU-19)
+app.get('/api/tutores', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('perfiles')
+            .select('*')
+            .or('rol.eq.Tutor,rol.eq.Ambos')
+            .eq('estado_verificacion', 'Aprobado');
+
+        if (error) {
+            return res.status(400).json({ success: false, error: error.message });
+        }
+
+        res.status(200).json({ success: true, data });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
