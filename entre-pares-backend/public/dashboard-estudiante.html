@@ -6,29 +6,122 @@
     <title>Panel Estudiante - Entre Pares</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Scripts y Estilos del Mapa (Leaflet) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
     <nav class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
         <h1 class="text-xl font-bold text-indigo-600">Entre Pares - Estudiante</h1>
-        <button id="btnCerrarSesion" class="text-sm bg-red-50 text-red-600 px-4 py-2 rounded-lg font-medium hover:bg-red-100 transition">Cerrar Sesión</button>
+        
+        <div class="flex items-center space-x-4">
+            <!-- Menú de Roles (Se activa si el rol en localStorage es "Ambos") -->
+            <div id="roleSwitcher" class="hidden relative inline-block text-left">
+                <button id="btnRoleDropdown" class="bg-gray-800 text-white px-4 py-2 rounded-md shadow-sm text-sm font-medium flex items-center hover:bg-gray-700 transition">
+                    Modo Estudiante ▼
+                </button>
+                <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden">
+                    <a href="dashboard-tutor.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50">Cambiar a Modo Tutor</a>
+                </div>
+            </div>
+            
+            <button id="btnCerrarSesion" class="text-sm bg-red-50 text-red-600 px-4 py-2 rounded-lg font-medium hover:bg-red-100 transition">Cerrar Sesión</button>
+        </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-6 py-10">
-        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
             <h2 class="text-2xl font-bold text-gray-900 mb-2">¡Bienvenido a tu panel!</h2>
             <p class="text-gray-600">Aquí podrás buscar tutorías, coordinar horarios con tus compañeros y gestionar tu aprendizaje académico.</p>
+        </div>
+
+        <!-- Sección de Búsqueda y Mapa (Sprint 2) -->
+        <div class="grid lg:grid-cols-3 gap-6">
+            
+            <!-- Panel Lateral de Filtros (HU-10) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Buscar Tutores</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Materia</label>
+                        <input type="text" placeholder="Ej: Álgebra" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Sede o Ciudad</label>
+                        <input type="text" placeholder="Ej: Catamarca" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <button class="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Aplicar Filtros</button>
+                </div>
+            </div>
+
+            <!-- Mapa Interactivo (HU-19) -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Tutores cerca de ti</h3>
+                <!-- Z-0 asegura que el mapa no tape el menú desplegable del header -->
+                <div id="mapa" class="w-full h-[400px] rounded-lg z-0 relative border border-gray-200"></div>
+            </div>
+            
         </div>
     </main>
 
     <script>
+        // --- 1. CONFIGURACIÓN DE SUPABASE Y SESIÓN ---
         const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         document.getElementById('btnCerrarSesion').addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
+            localStorage.removeItem('usuarioRol'); // Limpiamos el rol al salir
             window.location.href = 'login.html';
+        });
+
+        // --- 2. LÓGICA DEL MENÚ DE CAMBIO DE ROL ---
+        const rolActual = localStorage.getItem('usuarioRol');
+        const roleSwitcher = document.getElementById('roleSwitcher');
+        const btnRoleDropdown = document.getElementById('btnRoleDropdown');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        if (rolActual === 'Ambos' && roleSwitcher) {
+            roleSwitcher.classList.remove('hidden');
+        }
+
+        if (btnRoleDropdown) {
+            btnRoleDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('hidden');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (roleSwitcher && !roleSwitcher.contains(e.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        // --- 3. INICIALIZACIÓN DEL MAPA DE LEAFLET ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializamos el mapa centrado en Catamarca de forma predeterminada
+            const map = L.map('mapa').setView([-28.4695, -65.7852], 13);
+
+            // Cargamos la capa visual de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Agregamos un marcador de prueba simulando a un Tutor
+            const markerTutor = L.marker([-28.4650, -65.7800]).addTo(map);
+            
+            // Globo de información del tutor
+            markerTutor.bindPopup(`
+                <div class="text-center">
+                    <b class="text-gray-900">María Gómez</b><br>
+                    <span class="text-sm text-gray-600">Tutor de Análisis Matemático</span><br>
+                    <button class="mt-2 text-indigo-600 hover:underline font-medium text-sm">Agendar Tutoría</button>
+                </div>
+            `);
         });
     </script>
 </body>
