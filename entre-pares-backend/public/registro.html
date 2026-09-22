@@ -4,59 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Entre Pares</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos limpios para el autocompletado de la ciudad */
+        .sugerencias-container {
+            position: relative;
+        }
+        .sugerencias-lista {
+            position: absolute;
+            z-index: 20;
+            width: 100%;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            list-style: none;
+            padding: 0;
+        }
+        .sugerencias-lista li {
+            padding: 0.8rem 1rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .sugerencias-lista li:last-child {
+            border-bottom: none;
+        }
+        .sugerencias-lista li:hover {
+            background-color: var(--bg-color);
+        }
+    </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen py-10">
-
-    <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-lg">
-        <div class="text-center mb-6">
-            <a href="index.html" class="text-indigo-600 font-bold text-sm hover:underline">← Volver al inicio</a>
-            <h2 class="text-2xl font-bold text-gray-900 mt-2">Creá tu cuenta</h2>
-            <p class="text-sm text-gray-500">Usa tu correo institucional para registrarte</p>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo">
+                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo" style="height:50px;">
+            </a>
+            <div class="auth-buttons">
+                <a href="index.html" class="btn-text">← Volver al inicio</a>
+            </div>
         </div>
+    </header>
 
-        <form id="registerForm" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Nombre Completo</label>
-                <input type="text" id="nombre" required placeholder="Ej: María Gómez" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">DNI</label>
-                <input type="text" id="dni" required placeholder="Ej: 40123456" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
-                <input type="date" id="fecha_nacimiento" required class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            
-            <div class="relative">
-                <label class="block text-sm font-medium text-gray-700">Ciudad / Zona</label>
-                <input type="text" id="ciudad" required autocomplete="off" placeholder="Empezá a escribir tu ciudad..." class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                <ul id="sugerencias" class="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto hidden"></ul>
-            </div>
+    <main class="auth-wrapper" style="margin: 2rem auto;">
+        <div class="auth-card" style="max-width: 500px;">
+            <h2>Creá tu cuenta</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                Usa tu correo institucional para registrarte
+            </p>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Correo Institucional</label>
-                <input type="email" id="email" required placeholder="nombre@universidad.edu.ar" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Contraseña</label>
-                <input type="password" id="password" required placeholder="••••••••" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Rol en la plataforma</label>
-                <select id="rol" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option value="Estudiante">Estudiante</option>
-                    <option value="Tutor">Tutor Par</option>
-                    <!-- Nueva opción agregada -->
-                    <option value="Ambos">Ambos (Estudiante y Tutor)</option>
-                </select>
-            </div>
-            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Registrarse</button>
-        </form>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="nombre" class="form-control" required placeholder="Ej: María Gómez">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>DNI</label>
+                        <input type="text" id="dni" class="form-control" required placeholder="Ej: 40123456">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" id="fecha_nacimiento" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-group sugerencias-container">
+                    <label>Ciudad / Zona</label>
+                    <input type="text" id="ciudad" class="form-control" required autocomplete="off" placeholder="Empezá a escribir tu ciudad...">
+                    <ul id="sugerencias" class="sugerencias-lista"></ul>
+                </div>
 
-        <p id="mensaje" class="text-center text-sm mt-4 font-medium"></p>
-    </div>
+                <div class="form-group">
+                    <label>Correo Institucional</label>
+                    <input type="email" id="email" class="form-control" required placeholder="nombre@universidad.edu.ar">
+                </div>
+                
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••">
+                </div>
+                
+                <div class="form-group">
+                    <label>Rol en la plataforma</label>
+                    <select id="rol" class="form-control">
+                        <option value="Estudiante">Estudiante</option>
+                        <option value="Tutor">Tutor Par</option>
+                        <option value="Ambos">Ambos (Estudiante y Tutor)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-dark w-full" style="margin-top: 1rem;">Registrarse</button>
+            </form>
+
+            <p id="mensaje" class="mensaje"></p>
+        </div>
+    </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -69,7 +120,7 @@
                     clearTimeout(timeoutId);
                     const query = inputCiudad.value;
                     if (query.length < 3) {
-                        listaSugerencias.classList.add('hidden');
+                        listaSugerencias.style.display = 'none';
                         return;
                     }
 
@@ -80,19 +131,18 @@
 
                             listaSugerencias.innerHTML = '';
                             if (results.length > 0) {
-                                listaSugerencias.classList.remove('hidden');
+                                listaSugerencias.style.display = 'block';
                                 results.forEach(place => {
                                     const li = document.createElement('li');
                                     li.textContent = place.display_name;
-                                    li.className = "px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-none";
                                     li.addEventListener('click', () => {
                                         inputCiudad.value = place.display_name;
-                                        listaSugerencias.classList.add('hidden');
+                                        listaSugerencias.style.display = 'none';
                                     });
                                     listaSugerencias.appendChild(li);
                                 });
                             } else {
-                                listaSugerencias.classList.add('hidden');
+                                listaSugerencias.style.display = 'none';
                             }
                         } catch (err) {
                             console.error("Error buscando sugerencias:", err);
@@ -102,7 +152,7 @@
 
                 document.addEventListener('click', (e) => {
                     if (!inputCiudad.contains(e.target) && !listaSugerencias.contains(e.target)) {
-                        listaSugerencias.classList.add('hidden');
+                        listaSugerencias.style.display = 'none';
                     }
                 });
             }
@@ -123,7 +173,7 @@
                     const rol = document.getElementById('rol').value;
 
                     mensaje.textContent = "Registrando usuario a través del servidor...";
-                    mensaje.className = "text-center text-sm mt-4 text-blue-600 font-medium";
+                    mensaje.style.color = "var(--primary-blue)";
 
                     try {
                         const respuesta = await fetch('/api/auth/registro', {
@@ -136,22 +186,20 @@
 
                         if (!resultado.success) {
                             mensaje.textContent = "Error: " + resultado.error;
-                            mensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                            mensaje.style.color = "red";
                             return;
                         }
 
                         mensaje.textContent = "¡Registro exitoso! Redirigiendo a tu panel...";
-                        mensaje.className = "text-center text-sm mt-4 text-green-600 font-medium";
+                        mensaje.style.color = "green";
 
-                        // Se guarda el rol en localStorage para habilitar el menú dual en los dashboards
                         localStorage.setItem('usuarioRol', rol);
 
                         setTimeout(() => {
                             if (rol === 'Tutor') {
                                 window.location.href = 'dashboard-tutor.html';
                             } else if (rol === 'Ambos') {
-                                // Redirige por defecto a la vista de estudiante si elige ambos roles
-                                window.location.href = 'dashboard-estudiante.html';
+                                window.location.href = 'dashboard-ambos.html';
                             } else {
                                 window.location.href = 'dashboard-estudiante.html';
                             }
@@ -160,7 +208,7 @@
                     } catch (err) {
                         console.error("Error en la petición:", err);
                         mensaje.textContent = "Error de conexión con el servidor.";
-                        mensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                        mensaje.style.color = "red";
                     }
                 });
             }

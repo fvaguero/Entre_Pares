@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Dual - Entre Pares</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Leaflet para el mapa del estudiante -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Estilos específicos para las pestañas del panel dual */
+        .tabs-header {
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: var(--primary-dark);
+        }
+        .tab-btn.active {
+            color: var(--primary-dark);
+            border-bottom-color: var(--primary-yellow);
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo">
+                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo" style="height:40px;">
+            </a>
+            <div class="auth-buttons">
+                <button id="btnCerrar" class="btn" style="background-color: #fee2e2; color: #dc2626; padding: 0.5rem 1rem; font-size: 0.85rem;">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-single" style="max-width: 1000px; margin: 2.5rem auto;">
+        <h1 style="text-align: center; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif;">Mi Panel Dual</h1>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem;">Gestioná tus tutorías como estudiante o configurá tus materias como tutor desde un solo lugar.</p>
+        
+        <!-- Botones de Pestañas -->
+        <div class="tabs-header">
+            <button class="tab-btn active" onclick="cambiarPestana('estudiante')">Modo Estudiante</button>
+            <button class="tab-btn" onclick="cambiarPestana('tutor')">Modo Tutor</button>
+        </div>
+
+        <!-- CONTENIDO ESTUDIANTE (Mapa y Búsqueda) -->
+        <div id="tab-estudiante" class="tab-content active dashboard-layout" style="margin:0; padding:0;">
+            <aside class="panel-card card-student">
+                <h3>Buscar Tutorías</h3>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>¿Qué materia necesitás?</label>
+                    <input type="text" id="filtroMateria" class="form-control" placeholder="Ej: Matemática">
+                </div>
+                <div class="form-group">
+                    <label>Ciudad</label>
+                    <input type="text" id="filtroCiudad" class="form-control" placeholder="Ej: Catamarca">
+                </div>
+                <button class="btn btn-yellow w-full" style="margin-top: 0.5rem;">Aplicar Filtros</button>
+            </aside>
+            <section>
+                <div class="panel-card" style="padding: 0; overflow: hidden;">
+                    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);">
+                        <h3 style="margin: 0; font-size: 1.1rem;">Tutores disponibles</h3>
+                    </div>
+                    <div id="mapa"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- CONTENIDO TUTOR (Perfil y Materias) -->
+        <div id="tab-tutor" class="tab-content">
+            <div class="panel-card card-tutor" style="max-width: 600px; margin: 0 auto;">
+                <h3 style="margin-bottom: 0.5rem;">Configurar Perfil Profesional</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Completá estos datos para que los estudiantes puedan encontrarte en el mapa.</p>
+                
+                <form id="formPerfilTutor">
+                    <div class="form-group">
+                        <label>Ciudad / Zona de Referencia</label>
+                        <input type="text" id="ciudadTutor" class="form-control" placeholder="Ej: Catamarca" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Materias que imparto (separadas por coma)</label>
+                        <input type="text" id="materiasTutor" class="form-control" placeholder="Ej: Álgebra I, Física" required>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-full" style="background: var(--primary-blue); color: white; margin-top: 1rem;">Guardar Perfil</button>
+                </form>
+                <p id="mensajeTutor" class="mensaje" style="margin-top: 1rem; text-align: center; font-size: 0.9rem; font-weight: 500;"></p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Vinculación del script externo que maneja la lógica de este panel -->
+    <script src="js/dashboard-ambos.js"></script>
+</body>
+</html>

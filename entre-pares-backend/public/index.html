@@ -3,87 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entre Pares - Red de Tutorías</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Entre Pares - Plataforma de Tutorías</title>
+    <!-- Fuentes del diseño original -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Vinculación a tu archivo CSS puro -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-indigo-600">Entre Pares</h1>
-            <div class="space-x-4">
-                <a href="#beneficios" class="text-gray-600 hover:text-indigo-600 font-medium">Beneficios</a>
-                <a href="#como-funciona" class="text-gray-600 hover:text-indigo-600 font-medium">Cómo Funciona</a>
-                <a href="login.html" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Iniciar Sesión</a>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo">
+                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo Entre Pares">
+            </a>
+            
+            <div class="nav-and-actions">
+                <nav class="nav-links">
+                    <a href="#como-funciona">Beneficios</a>
+                    <a href="#como-funciona">Cómo Funciona</a>
+                </nav>
+                <div class="auth-buttons">
+                    <a href="login.html" class="btn-text">Iniciar Sesión</a>
+                    <a href="registro.html" class="btn btn-yellow">Registrarme</a>
+                </div>
             </div>
         </div>
     </header>
 
+    <!-- HERO SECTION -->
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <span class="subtitle">Plataforma de Tutorías</span>
+                <h1>Aprendé y enseñá con <mark>quienes ya pasaron</mark> por lo mismo.</h1>
+                <p>Conectamos estudiantes que necesitan apoyo académico con tutores pares avanzados de tu misma institución, de forma virtual.</p>
+                <a href="registro.html" class="btn btn-dark">Registrarme</a>
+            </div>
+        </section>
 
-    <section class="max-w-7xl mx-auto px-4 py-20 text-center">
-        <span class="bg-indigo-100 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full">Plataforma de Tutorias</span>
-        <h2 class="text-4xl md:text-6xl font-extrabold text-gray-900 mt-4 mb-6">
-            Aprende y enseña con quienes ya pasaron por lo mismo.
-        </h2>
-        <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Conectamos estudiantes que necesitan apoyo académico con tutores pares avanzados de tu misma institución de forma virtual.
-        </p>
-        <div class="space-x-4">
-            <a href="registro.html" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-indigo-700 shadow-lg transition">Registrarme</a>
-        </div>
-    </section>
+        <!-- SECCIÓN DE ROLES -->
+        <section class="roles" id="como-funciona">
+            <div class="roles-content">
+                <h2>¿Cómo querés participar?</h2>
+                
+                <div class="cards-container">
+                    <!-- Tarjeta Estudiante -->
+                    <div class="card card-student">
+                        <h3>Soy Estudiante</h3>
+                        <p>Encontrá ayuda personalizada para las materias que te cuestan, filtrá por tutores de tu sede y medí tu progreso académico.</p>
+                        <ul class="features-list student-list">
+                            <li><span>✓</span> Tutorías virtuales a medida</li>
+                            <li><span>✓</span> Videollamadas integradas y chat en vivo</li>
+                            <li><span>✓</span> Sistema de calificaciones y reseñas</li>
+                        </ul>
+                    </div>
 
-
-    <section id="beneficios" class="bg-white py-16 border-t border-gray-100">
-        <div class="max-w-7xl mx-auto px-4">
-            <h3 class="text-3xl font-bold text-center text-gray-900 mb-12">¿Cómo querés participar?</h3>
-            <div class="grid md:grid-cols-2 gap-8">
-
-                <div class="p-8 border border-gray-200 rounded-2xl bg-indigo-50/50">
-                    <h4 class="text-2xl font-bold text-indigo-900 mb-4">Soy Estudiante</h4>
-                    <p class="text-gray-600 mb-4">Encontrá ayuda personalizada para las materias que te cuestan, filtrá por tutores de tu sede y medí tu progreso académico.</p>
-                    <ul class="space-y-2 text-gray-700">
-                        <li>✔️ Tutorías virtuales a medida</li>
-                        <li>✔️ Videollamadas integradas y chat en vivo</li>
-                        <li>✔️ Sistema de calificaciones y reseñas</li>
-                    </ul>
+                    <!-- Tarjeta Tutor -->
+                    <div class="card card-tutor">
+                        <h3>Soy Tutor Par</h3>
+                        <p>Compartí tus conocimientos, organizá tus horarios con total flexibilidad y sumá puntos e insignias en tu perfil.</p>
+                        <ul class="features-list tutor-list">
+                            <li><span>✓</span> Gestión de disponibilidad horaria</li>
+                            <li><span>✓</span> Ganá experiencia y gamificación</li>
+                            <li><span>✓</span> Validación institucional de antecedentes</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="p-8 border border-gray-200 rounded-2xl bg-emerald-50/50">
-                    <h4 class="text-2xl font-bold text-emerald-900 mb-4">Soy Tutor Par</h4>
-                    <p class="text-gray-600 mb-4">Compartí tus conocimientos, organizá tus horarios con total flexibilidad y sumá puntos e insignias en tu perfil.</p>
-                    <ul class="space-y-2 text-gray-700">
-                        <li>✔️ Gestión de disponibilidad horaria</li>
-                        <li>✔️ Ganá experiencia y gamificación</li>
-                        <li>✔️ Validación institucional de antecedentes</li>
-                    </ul>
-                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>Entre Pares</h3>
+                <p>Conectando el conocimiento universitario de forma colaborativa. Aprendé y enseñá con quienes ya pasaron por lo mismo.</p>
+            </div>
+            
+            <div class="footer-col">
+                <h4>Navegación</h4>
+                <a href="#como-funciona">Beneficios</a>
+                <a href="#como-funciona">Cómo Funciona</a>
+                <a href="login.html">Iniciar Sesión</a>
+                <a href="registro.html">Registrarme</a>
+            </div>
+            
+            <div class="footer-col">
+                <h4>Soporte</h4>
+                <p>Contacto directo a través de la comunidad académica institucional para resolver tus dudas.</p>
             </div>
         </div>
-    </section>
-
-    <section id="como-funciona" class="py-16 max-w-7xl mx-auto px-4 text-center">
-        <h3 class="text-3xl font-bold text-gray-900 mb-12">¿Cómo funciona en 3 simples pasos?</h3>
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="p-6">
-                <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">1</div>
-                <h4 class="font-bold text-lg mb-2">Busca tu Tutor</h4>
-                <p class="text-gray-600">Filtra por materia, horario o cercanía de sede para encontrar al compañero ideal.</p>
-            </div>
-            <div class="p-6">
-                <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">2</div>
-                <h4 class="font-bold text-lg mb-2">Reserva un Turno</h4>
-                <p class="text-gray-600">Selecciona fecha y hora en el calendario adaptado a tu zona horaria y detalla tus dudas.</p>
-            </div>
-            <div class="p-6">
-                <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">3</div>
-                <h4 class="font-bold text-lg mb-2">Aprende y Evoluciona</h4>
-                <p class="text-gray-600">Conéctate mediante la videollamada integrada y califica tu experiencia al finalizar.</p>
-            </div>
+        
+        <div class="footer-bottom">
+            &copy; 2026 Entre Pares. Todos los derechos reservados.
         </div>
-    </section>
-
-    <footer class="bg-gray-900 text-white py-8 text-center">
-        <p class="text-gray-400">© 2026 Entre Pares</p>
     </footer>
 
 </body>

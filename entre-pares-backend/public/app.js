@@ -14,7 +14,7 @@ if (form) {
         const rol = document.getElementById('rol').value;
 
         mensaje.textContent = "Registrando usuario a través del servidor...";
-        mensaje.className = "text-center text-sm mt-4 text-blue-600 font-medium";
+        mensaje.style.color = "var(--primary-blue)"; // Aplicamos tu variable CSS
 
         try {
             const respuesta = await fetch('/api/auth/registro', {
@@ -27,22 +27,21 @@ if (form) {
 
             if (!resultado.success) {
                 mensaje.textContent = "Error: " + resultado.error;
-                mensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                mensaje.style.color = "red"; // Estilo limpio en lugar de Tailwind
                 return;
             }
 
             mensaje.textContent = "¡Registro exitoso! Redirigiendo a tu panel...";
-            mensaje.className = "text-center text-sm mt-4 text-green-600 font-medium";
+            mensaje.style.color = "green"; 
 
-            // Guardamos el rol en el navegador para activar el menú dual
             localStorage.setItem('usuarioRol', rol);
 
             setTimeout(() => {
                 if (rol === 'Tutor') {
                     window.location.href = 'dashboard-tutor.html';
                 } else if (rol === 'Ambos') {
-                    // Si elige ambos, lo mandamos primero a la vista de estudiante
-                    window.location.href = 'dashboard-estudiante.html';
+                    // Ahora redirige a la vista con pestañas
+                    window.location.href = 'dashboard-ambos.html'; 
                 } else {
                     window.location.href = 'dashboard-estudiante.html';
                 }
@@ -51,7 +50,7 @@ if (form) {
         } catch (err) {
             console.error("Error en la petición:", err);
             mensaje.textContent = "Error de conexión con el servidor.";
-            mensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+            mensaje.style.color = "red";
         }
     });
 }

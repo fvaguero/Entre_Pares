@@ -4,33 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Contraseña - Entre Pares</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
-
-    <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
-        <div class="text-center mb-6">
-            <a href="login.html" class="text-indigo-600 font-bold text-sm hover:underline">← Volver al login</a>
-            <h2 class="text-2xl font-bold text-gray-900 mt-2">Recuperar Contraseña</h2>
-            <p class="text-sm text-gray-500">Ingresá tu correo para recibir las instrucciones</p>
-        </div>
-
-        <form id="recoverForm" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Correo Institucional</label>
-                <input type="email" id="email" required placeholder="nombre@universidad.edu.ar" class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+<body>
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo">
+                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo" style="height:50px;">
+            </a>
+            <div class="auth-buttons">
+                <a href="login.html" class="btn-text">← Volver al login</a>
             </div>
-            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">Enviar instrucciones</button>
-        </form>
+        </div>
+    </header>
 
-        <p id="mensaje" class="text-center text-sm mt-4 font-medium"></p>
-    </div>
+    <main class="auth-wrapper">
+        <div class="auth-card">
+            <h2>Recuperar Contraseña</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                Ingresá tu correo para recibir las instrucciones.
+            </p>
+
+            <form id="recoverForm">
+                <div class="form-group">
+                    <label>Correo Institucional</label>
+                    <input type="email" id="email" class="form-control" placeholder="nombre@universidad.edu.ar" required>
+                </div>
+                <button type="submit" class="btn btn-dark w-full" style="margin-top: 1rem;">Enviar instrucciones</button>
+            </form>
+
+            <p id="mensaje" class="mensaje"></p>
+        </div>
+    </main>
 
     <script>
         const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const form = document.getElementById('recoverForm');
         const mensaje = document.getElementById('mensaje');
@@ -40,16 +52,17 @@
             const email = document.getElementById('email').value;
 
             mensaje.textContent = "Enviando correo de recuperación...";
-            mensaje.className = "text-center text-sm mt-4 text-blue-600 font-medium";
+            mensaje.style.color = "var(--primary-blue)";
 
+            // Supabase maneja el envío del mail automáticamente
             const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
 
             if (error) {
                 mensaje.textContent = "Error: " + error.message;
-                mensaje.className = "text-center text-sm mt-4 text-red-600 font-medium";
+                mensaje.style.color = "red";
             } else {
                 mensaje.textContent = "¡Correo enviado! Revisá tu bandeja de entrada.";
-                mensaje.className = "text-center text-sm mt-4 text-green-600 font-medium";
+                mensaje.style.color = "green";
                 form.reset();
             }
         });
