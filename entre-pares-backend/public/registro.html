@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Estilos limpios para el autocompletado de la ciudad */
         .sugerencias-container {
             position: relative;
         }
@@ -45,7 +44,7 @@
     <header>
         <div class="header-container">
             <a href="index.html" class="logo">
-                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo" style="height:50px;">
+                <img src="img/logo-cuaderno.png" alt="Logo" style="height:50px;">
             </a>
             <div class="auth-buttons">
                 <a href="index.html" class="btn-text">← Volver al inicio</a>
@@ -172,7 +171,7 @@
                     const password = document.getElementById('password').value;
                     const rol = document.getElementById('rol').value;
 
-                    mensaje.textContent = "Registrando usuario a través del servidor...";
+                    mensaje.textContent = "Registrando usuario...";
                     mensaje.style.color = "var(--primary-blue)";
 
                     try {
@@ -193,6 +192,11 @@
                         mensaje.textContent = "¡Registro exitoso! Redirigiendo a tu panel...";
                         mensaje.style.color = "green";
 
+
+                        const userId = resultado.data?.user?.id;
+                        if (userId) {
+                            localStorage.setItem('usuarioId', userId);
+                        }
                         localStorage.setItem('usuarioRol', rol);
 
                         setTimeout(() => {
@@ -214,5 +218,11 @@
             }
         });
     </script>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
+            <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>
+        </div>
+    </footer>
 </body>
 </html>

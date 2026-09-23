@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     
-    <!-- Leaflet para el mapa del estudiante -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -57,7 +56,7 @@
     <header>
         <div class="header-container">
             <a href="index.html" class="logo">
-                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo" style="height:40px;">
+                <img src="img/logo-cuaderno.png" alt="Logo" style="height:40px;">
             </a>
             <div class="auth-buttons">
                 <button id="btnCerrar" class="btn" style="background-color: #fee2e2; color: #dc2626; padding: 0.5rem 1rem; font-size: 0.85rem;">Cerrar Sesión</button>
@@ -69,13 +68,11 @@
         <h1 style="text-align: center; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif;">Mi Panel Dual</h1>
         <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem;">Gestioná tus tutorías como estudiante o configurá tus materias como tutor desde un solo lugar.</p>
         
-        <!-- Botones de Pestañas -->
         <div class="tabs-header">
             <button class="tab-btn active" onclick="cambiarPestana('estudiante')">Modo Estudiante</button>
             <button class="tab-btn" onclick="cambiarPestana('tutor')">Modo Tutor</button>
         </div>
-
-        <!-- CONTENIDO ESTUDIANTE (Mapa y Búsqueda) -->
+>
         <div id="tab-estudiante" class="tab-content active dashboard-layout" style="margin:0; padding:0;">
             <aside class="panel-card card-student">
                 <h3>Buscar Tutorías</h3>
@@ -99,7 +96,6 @@
             </section>
         </div>
 
-        <!-- CONTENIDO TUTOR (Perfil y Materias) -->
         <div id="tab-tutor" class="tab-content">
             <div class="panel-card card-tutor" style="max-width: 600px; margin: 0 auto;">
                 <h3 style="margin-bottom: 0.5rem;">Configurar Perfil Profesional</h3>
@@ -121,7 +117,12 @@
         </div>
     </main>
 
-    <!-- Vinculación del script externo que maneja la lógica de este panel -->
     <script src="js/dashboard-ambos.js"></script>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
+            <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>
+        </div>
+    </footer>
 </body>
 </html>

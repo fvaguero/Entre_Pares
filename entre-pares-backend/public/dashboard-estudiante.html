@@ -14,21 +14,19 @@
 </head>
 <body>
 
-    <!-- HEADER / NAVEGACIÓN -->
     <header>
         <div class="header-container">
             <a href="index.html" class="logo">
-                <img src="img/solo un cuaderno y un lapiz (2).png" alt="Logo" style="height:40px;">
+                <img src="img/logo-cuaderno.png" alt="Logo" style="height:40px;">
             </a>
             
             <div class="auth-buttons">
-                <!-- Menú de Roles (Se activa si el rol en localStorage es "Ambos") -->
                 <div id="roleSwitcher" style="display: none; position: relative; margin-right: 1rem;">
-                    <button id="btnRoleDropdown" class="btn" style="background-color: var(--primary-dark); color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">
+                    <button id="btnRoleDropdown" class="btn" style="background-color: #1e293b; color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">
                         Modo Estudiante ▼
                     </button>
-                    <div id="dropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="dashboard-tutor.html" style="display: block; padding: 0.8rem 1rem; font-size: 0.85rem; color: var(--text-main); text-decoration: none;">Cambiar a Modo Tutor</a>
+                    <div id="dropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
+                        <a href="dashboard-tutor.html" style="display: block; padding: 0.8rem 1rem; font-size: 0.85rem; color: #1e293b; text-decoration: none;">Cambiar a Modo Tutor</a>
                     </div>
                 </div>
                 
@@ -37,10 +35,8 @@
         </div>
     </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
     <main class="dashboard-layout" style="margin: 2.5rem auto;">
         
-        <!-- Panel Lateral de Filtros (HU-10) -->
         <aside class="panel-card card-student">
             <h3 style="margin-bottom: 1rem;">Buscar Tutores</h3>
             <div class="form-group">
@@ -54,78 +50,64 @@
             <button class="btn btn-yellow w-full" style="margin-top: 0.5rem;">Aplicar Filtros</button>
         </aside>
 
-        <!-- Mapa Interactivo (HU-19) y Bienvenida -->
         <section>
             <div class="panel-card" style="margin-bottom: 1.5rem;">
                 <h1 style="font-family: 'Inter', sans-serif; font-size: 1.5rem; margin-bottom: 0.5rem;">¡Bienvenido a tu panel!</h1>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">Aquí podrás buscar tutorías, coordinar horarios con tus compañeros y gestionar tu aprendizaje académico.</p>
+                <p style="color: #64748b; font-size: 0.95rem;">Aquí podrás buscar tutorías, coordinar horarios con tus compañeros y gestionar tu aprendizaje académico.</p>
             </div>
 
             <div class="panel-card" style="padding: 0; overflow: hidden;">
-                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);">
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;">
                     <h3 style="margin: 0; font-size: 1.1rem;">Tutores cerca de ti</h3>
                 </div>
-                <!-- El mapa de Leaflet -->
                 <div id="mapa"></div>
             </div>
         </section>
         
     </main>
 
-    <script>
-        // --- 1. CONFIGURACIÓN DE SUPABASE Y SESIÓN ---
-        const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        document.getElementById('btnCerrarSesion').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            localStorage.removeItem('usuarioRol'); 
-            window.location.href = 'login.html';
-        });
-
-        // --- 2. LÓGICA DEL MENÚ DE CAMBIO DE ROL ---
-        const rolActual = localStorage.getItem('usuarioRol');
-        const roleSwitcher = document.getElementById('roleSwitcher');
-        const btnRoleDropdown = document.getElementById('btnRoleDropdown');
-        const dropdownMenu = document.getElementById('dropdownMenu');
-
-        if (rolActual === 'Ambos' && roleSwitcher) {
-            roleSwitcher.style.display = 'inline-block';
-        }
-
-        if (btnRoleDropdown) {
-            btnRoleDropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-            });
-        }
-
-        document.addEventListener('click', (e) => {
-            if (roleSwitcher && !roleSwitcher.contains(e.target)) {
-                dropdownMenu.style.display = 'none';
-            }
-        });
-
-        // --- 3. INICIALIZACIÓN DEL MAPA DE LEAFLET ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const map = L.map('mapa').setView([-28.4695, -65.7852], 13);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-
-            // Marcador de prueba del tutor
-            const markerTutor = L.marker([-28.4650, -65.7800]).addTo(map);
+    <div id="modalReserva" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="panel-card" style="width: 100%; max-width: 450px; position: relative;">
+            <button id="cerrarModal" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">✕</button>
             
-            markerTutor.bindPopup(`
-                <div style="text-align: center;">
-                    <b style="color: var(--text-main);">María Gómez</b><br>
-                    <span style="font-size: 0.85rem; color: var(--text-muted);">Tutor de Análisis Matemático</span><br>
-                    <button style="margin-top: 8px; background: none; border: none; color: var(--primary-blue); cursor: pointer; font-weight: 500;">Agendar Tutoría</button>
+            <h2 style="font-family: 'Lora', serif; font-size: 1.5rem; color: #0f172a; margin-bottom: 0.5rem;">Reservar Tutoría</h2>
+            <p id="tutorNombreModal" style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Coordiná tu encuentro académico</p>
+
+            <form id="formReservaTutoria">
+                <input type="hidden" id="tutorIdModal">
+                
+                <div class="form-group">
+                    <label>Materia o Tema</label>
+                    <input type="text" id="materiaReserva" class="form-control" placeholder="Ej: Análisis Matemático I" required>
                 </div>
-            `);
-        });
-    </script>
+
+                <div class="form-group">
+                    <label>Fecha de la Tutoría</label>
+                    <input type="date" id="fechaReserva" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Hora (Hora Local)</label>
+                    <input type="time" id="horaReserva" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Comentarios o Dudas Previas</label>
+                    <textarea id="comentariosReserva" class="form-control" rows="3" placeholder="Breve descripción de lo que querés consultar..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-yellow w-full" style="margin-top: 1rem;">Confirmar Reserva</button>
+            </form>
+            <p id="mensajeReserva" style="text-align: center; margin-top: 1rem; font-size: 0.85rem; font-weight: 600;"></p>
+        </div>
+    </div>
+
+    <script src="js/dashboard-estudiante.js"></script>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
+            <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>
+        </div>
+    </footer>
 </body>
 </html>

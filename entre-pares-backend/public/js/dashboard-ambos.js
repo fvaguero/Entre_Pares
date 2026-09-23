@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. INICIALIZAR MAPA (Modo Estudiante) ---
     const map = L.map('mapa').setView([-28.4695, -65.7852], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
@@ -8,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pin de prueba para el mapa
     L.marker([-28.4650, -65.7800]).addTo(map).bindPopup('<b>María Gómez</b><br>Tutor de Análisis Matemático');
 
-    // --- 2. LÓGICA DE PESTAÑAS (Tabs) ---
     window.cambiarPestana = function(modo) {
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -16,13 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(`tab-${modo}`).classList.add('active');
         event.currentTarget.classList.add('active');
 
-        // Leaflet necesita recalcular el tamaño si estaba oculto
         if (modo === 'estudiante') {
             setTimeout(() => map.invalidateSize(), 100);
         }
     };
 
-    // --- 3. GUARDAR PERFIL DE TUTOR (Conectado a Node.js) ---
     const formTutor = document.getElementById('formPerfilTutor');
     if (formTutor) {
         formTutor.addEventListener('submit', async (e) => {
@@ -34,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mensaje.textContent = "Guardando perfil...";
             mensaje.style.color = "var(--primary-blue)";
 
-            // Obtenemos el ID del usuario actual mediante Supabase local
             const supabase = window.supabase.createClient('https://uecwotydamsjstpovbzz.supabase.co', 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2');
             const { data: { user } } = await supabase.auth.getUser();
 
@@ -62,8 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    // --- 4. CERRAR SESIÓN ---
     const btnCerrar = document.getElementById('btnCerrar');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', async () => {

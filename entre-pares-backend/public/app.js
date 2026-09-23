@@ -14,7 +14,7 @@ if (form) {
         const rol = document.getElementById('rol').value;
 
         mensaje.textContent = "Registrando usuario a través del servidor...";
-        mensaje.style.color = "var(--primary-blue)"; // Aplicamos tu variable CSS
+        mensaje.style.color = "var(--primary-blue)";
 
         try {
             const respuesta = await fetch('/api/auth/registro', {

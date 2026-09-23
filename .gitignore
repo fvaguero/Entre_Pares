@@ -10,3 +10,6 @@ entre-pares-backend/.env
 .DS_Store
 Thumbs.db
 .vscode/
+
+.env
+node_modules/
