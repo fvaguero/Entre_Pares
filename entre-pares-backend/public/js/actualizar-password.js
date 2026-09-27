@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar Supabase con tus credenciales públicas
+    const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2'; 
+    
+    // Inicializamos el cliente usando la clave correcta
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const formActualizar = document.getElementById('updatePasswordForm');
     const inputNuevaPassword = document.getElementById('nuevaPassword');
     const mensaje = document.getElementById('mensaje');
