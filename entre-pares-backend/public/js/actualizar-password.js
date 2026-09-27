@@ -1,23 +1,41 @@
-// js/actualizar-password.js
-const formActualizar = document.getElementById('form-actualizar'); // O el selector de tu formulario
-const inputNuevaPassword = document.getElementById('nueva-password'); // El input de la nueva pass
+document.addEventListener('DOMContentLoaded', () => {
+    const formActualizar = document.getElementById('updatePasswordForm');
+    const inputNuevaPassword = document.getElementById('nuevaPassword');
+    const mensaje = document.getElementById('mensaje');
 
-formActualizar.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const nuevaPassword = inputNuevaPassword.value;
+    if (formActualizar) {
+        formActualizar.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nuevaPassword = inputNuevaPassword.value;
 
-    try {
-        const { data, error } = await supabaseClient.auth.updateUser({
-            password: nuevaPassword
+            if (mensaje) {
+                mensaje.textContent = "Actualizando contraseña...";
+                mensaje.style.color = "#2563eb";
+            }
+
+            try {
+                const { data, error } = await supabaseClient.auth.updateUser({
+                    password: nuevaPassword
+                });
+
+                if (error) throw error;
+
+                if (mensaje) {
+                    mensaje.textContent = "¡Contraseña actualizada con éxito! Redirigiendo al login...";
+                    mensaje.style.color = "green";
+                }
+
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error("Error al actualizar la contraseña:", error.message);
+                if (mensaje) {
+                    mensaje.textContent = "Error: " + error.message;
+                    mensaje.style.color = "red";
+                }
+            }
         });
-
-        if (error) throw error;
-
-        alert('¡Contraseña actualizada con éxito! Redirigiendo al login...');
-        window.location.href = 'login.html';
-
-    } catch (error) {
-        console.error("Error al actualizar la contraseña:", error.message);
-        alert("Hubo un error al actualizar la contraseña: " + error.message);
     }
 });
