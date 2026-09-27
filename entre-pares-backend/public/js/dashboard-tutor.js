@@ -5,202 +5,204 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let usuarioActual = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
         window.location.href = 'login.html';
         return;
     }
     usuarioActual = user;
 
-    const rolActual = localStorage.getItem('usuarioRol');
-    const roleSwitcher = document.getElementById('roleSwitcher');
-    const btnRoleDropdown = document.getElementById('btnRoleDropdown');
-    const dropdownMenu = document.getElementById('dropdownMenu');
+    // 1. Obtener perfil del tutor para el nombre superior y datos
+    try {
+        const { data: perfil } = await supabaseClient
+            .from('perfiles')
+            .select('*')
+            .eq('id', usuarioActual.id)
+            .single();
 
-    if (rolActual === 'Ambos' && roleSwitcher) {
-        roleSwitcher.style.display = 'inline-block';
+        if (perfil) {
+            // Rellenar nombre en la barra superior
+            const spanNombre = document.getElementById('nombreUsuarioHeader');
+            if (spanNombre) {
+                spanNombre.textContent = perfil.nombre_completo || 'Tutor';
+            }
+
+            // Rellenar pestaña de perfil
+            const inputNombre = document.getElementById('perfilNombre');
+            const inputEmail = document.getElementById('perfilEmail');
+            const inputSede = document.getElementById('perfilSede');
+            const inputMaterias = document.getElementById('perfilMaterias');
+
+            if (inputNombre) inputNombre.value = perfil.nombre_completo || '';
+            if (inputEmail) inputEmail.value = perfil.email || '';
+            if (inputSede) inputSede.value = perfil.sede_universitaria || '';
+            if (inputMaterias) inputMaterias.value = perfil.materias_impartidas || '';
+
+            // Selector de roles si es 'Ambos'
+            if (perfil.rol === 'Ambos') {
+                const roleSwitcher = document.getElementById('roleSwitcher');
+                if (roleSwitcher) roleSwitcher.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error("Error al cargar perfil del tutor:", err);
     }
 
-    if (btnRoleDropdown) {
+    // Dropdown de Rol
+    const btnRoleDropdown = document.getElementById('btnRoleDropdown');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (btnRoleDropdown && dropdownMenu) {
         btnRoleDropdown.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
         });
     }
 
-    document.addEventListener('click', (e) => {
-        if (roleSwitcher && !roleSwitcher.contains(e.target) && dropdownMenu) {
-            dropdownMenu.style.display = 'none';
-        }
+    // Dropdown de Usuario en la cabecera
+    const btnUserDropdown = document.getElementById('btnUserDropdown');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    if (btnUserDropdown && userDropdownMenu) {
+        btnUserDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdownMenu.style.display = userDropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+    }
+
+    window.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        if (userDropdownMenu) userDropdownMenu.style.display = 'none';
     });
 
+    // Botón Cerrar Sesión
     const btnCerrarSesion = document.getElementById('btnCerrarSesion');
     if (btnCerrarSesion) {
         btnCerrarSesion.addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
-            localStorage.removeItem('usuarioRol'); 
             window.location.href = 'login.html';
         });
     }
 
-    const formMaterias = document.getElementById('formMaterias');
-    const mensajeMaterias = document.getElementById('mensajeMaterias');
-
-    if (formMaterias) {
-        formMaterias.addEventListener('submit', async (e) => {
+    // Formulario de Actualizar Perfil y Materias
+    const formPerfilTutor = document.getElementById('formPerfilTutor');
+    if (formPerfilTutor) {
+        formPerfilTutor.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const ciudad = document.getElementById('ciudadTutor').value;
-            const materias = document.getElementById('materias').value;
-
-            mensajeMaterias.textContent = "Guardando perfil...";
-            mensajeMaterias.style.color = "#4f46e5";
+            const sede = document.getElementById('perfilSede').value;
+            const materias = document.getElementById('perfilMaterias').value;
 
             try {
-                const respuesta = await fetch('/api/tutor/perfil', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: usuarioActual.id, ciudad: ciudad, materias: materias })
-                });
-                const resultado = await respuesta.json();
+                const { error } = await supabaseClient
+                    .from('perfiles')
+                    .update({ 
+                        sede_universitaria: sede, 
+                        materias_impartidas: materias 
+                    })
+                    .eq('id', usuarioActual.id);
 
-                if (!resultado.success) throw new Error(resultado.error || "No se pudo actualizar.");
-                
-                mostrarNotificacion("¡Perfil activado con éxito!", "exito");
-                mensajeMaterias.textContent = "¡Perfil activado con éxito!";
-                mensajeMaterias.style.color = "green";
+                if (error) throw error;
+                mostrarNotificacion("¡Perfil y materias actualizados con éxito!", "exito");
             } catch (error) {
-                mostrarNotificacion("Error: " + error.message, "error");
-                mensajeMaterias.textContent = "Error: " + error.message;
-                mensajeMaterias.style.color = "red";
+                mostrarNotificacion("Error al actualizar: " + error.message, "error");
             }
         });
     }
 
-    const ciudadInput = document.getElementById('ciudadTutor');
-    const sugerenciasContenedor = document.getElementById('sugerenciasCiudades');
-    let debounceTimer;
-
-    if (ciudadInput && sugerenciasContenedor) {
-        ciudadInput.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            const query = e.target.value.trim();
-            
-            if (query.length < 3) {
-                sugerenciasContenedor.style.display = 'none';
-                return;
-            }
-
-            debounceTimer = setTimeout(async () => {
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ar&limit=5`);
-                    const data = await response.json();
-                    
-                    sugerenciasContenedor.innerHTML = '';
-                    
-                    if (data.length > 0) {
-                        data.forEach(lugar => {
-                            const div = document.createElement('div');
-                            div.textContent = lugar.display_name;
-                            div.addEventListener('click', () => {
-                                ciudadInput.value = lugar.display_name;
-                                sugerenciasContenedor.style.display = 'none';
-                            });
-                            sugerenciasContenedor.appendChild(div);
-                        });
-                        sugerenciasContenedor.style.display = 'block';
-                    } else {
-                        sugerenciasContenedor.style.display = 'none';
-                    }
-                } catch (error) {
-                    console.error('Error al buscar ciudad:', error);
-                }
-            }, 300);
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!ciudadInput.contains(e.target) && !sugerenciasContenedor.contains(e.target)) {
-                sugerenciasContenedor.style.display = 'none';
-            }
-        });
-    }
-
-    cargarSolicitudes();
+    // Cargar solicitudes pendientes y agenda aceptada
+    cargarSolicitudesYTutorias();
 });
 
-async function cargarSolicitudes() {
-    const listaSolicitudes = document.getElementById('listaSolicitudes');
-    if (!listaSolicitudes || !usuarioActual) return;
+async function cargarSolicitudesYTutorias() {
+    const contenedorPendientes = document.getElementById('listaSolicitudesPendientes');
+    const contenedorAceptadas = document.getElementById('listaTutoriasAceptadas');
+    
+    if (!usuarioActual) return;
 
     try {
-        const respuesta = await fetch(`/api/reservas/${usuarioActual.id}?rol=Tutor`);
-        const resultado = await respuesta.json();
+        const { data: reservas, error } = await supabaseClient
+            .from('reservas')
+            .select(`*, estudiante:estudiante_id (nombre_completo, email)`)
+            .eq('tutor_id', usuarioActual.id)
+            .order('fecha_hora', { ascending: false });
 
-        if (!resultado.success) {
-            listaSolicitudes.innerHTML = `<p style="color: red; text-align: center;">Error al cargar: ${resultado.error}</p>`;
+        if (error) throw error;
+
+        if (!reservas || reservas.length === 0) {
+            if (contenedorPendientes) contenedorPendientes.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No tienes solicitudes pendientes.</p>`;
+            if (contenedorAceptadas) contenedorAceptadas.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No tienes tutorías aceptadas aún.</p>`;
             return;
         }
 
-        const reservas = resultado.data.filter(r => r.estado && r.estado.toLowerCase() === 'pendiente');
+        const pendientes = reservas.filter(r => r.estado && r.estado.toLowerCase() === 'pendiente');
+        const aceptadas = reservas.filter(r => r.estado && (r.estado.toLowerCase() === 'aceptada' || r.estado.toLowerCase() === 'aprobada'));
 
-        if (reservas.length === 0) {
-            listaSolicitudes.innerHTML = `<p style="color: #64748b; text-align: center; font-style: italic;">No tienes solicitudes pendientes en este momento.</p>`;
-            return;
+        // Renderizar Pendientes
+        if (contenedorPendientes) {
+            if (pendientes.length === 0) {
+                contenedorPendientes.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No hay solicitudes pendientes.</p>`;
+            } else {
+                contenedorPendientes.innerHTML = pendientes.map(res => {
+                    const fecha = new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
+                    return `
+                        <div style="border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <h4 style="color: #0f172a; margin-bottom: 0.4rem; font-size: 1rem;">📚 ${res.materia}</h4>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;"><strong>Estudiante:</strong> ${res.estudiante?.nombre_completo || 'Anónimo'}</p>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;"><strong>Fecha:</strong> ${fecha}</p>
+                            ${res.comentarios ? `<p style="color: #64748b; font-size: 0.85rem; margin: 0.2rem 0; font-style: italic;">"${res.comentarios}"</p>` : ''}
+                            
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                <button onclick="actualizarEstado('${res.id}', 'Aceptada')" class="btn" style="background: #16a34a; color: white; flex: 1; border: none; padding: 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Aceptar</button>
+                                <button onclick="actualizarEstado('${res.id}', 'Rechazada')" class="btn" style="background: #dc2626; color: white; flex: 1; border: none; padding: 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Rechazar</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
         }
 
-        listaSolicitudes.innerHTML = reservas.map(reserva => {
-            const fecha = new Date(reserva.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
-            return `
-                <div style="border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1rem; background: #ffffff;">
-                    <h4 style="color: #0f172a; margin-bottom: 0.5rem; font-size: 1.1rem;">📚 Materia: ${reserva.materia}</h4>
-                    <p style="color: #475569; font-size: 0.9rem; margin-bottom: 0.3rem;"><strong>🗓️ Fecha y Hora:</strong> ${fecha}</p>
-                    <p style="color: #475569; font-size: 0.9rem; margin-bottom: 1.5rem;"><strong>💬 Estudiante ID:</strong> ${reserva.estudiante_id}</p>
-                    
-                    <div style="display: flex; gap: 1rem;">
-                        <button onclick="actualizarEstado('${reserva.id}', 'Aprobado')" class="btn" style="background: #10b981; color: white; flex: 1; border: none; padding: 0.6rem; border-radius: 4px; cursor: pointer;">Aceptar Tutoría</button>
-                        <button onclick="actualizarEstado('${reserva.id}', 'Rechazada')" class="btn" style="background: #ef4444; color: white; flex: 1; border: none; padding: 0.6rem; border-radius: 4px; cursor: pointer;">Rechazar</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Renderizar Aceptadas / Agenda
+        if (contenedorAceptadas) {
+            if (aceptadas.length === 0) {
+                contenedorAceptadas.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No tienes tutorías confirmadas en tu agenda.</p>`;
+            } else {
+                contenedorAceptadas.innerHTML = aceptadas.map(res => {
+                    const fecha = new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
+                    return `
+                        <div style="border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <strong style="color: #0f172a;">${res.materia}</strong>
+                                <span style="background: #16a34a; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">Aceptada</span>
+                            </div>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Estudiante: ${res.estudiante?.nombre_completo || 'Asignado'}</p>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Fecha: ${fecha}</p>
+                            <a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.8rem; background: #2563eb; color: white; padding: 0.4rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px; font-weight: 600;">Unirse a Videollamada</a>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
 
     } catch (err) {
-        console.error("Error cargando solicitudes:", err);
-        listaSolicitudes.innerHTML = `<p style="color: red; text-align: center;">Error de conexión con el servidor.</p>`;
+        console.error("Error al cargar solicitudes:", err);
     }
 }
 
 window.actualizarEstado = async function(id, nuevoEstado) {
-    const accionTexto = nuevoEstado === 'Aprobado' ? 'aceptar' : 'rechazar';
-    
-    // Usamos un modal/confirmación sutil o directo sin bloqueos molestos. 
-    // Si prefieres omitir cualquier confirmación, puedes quitar esta línea:
-    if (!window.confirm(`¿Estás seguro de que deseas ${accionTexto} esta tutoría?`)) return;
-
     try {
-        const endpoint = nuevoEstado === 'Aprobado' 
-            ? `/api/reservas/${id}/aprobar` 
-            : `/api/reservas/${id}/estado`;
+        const { error } = await supabaseClient
+            .from('reservas')
+            .update({ estado: nuevoEstado })
+            .eq('id', id);
 
-        const options = nuevoEstado === 'Aprobado' 
-            ? { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-            : { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: nuevoEstado }) };
+        if (error) throw error;
 
-        const respuesta = await fetch(endpoint, options);
-        const resultado = await respuesta.json();
-
-        if (!resultado.success) {
-            mostrarNotificacion("Error: " + resultado.error, "error");
-        } else {
-            mostrarNotificacion(`¡Tutoría ${nuevoEstado.toLowerCase()} con éxito! Notificación enviada.`, "exito");
-            cargarSolicitudes();
-        }
+        mostrarNotificacion(`¡Tutoría ${nuevoEstado.toLowerCase()} con éxito!`, "exito");
+        cargarSolicitudesYTutorias();
     } catch (err) {
-        console.error("Error en la petición:", err);
-        mostrarNotificacion("Error de conexión con el servidor.", "error");
+        console.error("Error al actualizar estado:", err);
+        mostrarNotificacion("Error al actualizar la solicitud.", "error");
     }
 };
 
-// Función para mostrar alertas flotantes modernas en lugar del alert() nativo
 function mostrarNotificacion(mensaje, tipo) {
     const alerta = document.createElement('div');
     alerta.textContent = mensaje;
@@ -208,20 +210,16 @@ function mostrarNotificacion(mensaje, tipo) {
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: ${tipo === 'exito' ? '#10b981' : '#ef4444'};
+        background: ${tipo === 'exito' ? '#16a34a' : '#dc2626'};
         color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
+        padding: 0.8rem 1.2rem;
+        border-radius: 6px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 1000;
+        z-index: 3000;
         font-family: 'Inter', sans-serif;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 500;
-        animation: fadeInOut 3s ease forwards;
     `;
     document.body.appendChild(alerta);
-
-    setTimeout(() => {
-        alerta.remove();
-    }, 3500);
+    setTimeout(() => { alerta.remove(); }, 3000);
 }

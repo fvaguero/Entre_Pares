@@ -8,64 +8,231 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Scripts y Estilos del Mapa (Leaflet) -->
+    <!-- Estilos y Scripts del Mapa (Leaflet) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: calc(100vh - 70px);
+            background-color: #f8fafc;
+            transition: grid-template-columns 0.3s ease;
+        }
+        /* Clase cuando el menú está cerrado */
+        .dashboard-container.sidebar-closed {
+            grid-template-columns: 0px 1fr;
+        }
+        .sidebar {
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: padding 0.3s ease, opacity 0.3s ease;
+        }
+        .dashboard-container.sidebar-closed .sidebar {
+            padding: 1.5rem 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .sidebar-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+        .sidebar-btn:hover, .sidebar-btn.active {
+            background-color: #fef08a;
+            color: #713f12;
+            font-weight: 600;
+        }
+        .content-section {
+            display: none;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
 
     <header>
-        <div class="header-container">
-            <a href="index.html" class="logo">
-                <img src="img/logo-cuaderno.png" alt="Logo" style="height:40px;">
-            </a>
+        <div class="header-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Botón para Abrir/Cerrar el Menú -->
+                <button id="btnToggleSidebar" class="btn" style="background: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 1rem; border: 1px solid #cbd5e1; cursor: pointer;">
+                    ☰
+                </button>
+                <a href="index.html" class="logo">
+                    <img src="img/logo-cuaderno.png" alt="Logo" style="height:40px;">
+                </a>
+            </div>
             
-            <div class="auth-buttons">
-                <div id="roleSwitcher" style="display: none; position: relative; margin-right: 1rem;">
-                    <button id="btnRoleDropdown" class="btn" style="background-color: #1e293b; color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">
+            <div class="auth-buttons" style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Selector de Roles (Si es Ambos o Tutor) -->
+                <div id="roleSwitcher" style="display: none; position: relative;">
+                    <button id="btnRoleDropdown" class="btn" style="background-color: #1e293b; color: white; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                         Modo Estudiante ▼
                     </button>
                     <div id="dropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="dashboard-tutor.html" style="display: block; padding: 0.8rem 1rem; font-size: 0.85rem; color: #1e293b; text-decoration: none;">Cambiar a Modo Tutor</a>
+                        <a href="dashboard-tutor.html" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Cambiar a Modo Tutor</a>
+                    </div>
+                </div>
+
+                <!-- Perfil / Nombre de Usuario con Desplegable -->
+                <div style="position: relative;">
+                    <button id="btnUserDropdown" class="btn" style="background-color: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <span id="nombreUsuarioHeader" style="font-weight: 600;">Cargando...</span> ▼
+                    </button>
+                    <div id="userDropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
+                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[3]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
                     </div>
                 </div>
                 
-                <button id="btnCerrarSesion" class="btn" style="background-color: #fee2e2; color: #dc2626; padding: 0.5rem 1rem; font-size: 0.85rem;">Cerrar Sesión</button>
+                <button id="btnCerrarSesion" class="btn" style="background-color: #fee2e2; color: #dc2626; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Cerrar Sesión</button>
             </div>
         </div>
     </header>
 
-    <main class="dashboard-layout" style="margin: 2.5rem auto;">
-        
-        <aside class="panel-card card-student">
-            <h3 style="margin-bottom: 1rem;">Buscar Tutores</h3>
-            <div class="form-group">
-                <label>Materia</label>
-                <input type="text" id="filtroMateria" class="form-control" placeholder="Ej: Álgebra">
-            </div>
-            <div class="form-group">
-                <label>Sede o Ciudad</label>
-                <input type="text" id="filtroCiudad" class="form-control" placeholder="Ej: Catamarca">
-            </div>
-            <button class="btn btn-yellow w-full" style="margin-top: 0.5rem;">Aplicar Filtros</button>
+    <div id="dashboardContainer" class="dashboard-container">
+        <!-- Menú Lateral / Sidebar -->
+        <aside class="sidebar">
+            <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Estudiante</p>
+            <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-buscar', this)">🔍 Buscar Tutores</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📅 Mis Tutorías</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
         </aside>
 
-        <section>
-            <div class="panel-card" style="margin-bottom: 1.5rem;">
-                <h1 style="font-family: 'Inter', sans-serif; font-size: 1.5rem; margin-bottom: 0.5rem;">¡Bienvenido a tu panel!</h1>
-                <p style="color: #64748b; font-size: 0.95rem;">Aquí podrás buscar tutorías, coordinar horarios con tus compañeros y gestionar tu aprendizaje académico.</p>
-            </div>
-
-            <div class="panel-card" style="padding: 0; overflow: hidden;">
-                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;">
-                    <h3 style="margin: 0; font-size: 1.1rem;">Tutores cerca de ti</h3>
+        <!-- Área de Contenido Dinámico por Pestañas -->
+        <main>
+            <!-- 1. SECCIÓN BUSCAR TUTORES Y MAPA -->
+            <section id="seccion-buscar" class="content-section active">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Buscar Tutores Académicos</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Encuentra compañeros disponibles para resolver tus dudas por materia o sede.</p>
                 </div>
-                <div id="mapa"></div>
-            </div>
-        </section>
-        
-    </main>
 
+                <div style="display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem;">
+                    <!-- Filtros y tarjetas de resultados -->
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="panel-card">
+                            <h3 style="margin-bottom: 1rem; font-size: 1rem;">Filtros de Búsqueda</h3>
+                            <div class="form-group">
+                                <label>Materia</label>
+                                <input type="text" id="filtroMateria" class="form-control" placeholder="Ej: Álgebra">
+                            </div>
+                            <div class="form-group">
+                                <label>Sede o Ciudad</label>
+                                <input type="text" id="filtroCiudad" class="form-control" placeholder="Ej: Catamarca">
+                            </div>
+                            <button id="btnAplicarFiltros" class="btn btn-yellow w-full" style="margin-top: 0.5rem;">Aplicar Filtros</button>
+                        </div>
+
+                        <div class="panel-card">
+                            <h3 style="margin-bottom: 0.8rem; font-size: 1rem;">Tutores Encontrados</h3>
+                            <div id="listaTutoresFiltrados" style="display: flex; flex-direction: column; gap: 0.8rem; max-height: 300px; overflow-y: auto;">
+                                <p style="color: #64748b; font-size: 0.85rem; text-align: center;">Aplica un filtro para ver tutores.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mapa -->
+                    <div class="panel-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;">
+                            <h3 style="margin: 0; font-size: 1rem;">Mapa de Ubicación de Tutores</h3>
+                        </div>
+                        <div id="mapa" style="width: 100%; height: 500px;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. SECCIÓN MIS TUTORÍAS -->
+            <section id="seccion-reservas" class="content-section">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Tutorías Solicitadas</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Haz seguimiento del estado de tus reservas y conéctate a las videollamadas a la hora pactada.</p>
+                </div>
+                <div class="panel-card">
+                    <div id="listaMisReservas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                        <p style="color: #64748b; font-size: 0.9rem;">Cargando tus reservas...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. SECCIÓN MENSAJES -->
+            <section id="seccion-mensajes" class="content-section">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Comunícate directamente con tus tutores asignados.</p>
+                </div>
+                <div class="panel-card" style="text-align: center; padding: 3rem;">
+                    <p style="color: #64748b; font-size: 0.95rem;">Próximamente: Chat integrado en tiempo real con WebSockets.</p>
+                </div>
+            </section>
+
+            <!-- 4. SECCIÓN PERFIL Y GAMIFICACIÓN -->
+            <section id="seccion-perfil" class="content-section">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mi Perfil Académico</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Gestiona tu información personal y revisa tu progreso en la red.</p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;">
+                    <div class="panel-card">
+                        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Datos Personales</h3>
+                        <form id="formPerfilEstudiante">
+                            <div class="form-group">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="perfilNombre" class="form-control" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input type="email" id="perfilEmail" class="form-control" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Carrera</label>
+                                <input type="text" id="perfilCarrera" class="form-control" placeholder="Ej: Ingeniería en Sistemas">
+                            </div>
+                            <div class="form-group">
+                                <label>Sede Universitaria</label>
+                                <input type="text" id="perfilSede" class="form-control" placeholder="Ej: Catamarca">
+                            </div>
+                            <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Actualizar Datos</button>
+                        </form>
+                    </div>
+                    <div class="panel-card" style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); color: #713f12; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                        <span style="font-size: 2.5rem; margin-bottom: 0.5rem;">⭐</span>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.2rem;">Puntos de Gamificación</h3>
+                        <p id="puntosGamificacion" style="font-size: 2rem; font-weight: 700; margin: 0;">0 pts</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">¡Suma puntos asistiendo y participando en tutorías!</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Reserva -->
     <div id="modalReserva" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 2000; align-items: center; justify-content: center;">
         <div class="panel-card" style="width: 100%; max-width: 450px; position: relative;">
             <button id="cerrarModal" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">✕</button>
@@ -102,8 +269,46 @@
         </div>
     </div>
 
+    <!-- Script para manejo de pestañas, colapso del menú y dropdowns -->
+    <script>
+        function cambiarPestaña(idSeccion, btnElemento) {
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(idSeccion).classList.add('active');
+            btnElemento.classList.add('active');
+
+            if (idSeccion === 'seccion-buscar' && window.mapaLeaflet) {
+                setTimeout(() => { window.mapaLeaflet.invalidateSize(); }, 200);
+            }
+        }
+
+        // Lógica para abrir/cerrar el menú lateral
+        document.getElementById('btnToggleSidebar').addEventListener('click', () => {
+            const container = document.getElementById('dashboardContainer');
+            container.classList.toggle('sidebar-closed');
+
+            if (window.mapaLeaflet) {
+                setTimeout(() => { window.mapaLeaflet.invalidateSize(); }, 300);
+            }
+        });
+
+        // Dropdown del Usuario en la cabecera
+        const btnUserDropdown = document.getElementById('btnUserDropdown');
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+        if (btnUserDropdown && userDropdownMenu) {
+            btnUserDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdownMenu.style.display = userDropdownMenu.style.display === 'block' ? 'none' : 'block';
+            });
+            window.addEventListener('click', () => {
+                userDropdownMenu.style.display = 'none';
+            });
+        }
+    </script>
+
     <script src="js/dashboard-estudiante.js"></script>
-    <footer class="site-footer">
+    <footer class="site-footer" style="grid-column: 1 / -1;">
         <div class="footer-container">
             <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
             <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>

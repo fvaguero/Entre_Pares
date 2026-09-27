@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Tutor - Entre Pares</title>
+    <title>Panel Administrador - Entre Pares</title>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -84,23 +84,13 @@
             </div>
             
             <div class="auth-buttons" style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Selector de Roles (Si es Ambos) -->
-                <div id="roleSwitcher" style="display: none; position: relative;">
-                    <button id="btnRoleDropdown" class="btn" style="background-color: #1e293b; color: white; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        Modo Tutor ▼
-                    </button>
-                    <div id="dropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="dashboard-estudiante.html" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Cambiar a Modo Estudiante</a>
-                    </div>
-                </div>
-
                 <!-- Perfil / Nombre de Usuario con Desplegable -->
                 <div style="position: relative;">
                     <button id="btnUserDropdown" class="btn" style="background-color: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <span id="nombreUsuarioHeader" style="font-weight: 600;">Cargando...</span> ▼
+                        <span id="nombreUsuarioHeader" style="font-weight: 600;">Administrador</span> ▼
                     </button>
                     <div id="userDropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[3]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
+                        <a href="#" onclick="cambiarPestaña('seccion-metricas', document.querySelectorAll('.sidebar-btn')[2]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver Métricas</a>
                     </div>
                 </div>
                 
@@ -112,78 +102,59 @@
     <div id="dashboardContainer" class="dashboard-container">
         <!-- Menú Lateral / Sidebar -->
         <aside class="sidebar">
-            <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Tutor</p>
-            <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-solicitudes', this)">📥 Solicitudes Pendientes</button>
-            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-agenda', this)">✅ Mis Tutorías Aceptadas</button>
-            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
-            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Materias</button>
+            <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Administrador</p>
+            <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-tutores', this)">🛡️ Validar Tutores</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-tutorias', this)">📊 Control de Tutorías</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-metricas', this)">📈 Métricas Generales</button>
         </aside>
 
         <!-- Área de Contenido Dinámico -->
         <main>
-            <!-- 1. SOLICITUDES PENDIENTES -->
-            <section id="seccion-solicitudes" class="content-section active">
+            <!-- 1. VALIDACIÓN DE TUTORES -->
+            <section id="seccion-tutores" class="content-section active">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Solicitudes de Tutoría</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Revisa y gestiona las reservas solicitadas por los estudiantes.</p>
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Validación de Perfiles de Tutores</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Aprueba o rechaza las postulaciones de nuevos tutores en la plataforma.</p>
                 </div>
                 <div class="panel-card">
-                    <div id="listaSolicitudesPendientes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando solicitudes...</p>
+                    <div id="listaTutoresPendientes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                        <p style="color: #64748b; font-size: 0.9rem;">Cargando postulaciones...</p>
                     </div>
                 </div>
             </section>
 
-            <!-- 2. MIS TUTORÍAS ACEPTADAS / AGENDA -->
-            <section id="seccion-agenda" class="content-section">
+            <!-- 2. CONTROL DE TUTORÍAS -->
+            <section id="seccion-tutorias" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Agenda de Tutorías Confirmadas</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Tus encuentros académicos programados y enlaces de videollamada.</p>
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial y Control de Tutorías</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Visualiza todas las reservas y encuentros agendados en el sistema.</p>
                 </div>
                 <div class="panel-card">
-                    <div id="listaTutoriasAceptadas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando agenda...</p>
+                    <div id="listaTodasTutorias" style="display: flex; flex-direction: column; gap: 0.8rem; max-height: 500px; overflow-y: auto;">
+                        <p style="color: #64748b; font-size: 0.9rem;">Cargando tutorías...</p>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. MENSAJES -->
-            <section id="seccion-mensajes" class="content-section">
+            <!-- 3. MÉTRICAS GENERALES -->
+            <section id="seccion-metricas" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Comunícate con tus estudiantes asignados.</p>
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Métricas de la Plataforma</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Estadísticas generales de uso de Entre Pares.</p>
                 </div>
-                <div class="panel-card" style="text-align: center; padding: 3rem;">
-                    <p style="color: #64748b; font-size: 0.95rem;">Próximamente: Chat integrado en tiempo real con WebSockets.</p>
-                </div>
-            </section>
-
-            <!-- 4. PERFIL Y MATERIAS -->
-            <section id="seccion-perfil" class="content-section">
-                <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Perfil del Tutor</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Configura tus datos profesionales y las materias que impartes.</p>
-                </div>
-                <div class="panel-card">
-                    <form id="formPerfilTutor">
-                        <div class="form-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="perfilNombre" class="form-control" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Correo Electrónico</label>
-                            <input type="email" id="perfilEmail" class="form-control" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Sede Universitaria</label>
-                            <input type="text" id="perfilSede" class="form-control" placeholder="Ej: Catamarca">
-                        </div>
-                        <div class="form-group">
-                            <label>Materias que Impartes (separadas por comas)</label>
-                            <input type="text" id="perfilMaterias" class="form-control" placeholder="Ej: Álgebra, Física I, Análisis Matemático">
-                        </div>
-                        <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Guardar Cambios</button>
-                    </form>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+                    <div class="panel-card" style="text-align: center; background: #f8fafc;">
+                        <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">Total Usuarios</h3>
+                        <p id="statUsuarios" style="font-size: 2rem; font-weight: 700; color: #0f172a; margin: 0;">-</p>
+                    </div>
+                    <div class="panel-card" style="text-align: center; background: #f8fafc;">
+                        <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">Tutores Aprobados</h3>
+                        <p id="statTutores" style="font-size: 2rem; font-weight: 700; color: #16a34a; margin: 0;">-</p>
+                    </div>
+                    <div class="panel-card" style="text-align: center; background: #f8fafc;">
+                        <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">Tutorías Solicitadas</h3>
+                        <p id="statReservas" style="font-size: 2rem; font-weight: 700; color: #2563eb; margin: 0;">-</p>
+                    </div>
                 </div>
             </section>
         </main>
@@ -214,7 +185,7 @@
         }
     </script>
 
-    <script src="js/dashboard-tutor.js"></script>
+    <script src="js/dashboard-admin.js"></script>
     <footer class="site-footer" style="grid-column: 1 / -1;">
         <div class="footer-container">
             <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>

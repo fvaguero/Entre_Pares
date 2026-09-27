@@ -1,229 +1,261 @@
-const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let tutoresGlobales = [];
-let markersLayer = null;
-let map = null;
-
 document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
+    const SUPABASE_URL = "https://uecwotydamsjstpovbzz.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !session) {
         window.location.href = 'login.html';
         return;
     }
 
-    const btnCerrarSesion = document.getElementById('btnCerrarSesion');
-    if (btnCerrarSesion) {
-        btnCerrarSesion.addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            localStorage.removeItem('usuarioRol'); 
-            window.location.href = 'login.html';
+    const userId = session.user.id;
+
+    // 1. Verificar perfil, rol y rellenar datos en la cabecera y perfil
+    try {
+        const { data: perfil, error: perfilError } = await supabaseClient
+            .from('perfiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (perfil) {
+            // Mostrar nombre en la barra superior
+            const spanNombre = document.getElementById('nombreUsuarioHeader');
+            if (spanNombre) {
+                spanNombre.textContent = perfil.nombre_completo || 'Estudiante';
+            }
+
+            // Rellenar datos en la pestaña de Perfil
+            const inputNombre = document.getElementById('perfilNombre');
+            const inputEmail = document.getElementById('perfilEmail');
+            const inputCarrera = document.getElementById('perfilCarrera');
+            const inputSede = document.getElementById('perfilSede');
+            const spanPuntos = document.getElementById('puntosGamificacion');
+
+            if (inputNombre) inputNombre.value = perfil.nombre_completo || '';
+            if (inputEmail) inputEmail.value = perfil.email || '';
+            if (inputCarrera) inputCarrera.value = perfil.carrera || '';
+            if (inputSede) inputSede.value = perfil.sede_universitaria || '';
+            if (spanPuntos) spanPuntos.textContent = `${perfil.puntos_gamificacion || 0} pts`;
+
+            // Control de roles
+            if (perfil.rol === 'Ambos' || perfil.rol === 'Tutor') {
+                const roleSwitcher = document.getElementById('roleSwitcher');
+                if (roleSwitcher) roleSwitcher.style.display = 'block';
+            }
+            if (perfil.rol === 'Tutor') {
+                window.location.href = 'dashboard-tutor.html';
+                return;
+            }
+        }
+    } catch (err) {
+        console.error("Error al verificar perfil:", err);
+    }
+
+    // 2. Inicializar Mapa (Leaflet)
+    const mapa = L.map('mapa').setView([-28.4696, -65.7852], 13);
+    window.mapaLeaflet = mapa; // Guardar referencia para redibujar al cambiar pestañas
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapa);
+
+    setTimeout(() => {
+        mapa.invalidateSize();
+    }, 250);
+
+    // Cargar tutores iniciales y reservas
+    cargarTutoresEnMapa(supabaseClient, mapa);
+    cargarMisReservas(supabaseClient, userId);
+
+    // 3. Botón de Filtros
+    const btnAplicarFiltros = document.getElementById('btnAplicarFiltros');
+    if (btnAplicarFiltros) {
+        btnAplicarFiltros.addEventListener('click', () => {
+            const materiaFiltro = document.getElementById('filtroMateria').value.trim();
+            const ciudadFiltro = document.getElementById('filtroCiudad').value.trim();
+            cargarTutoresEnMapa(supabaseClient, mapa, materiaFiltro, ciudadFiltro);
         });
     }
 
-    const rolActual = localStorage.getItem('usuarioRol');
-    const roleSwitcher = document.getElementById('roleSwitcher');
-    const btnRoleDropdown = document.getElementById('btnRoleDropdown');
-    const dropdownMenu = document.getElementById('dropdownMenu');
+    // 4. Actualizar Datos del Perfil
+    const formPerfil = document.getElementById('formPerfilEstudiante');
+    if (formPerfil) {
+        formPerfil.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const carrera = document.getElementById('perfilCarrera').value;
+            const sede = document.getElementById('perfilSede').value;
 
-    if (rolActual === 'Ambos' && roleSwitcher) {
-        roleSwitcher.style.display = 'inline-block';
+            const { error } = await supabaseClient
+                .from('perfiles')
+                .update({ carrera, sede_universitaria: sede })
+                .eq('id', userId);
+
+            if (!error) {
+                alert("¡Perfil actualizado con éxito!");
+            } else {
+                alert("Error al actualizar el perfil.");
+            }
+        });
     }
 
-    if (btnRoleDropdown) {
+    // 5. Botón Cerrar Sesión
+    document.getElementById('btnCerrarSesion').addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        window.location.href = 'login.html';
+    });
+
+    // Dropdown Rol
+    const btnRoleDropdown = document.getElementById('btnRoleDropdown');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (btnRoleDropdown && dropdownMenu) {
         btnRoleDropdown.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
         });
+        window.addEventListener('click', () => { dropdownMenu.style.display = 'none'; });
     }
 
-    document.addEventListener('click', (e) => {
-        if (roleSwitcher && !roleSwitcher.contains(e.target) && dropdownMenu) {
-            dropdownMenu.style.display = 'none';
-        }
-    });
-
-    map = L.map('mapa').setView([-28.4695, -65.7852], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    markersLayer = L.layerGroup().addTo(map);
-
-    let contenedorSidebar = document.getElementById('listaTutoresSidebar');
-    if (!contenedorSidebar) {
-        const aside = document.querySelector('.panel-card.card-student');
-        if (aside) {
-            contenedorSidebar = document.createElement('div');
-            contenedorSidebar.id = 'listaTutoresSidebar';
-            contenedorSidebar.style.cssText = "margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; max-height: 400px; overflow-y: auto;";
-            aside.appendChild(contenedorSidebar);
-        }
+    // Modal
+    const modalReserva = document.getElementById('modalReserva');
+    const cerrarModal = document.getElementById('cerrarModal');
+    if (cerrarModal) {
+        cerrarModal.addEventListener('click', () => {
+            modalReserva.style.display = 'none';
+        });
     }
 
-    if (contenedorSidebar) {
-        contenedorSidebar.innerHTML = '<p style="font-size: 0.85rem; color: #64748b; text-align: center;">Aplicá un filtro para buscar tutores disponibles.</p>';
-    }
+    // 6. Enviar formulario de reserva adaptado a la tabla 'reservas'
+    const formReserva = document.getElementById('formReservaTutoria');
+    if (formReserva) {
+        formReserva.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tutorId = document.getElementById('tutorIdModal').value;
+            const materia = document.getElementById('materiaReserva').value;
+            const fecha = document.getElementById('fechaReserva').value;
+            const hora = document.getElementById('horaReserva').value;
+            const comentarios = document.getElementById('comentariosReserva').value;
+            const mensajeEstado = document.getElementById('mensajeReserva');
 
-    try {
-        const response = await fetch('/api/tutores');
-        const resultado = await response.json();
+            try {
+                const { error: insertError } = await supabaseClient
+                    .from('reservas')
+                    .insert([{
+                        estudiante_id: userId,
+                        tutor_id: tutorId,
+                        materia: materia,
+                        fecha_hora: `${fecha}T${hora}:00-03:00`,
+                        comentarios: comentarios,
+                        estado: 'Pendiente'
+                    }]);
 
-        if (resultado.success && resultado.data) {
-            tutoresGlobales = resultado.data;
-        }
-    } catch (error) {
-        console.error("Error al cargar tutores:", error);
-    }
+                if (insertError) {
+                    throw insertError;
+                }
 
-    const btnFiltrar = document.querySelector('.panel-card.card-student button');
-    if (btnFiltrar) {
-        btnFiltrar.addEventListener('click', aplicarFiltros);
+                mensajeEstado.style.color = '#16a34a';
+                mensajeEstado.textContent = "¡Tutoría reservada con éxito!";
+                setTimeout(() => {
+                    modalReserva.style.display = 'none';
+                    e.target.reset();
+                    mensajeEstado.textContent = '';
+                    cargarMisReservas(supabaseClient, userId);
+                }, 2000);
+            } catch (error) {
+                console.error("Error al reservar:", error);
+                mensajeEstado.style.color = '#dc2626';
+                mensajeEstado.textContent = "Error: " + (error.message || "No se pudo completar la reserva.");
+            }
+        });
     }
 });
 
-function aplicarFiltros() {
-    const materiaFiltro = document.getElementById('filtroMateria').value.toLowerCase().trim();
-    const ciudadFiltro = document.getElementById('filtroCiudad').value.toLowerCase().trim();
+async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', filtroCiudad = '') {
+    try {
+        let query = supabaseClient
+            .from('perfiles')
+            .select('*')
+            .in('rol', ['Tutor', 'Ambos'])
+            .eq('estado_verificacion', 'Aprobado');
 
-    const tutoresFiltrados = tutoresGlobales.filter(tutor => {
-        const materiasTutor = (tutor.materias_impartidas || '').toLowerCase();
-        const sedeTutor = (tutor.sede_universitaria || '').toLowerCase();
-
-        const coincideMateria = materiaFiltro === '' || materiasTutor.includes(materiaFiltro);
-        const coincideCiudad = ciudadFiltro === '' || sedeTutor.includes(ciudadFiltro);
-
-        return coincideMateria && coincideCiudad;
-    });
-
-    renderizarResultadosEnPantalla(tutoresFiltrados);
-}
-
-function renderizarResultadosEnPantalla(listaTutores) {
-    if (!markersLayer) return;
-    markersLayer.clearLayers();
-
-    const contenedorSidebar = document.getElementById('listaTutoresSidebar');
-    if (contenedorSidebar) {
-        contenedorSidebar.innerHTML = '';
-    }
-
-    if (listaTutores.length === 0) {
-        if (contenedorSidebar) {
-            contenedorSidebar.innerHTML = '<p style="font-size: 0.85rem; color: #dc2626; text-align: center;">No se encontraron tutores con esos criterios.</p>';
+        if (filtroCiudad) {
+            query = query.ilike('sede_universitaria', `%${filtroCiudad}%`);
         }
-        return;
-    }
 
-    listaTutores.forEach(tutor => {
-        const lat = -28.4695 + (Math.random() - 0.5) * 0.02;
-        const lng = -65.7852 + (Math.random() - 0.5) * 0.02;
+        const { data: tutores, error } = await query;
 
-        const marker = L.marker([lat, lng]);
-        
-        const nombre = tutor.nombre_completo || 'Tutor Par';
-        const materias = tutor.materias_impartidas || 'Sin materias especificadas';
-        const sede = tutor.sede_universitaria || 'Catamarca';
-
-        marker.bindPopup(`
-            <div style="text-align: center; min-width: 160px;">
-                <b style="color: #1e293b; font-size: 0.95rem;">${nombre}</b><br>
-                <span style="font-size: 0.8rem; color: #475569;">📚 ${materias}</span><br>
-                <span style="font-size: 0.75rem; color: #64748b;">📍 ${sede}</span><br>
-                <button onclick="abrirModalReserva('${tutor.id}', '${nombre}')" style="margin-top: 8px; background: #fde047; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem; color: #1e293b;">Agendar Tutoría</button>
-            </div>
-        `);
-
-        markersLayer.addLayer(marker);
-
-        if (contenedorSidebar) {
-            const cardItem = document.createElement('div');
-            cardItem.style.cssText = "background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.75rem;";
-            cardItem.innerHTML = `
-                <b style="font-size: 0.9rem; color: #0f172a; display: block; margin-bottom: 0.2rem;">${nombre}</b>
-                <span style="font-size: 0.8rem; color: #475569; display: block;">📚 ${materias}</span>
-                <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.5rem;">📍 ${sede}</span>
-                <button onclick="abrirModalReserva('${tutor.id}', '${nombre}')" class="btn" style="width: 100%; background: #0f172a; color: white; padding: 0.3rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">Agendar Tutoría</button>
-            `;
-            contenedorSidebar.appendChild(cardItem);
-        }
-    });
-}
-
-// --- 6. GESTIÓN DEL MODAL Y RESERVA (HU-12 Y HU-13) ---
-const modalReserva = document.getElementById('modalReserva');
-const mensajeReserva = document.getElementById('mensajeReserva');
-
-window.abrirModalReserva = function(tutorId, nombreTutor) {
-    document.getElementById('tutorIdModal').value = tutorId;
-    document.getElementById('tutorNombreModal').textContent = `Tutor: ${nombreTutor}`;
-    modalReserva.style.display = 'flex';
-};
-
-const cerrarModalBtn = document.getElementById('cerrarModal');
-if (cerrarModalBtn) {
-    cerrarModalBtn.addEventListener('click', () => {
-        modalReserva.style.display = 'none';
-        mensajeReserva.textContent = '';
-    });
-}
-
-const formReserva = document.getElementById('formReservaTutoria');
-if (formReserva) {
-    formReserva.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        mensajeReserva.textContent = "Procesando reserva...";
-        mensajeReserva.style.color = "#4f46e5";
-
-        const tutorId = document.getElementById('tutorIdModal').value;
-        const materia = document.getElementById('materiaReserva').value;
-        const fecha = document.getElementById('fechaReserva').value;
-        const hora = document.getElementById('horaReserva').value;
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) {
-            alert("Debes iniciar sesión nuevamente.");
-            window.location.href = 'login.html';
+        if (error) {
+            console.error("Error al consultar tutores:", error);
             return;
         }
 
-        const fechaHoraLocal = `${fecha}T${hora}:00-03:00`;
+        if (tutores && tutores.length > 0) {
+            tutores.forEach((tutor, index) => {
+                if (filtroMateria && tutor.materias_impartidas) {
+                    if (!tutor.materias_impartidas.toLowerCase().includes(filtroMateria.toLowerCase())) {
+                        return;
+                    }
+                }
 
-        try {
-            const respuesta = await fetch('/api/reservas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tutor_id: tutorId,
-                    estudiante_id: user.id,
-                    materia: materia,
-                    fecha_hora: fechaHoraLocal
-                })
+                const lat = tutor.latitud ? parseFloat(tutor.latitud) : -28.4696 + (index * 0.002);
+                const lng = tutor.longitud ? parseFloat(tutor.longitud) : -65.7852 + (index * 0.002);
+
+                const marker = L.marker([lat, lng]).addTo(mapa);
+                marker.bindPopup(`
+                    <b>${tutor.nombre_completo || 'Tutor Entre Pares'}</b><br>
+                    Sede: ${tutor.sede_universitaria || 'Catamarca'}<br>
+                    Materias: ${tutor.materias_impartidas || 'Varias'}<br>
+                    <button onclick="abrirModalReserva('${tutor.id}', '${tutor.nombre_completo || 'Tutor'}')" style="margin-top: 6px; background: #eab308; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem;">Reservar</button>
+                `);
             });
-
-            const resultado = await respuesta.json();
-
-            if (!resultado.success) {
-                mensajeReserva.textContent = "Error: " + resultado.error;
-                mensajeReserva.style.color = "red";
-                return;
-            }
-
-            mensajeReserva.textContent = "¡Tutoría reservada con éxito!";
-            mensajeReserva.style.color = "green";
-
-            setTimeout(() => {
-                modalReserva.style.display = 'none';
-                e.target.reset();
-                mensajeReserva.textContent = '';
-            }, 2000);
-
-        } catch (err) {
-            console.error("Error en la petición de reserva:", err);
-            mensajeReserva.textContent = "Error de conexión con el servidor.";
-            mensajeReserva.style.color = "red";
         }
-    });
+    } catch (err) {
+        console.error("Error al cargar mapa:", err);
+    }
 }
+
+async function cargarMisReservas(supabaseClient, estudianteId) {
+    const contenedor = document.getElementById('listaMisReservas');
+    try {
+        const { data: reservas, error } = await supabaseClient
+            .from('reservas')
+            .select(`*, tutor:tutor_id (nombre_completo, email)`)
+            .eq('estudiante_id', estudianteId)
+            .order('fecha_hora', { ascending: false });
+
+        if (error || !reservas || reservas.length === 0) {
+            contenedor.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No tienes tutorías solicitadas aún.</p>`;
+            return;
+        }
+
+        contenedor.innerHTML = '';
+        reservas.forEach(res => {
+            let badgeColor = '#eab308'; // Pendiente
+            if (res.estado === 'Aceptada' || res.estado === 'aprobada') badgeColor = '#16a34a';
+            if (res.estado === 'Rechazada' || res.estado === 'rechazada') badgeColor = '#dc2626';
+
+            const card = document.createElement('div');
+            card.style.cssText = "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.8rem; font-size: 0.85rem;";
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <strong style="color: #0f172a;">${res.materia}</strong>
+                    <span style="background: ${badgeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; text-transform: uppercase;">${res.estado}</span>
+                </div>
+                <p style="color: #475569; margin: 0.2rem 0;">Tutor: ${res.tutor?.nombre_completo || 'Asignado'}</p>
+                <p style="color: #475569; margin: 0.2rem 0;">Fecha: ${new Date(res.fecha_hora).toLocaleString()}</p>
+                ${(res.estado === 'Aceptada' || res.estado === 'aprobada') ? `<a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.5rem; background: #2563eb; color: white; padding: 0.4rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px;">Unirse a Videollamada</a>` : ''}
+            `;
+            contenedor.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Error al cargar reservas:", err);
+        contenedor.innerHTML = `<p style="color: #dc2626; font-size: 0.85rem; text-align: center;">Error al cargar reservas.</p>`;
+    }
+}
+
+window.abrirModalReserva = function(tutorId, tutorNombre) {
+    document.getElementById('tutorIdModal').value = tutorId;
+    document.getElementById('tutorNombreModal').textContent = `Coordiná tu encuentro con ${tutorNombre}`;
+    document.getElementById('modalReserva').style.display = 'flex';
+};
