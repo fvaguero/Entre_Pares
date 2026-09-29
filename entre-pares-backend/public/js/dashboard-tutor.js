@@ -289,7 +289,7 @@ function inicializarChat(supabaseClient, usuarioActualId) {
         formMensaje.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!destinatarioActivoId) {
-                alert("Selecciona un contacto primero.");
+                mostrarNotificacion("Selecciona un contacto primero.", "error");
                 return;
             }
 
@@ -304,7 +304,7 @@ function inicializarChat(supabaseClient, usuarioActualId) {
 
             if (error) {
                 console.error("Error al enviar mensaje:", error.message);
-                alert("No se pudo enviar el mensaje.");
+                mostrarNotificacion("No se pudo enviar el mensaje.", "error");
             } else {
                 inputTexto.value = '';
                 cargarHistorialChat(supabaseClient, usuarioActualId, destinatarioActivoId);
@@ -363,6 +363,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
 
     bandeja.scrollTop = bandeja.scrollHeight;
 }
+
 async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId, nombreEstudiante) {
     destinatarioActivoId = estudianteId;
     
@@ -376,7 +377,6 @@ async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId
         </div>
     `;
     
-    // Buscamos todas las reservas asociadas a este tutor y estudiante para garantizar encontrar una activa
     const { data: reservas, error } = await supabaseClient
         .from('reservas')
         .select('*')
@@ -388,7 +388,6 @@ async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId
         console.error("Error al buscar reserva para el chat:", error);
     }
 
-    // Tomamos la más reciente o una que esté pendiente/aceptada
     const reservaActiva = reservas && reservas.length > 0 ? reservas[0] : null;
 
     const btnConfirmar = document.getElementById('btnConfirmarCita');
@@ -433,10 +432,13 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
             console.warn("La cita se confirmó, pero hubo un error al disparar la función de correo:", fnError);
         }
 
-        alert("¡Cita confirmada y correo enviado con éxito al estudiante a través de Brevo!");
-        location.reload();
+        mostrarNotificacion("¡Cita confirmada y correo enviado con éxito al estudiante!", "exito");
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+
     } catch (err) {
         console.error("Error al confirmar la coordinación:", err);
-        alert("No se pudo completar la confirmación.");
+        mostrarNotificacion("No se pudo completar la confirmación.", "error");
     }
 }
