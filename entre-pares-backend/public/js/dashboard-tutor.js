@@ -127,7 +127,7 @@ async function cargarSolicitudesYTutorias() {
             .from('reservas')
             .select(`*, estudiante:estudiante_id (nombre_completo, email)`)
             .eq('tutor_id', usuarioActual.id)
-            .order('created_at', { ascending: false });
+            .order('id', { ascending: false });
 
         if (error) throw error;
 
@@ -240,7 +240,7 @@ async function cargarContactos(supabaseClient, miId) {
             .from('reservas')
             .select('estudiante_id, estado, estudiante:estudiante_id (nombre_completo)')
             .eq('tutor_id', miId)
-            .order('created_at', { ascending: false });
+            .order('id', { ascending: false });
 
         if (error) throw error;
 
@@ -334,7 +334,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         .from('mensajes')
         .select('*')
         .or(`and(remitente_id.eq.${miId},destinatario_id.eq.${otroId}),and(remitente_id.eq.${otroId},destinatario_id.eq.${miId})`)
-        .order('created_at', { ascending: true });
+        .order('id', { ascending: true });
 
     if (error) {
         console.error("Error al cargar historial:", error.message);
