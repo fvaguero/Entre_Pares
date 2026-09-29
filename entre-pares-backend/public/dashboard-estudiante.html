@@ -8,19 +8,25 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Estilos y Scripts del Mapa (Leaflet) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+        }
         .dashboard-container {
             display: grid;
             grid-template-columns: 260px 1fr;
-            min-height: calc(100vh - 70px);
+            flex: 1;
             background-color: #f8fafc;
             transition: grid-template-columns 0.3s ease;
+            min-height: 0;
         }
-        /* Clase cuando el menú está cerrado */
         .dashboard-container.sidebar-closed {
             grid-template-columns: 0px 1fr;
         }
@@ -65,13 +71,29 @@
             display: none;
             padding: 2rem;
             animation: fadeIn 0.3s ease-in-out;
+            overflow-y: auto;
+            flex: 1;
         }
         .content-section.active {
             display: block;
         }
+        main {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        .site-footer {
+            background: #0f172a;
+            color: white;
+            padding: 1.2rem;
+            text-align: center;
+            width: 100%;
+            grid-column: 1 / -1;
+            border-top: 1px solid #1e293b;
         }
     </style>
 </head>
@@ -80,7 +102,6 @@
     <header>
         <div class="header-container" style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Botón para Abrir/Cerrar el Menú -->
                 <button id="btnToggleSidebar" class="btn" style="background: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 1rem; border: 1px solid #cbd5e1; cursor: pointer;">
                     ☰
                 </button>
@@ -90,7 +111,6 @@
             </div>
             
             <div class="auth-buttons" style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Selector de Roles -->
                 <div id="roleSwitcher" style="display: none; position: relative;">
                     <button id="btnRoleDropdown" class="btn" style="background-color: #1e293b; color: white; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                         Modo Estudiante ▼
@@ -100,7 +120,6 @@
                     </div>
                 </div>
 
-                <!-- Perfil / Nombre de Usuario con Desplegable -->
                 <div style="position: relative;">
                     <button id="btnUserDropdown" class="btn" style="background-color: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <span id="nombreUsuarioHeader" style="font-weight: 600;">Cargando...</span> ▼
@@ -135,7 +154,6 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start;">
-                    <!-- Filtros y tarjetas de resultados -->
                     <div style="display: flex; flex-direction: column; gap: 1rem;">
                         <div class="panel-card">
                             <h3 style="margin-bottom: 1rem; font-size: 1rem;">Filtros de Búsqueda</h3>
@@ -150,7 +168,6 @@
                             <button id="btnAplicarFiltros" class="btn btn-yellow w-full" style="margin-top: 0.5rem;">Aplicar Filtros</button>
                         </div>
 
-                        <!-- Contenedor con altura controlada y scroll interno para evitar desbordes -->
                         <div class="panel-card" style="display: flex; flex-direction: column; max-height: 420px;">
                             <h3 style="margin-bottom: 0.8rem; font-size: 1rem;">Tutores Encontrados</h3>
                             <div id="listaTutoresFiltrados" style="display: flex; flex-direction: column; gap: 0.8rem; overflow-y: auto; padding-right: 4px; flex: 1;">
@@ -159,7 +176,6 @@
                         </div>
                     </div>
 
-                    <!-- Mapa -->
                     <div class="panel-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                         <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;">
                             <h3 style="margin: 0; font-size: 1rem;">Mapa de Ubicación de Tutores</h3>
@@ -182,7 +198,7 @@
                 </div>
             </section>
 
-            <!-- 3. SECCIÓN MENSAJES (Chat por WebSockets) -->
+            <!-- 3. SECCIÓN MENSAJES -->
             <section id="seccion-mensajes" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
@@ -190,7 +206,6 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; height: 500px;">
-                    <!-- Lista de Contactos / Conversaciones Habilitadas -->
                     <div class="panel-card" style="display: flex; flex-direction: column; padding: 1rem; overflow-y: auto;">
                         <h3 style="font-size: 0.95rem; margin-bottom: 0.8rem; color: #1e293b;">Chats Habilitados</h3>
                         <div id="listaContactos" style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -198,7 +213,6 @@
                         </div>
                     </div>
 
-                    <!-- Ventana de Chat -->
                     <div class="panel-card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden;">
                         <div id="chatHeader" style="padding: 1rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 0.95rem;">
                             Selecciona una conversación
@@ -254,6 +268,14 @@
                 </div>
             </section>
         </main>
+
+        <!-- Footer integrado correctamente al final del layout -->
+        <footer class="site-footer">
+            <div class="footer-container">
+                <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
+                <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>
+            </div>
+        </footer>
     </div>
 
     <!-- Modal de Solicitud de Consulta -->
@@ -274,7 +296,7 @@
 
                 <div class="form-group">
                     <label>¿Qué tipo de duda tenés?</label>
-                    <textarea id="comentariosReserva" class="form-control" rows="4" placeholder="Explicale brevemente al tutor cuál es tu inconveniente o qué ejercicio no te sale..." required></textarea>
+                    <textarea id="comentariosReserva" class="form-control" rows="4" placeholder="Explicale brevemente al tutor cuál es tu inconveniente..." required></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-yellow w-full" style="margin-top: 1rem;">Enviar Solicitud</button>
@@ -320,11 +342,5 @@
     </script>
 
     <script src="js/dashboard-estudiante.js"></script>
-    <footer class="site-footer" style="grid-column: 1 / -1;">
-        <div class="footer-container">
-            <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
-            <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>
-        </div>
-    </footer>
 </body>
 </html>

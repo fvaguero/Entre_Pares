@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Inicializar Mapa (Leaflet)
     const mapa = L.map('mapa').setView([-28.4696, -65.7852], 13);
-    window.mapaLeaflet = mapa; // Guardar referencia para redibujar al cambiar pestañas
+    window.mapaLeaflet = mapa; 
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 6. Enviar formulario de solicitud de consulta adaptado a la tabla 'reservas' (sin fecha ni hora obligatoria)
+    // 6. Enviar formulario de solicitud de consulta
     const formReserva = document.getElementById('formReservaTutoria');
     if (formReserva) {
         formReserva.addEventListener('submit', async (e) => {
@@ -187,8 +187,6 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
             .from('perfiles')
             .select('*')
             .in('rol', ['Tutor', 'Ambos']);
-            // Si tienes un campo de verificación y ya lo configuraste, puedes descomentar la siguiente línea:
-            // .eq('estado_verificacion', 'Aprobado');
 
         if (filtroCiudad) {
             query = query.ilike('sede_universitaria', `%${filtroCiudad}%`);
@@ -216,7 +214,6 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
                 }
             }
 
-            // 1. Renderizar la tarjeta en la lista izquierda
             if (listaTutoresContenedor) {
                 const card = document.createElement('div');
                 card.style.cssText = "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.8rem; font-size: 0.85rem;";
@@ -229,7 +226,6 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
                 listaTutoresContenedor.appendChild(card);
             }
 
-            // 2. Colocar marcador en el mapa de Leaflet
             const lat = tutor.latitud ? parseFloat(tutor.latitud) : -28.4696 + (index * 0.002);
             const lng = tutor.longitud ? parseFloat(tutor.longitud) : -65.7852 + (index * 0.002);
 
@@ -258,7 +254,7 @@ async function cargarMisReservas(supabaseClient, estudianteId) {
             .from('reservas')
             .select(`*, tutor:tutor_id (nombre_completo, email)`)
             .eq('estudiante_id', estudianteId)
-            .order('created_at', { ascending: false });
+            .order('id', { ascending: false }); // Corregido a id
 
         if (error || !reservas || reservas.length === 0) {
             contenedor.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No tienes solicitudes de consulta aún.</p>`;
@@ -267,7 +263,7 @@ async function cargarMisReservas(supabaseClient, estudianteId) {
 
         contenedor.innerHTML = '';
         reservas.forEach(res => {
-            let badgeColor = '#eab308'; // Pendiente
+            let badgeColor = '#eab308';
             if (res.estado === 'Aceptada' || res.estado === 'aprobada') badgeColor = '#16a34a';
             if (res.estado === 'Rechazada' || res.estado === 'rechazada') badgeColor = '#dc2626';
 
@@ -312,7 +308,6 @@ async function cargarContactos(supabaseClient, miId) {
 
         if (error) throw error;
 
-        // Solo mostrar contactos con los que tenga una reserva aprobada / aceptada
         const vistos = new Set();
         const contactos = [];
         (reservas || []).forEach(r => {
@@ -402,7 +397,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         .from('mensajes')
         .select('*')
         .or(`and(remitente_id.eq.${miId},destinatario_id.eq.${otroId}),and(remitente_id.eq.${otroId},destinatario_id.eq.${miId})`)
-        .order('created_at', { ascending: true });
+        .order('id', { ascending: true }); // Corregido a id
 
     if (error) {
         console.error("Error al cargar historial:", error.message);
@@ -430,4 +425,4 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     });
 
     bandeja.scrollTop = bandeja.scrollHeight;
-}   
+}
