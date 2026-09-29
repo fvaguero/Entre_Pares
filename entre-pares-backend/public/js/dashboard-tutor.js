@@ -3,6 +3,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let usuarioActual = null;
+let destinatarioActivoId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
@@ -109,6 +110,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Cargar solicitudes pendientes y agenda aceptada
     cargarSolicitudesYTutorias();
+
+    // Chat en tiempo real
+    inicializarChat(supabaseClient, usuarioActual.id);
+    cargarContactos(supabaseClient, usuarioActual.id);
 });
 
 async function cargarSolicitudesYTutorias() {
@@ -122,7 +127,7 @@ async function cargarSolicitudesYTutorias() {
             .from('reservas')
             .select(`*, estudiante:estudiante_id (nombre_completo, email)`)
             .eq('tutor_id', usuarioActual.id)
-            .order('fecha_hora', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
@@ -141,16 +146,14 @@ async function cargarSolicitudesYTutorias() {
                 contenedorPendientes.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No hay solicitudes pendientes.</p>`;
             } else {
                 contenedorPendientes.innerHTML = pendientes.map(res => {
-                    const fecha = new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
                     return `
                         <div style="border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                             <h4 style="color: #0f172a; margin-bottom: 0.4rem; font-size: 1rem;">📚 ${res.materia}</h4>
                             <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;"><strong>Estudiante:</strong> ${res.estudiante?.nombre_completo || 'Anónimo'}</p>
-                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;"><strong>Fecha:</strong> ${fecha}</p>
-                            ${res.comentarios ? `<p style="color: #64748b; font-size: 0.85rem; margin: 0.2rem 0; font-style: italic;">"${res.comentarios}"</p>` : ''}
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.4rem 0;"><strong>Duda / Consulta:</strong> ${res.comentarios || 'Sin descripción'}</p>
                             
                             <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                                <button onclick="actualizarEstado('${res.id}', 'Aceptada')" class="btn" style="background: #16a34a; color: white; flex: 1; border: none; padding: 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Aceptar</button>
+                                <button onclick="actualizarEstado('${res.id}', 'Aceptada')" class="btn" style="background: #16a34a; color: white; flex: 1; border: none; padding: 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Aceptar (Habilitar Chat)</button>
                                 <button onclick="actualizarEstado('${res.id}', 'Rechazada')" class="btn" style="background: #dc2626; color: white; flex: 1; border: none; padding: 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Rechazar</button>
                             </div>
                         </div>
@@ -165,7 +168,6 @@ async function cargarSolicitudesYTutorias() {
                 contenedorAceptadas.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No tienes tutorías confirmadas en tu agenda.</p>`;
             } else {
                 contenedorAceptadas.innerHTML = aceptadas.map(res => {
-                    const fecha = new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
                     return `
                         <div style="border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
@@ -173,7 +175,7 @@ async function cargarSolicitudesYTutorias() {
                                 <span style="background: #16a34a; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">Aceptada</span>
                             </div>
                             <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Estudiante: ${res.estudiante?.nombre_completo || 'Asignado'}</p>
-                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Fecha: ${fecha}</p>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Consulta: ${res.comentarios || 'Sin descripción'}</p>
                             <a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.8rem; background: #2563eb; color: white; padding: 0.4rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px; font-weight: 600;">Unirse a Videollamada</a>
                         </div>
                     `;
@@ -197,6 +199,7 @@ window.actualizarEstado = async function(id, nuevoEstado) {
 
         mostrarNotificacion(`¡Tutoría ${nuevoEstado.toLowerCase()} con éxito!`, "exito");
         cargarSolicitudesYTutorias();
+        cargarContactos(supabaseClient, usuarioActual.id);
     } catch (err) {
         console.error("Error al actualizar estado:", err);
         mostrarNotificacion("Error al actualizar la solicitud.", "error");
@@ -222,4 +225,212 @@ function mostrarNotificacion(mensaje, tipo) {
     `;
     document.body.appendChild(alerta);
     setTimeout(() => { alerta.remove(); }, 3000);
+}
+
+/* ============================================================
+   CHAT EN TIEMPO REAL Y COORDINACIÓN
+   ============================================================ */
+
+async function cargarContactos(supabaseClient, miId) {
+    const lista = document.getElementById('listaContactos');
+    if (!lista) return;
+
+    try {
+        const { data: reservas, error } = await supabaseClient
+            .from('reservas')
+            .select('estudiante_id, estado, estudiante:estudiante_id (nombre_completo)')
+            .eq('tutor_id', miId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const vistos = new Set();
+        const contactos = [];
+        (reservas || []).forEach(r => {
+            const rechazada = r.estado === 'Rechazada' || r.estado === 'rechazada';
+            if (rechazada || vistos.has(r.estudiante_id)) return;
+            vistos.add(r.estudiante_id);
+            contactos.push({ id: r.estudiante_id, nombre: r.estudiante?.nombre_completo || 'Estudiante' });
+        });
+
+        if (contactos.length === 0) {
+            lista.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 2rem;">No hay chats activos.</p>';
+            return;
+        }
+
+        lista.innerHTML = '';
+        contactos.forEach(c => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sidebar-btn contacto-chat';
+            btn.dataset.id = c.id;
+            btn.textContent = `👤 ${c.nombre}`;
+            if (c.id === destinatarioActivoId) btn.classList.add('active');
+            
+            btn.addEventListener('click', () => {
+                seleccionarContactoParaChat(supabaseClient, usuarioActual.id, c.id, c.nombre);
+                document.querySelectorAll('.contacto-chat').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+
+            lista.appendChild(btn);
+        });
+    } catch (err) {
+        console.error("Error al cargar contactos:", err);
+        lista.innerHTML = '<p style="color: #dc2626; font-size: 0.85rem; text-align: center;">Error al cargar conversaciones.</p>';
+    }
+}
+
+function inicializarChat(supabaseClient, usuarioActualId) {
+    const formMensaje = document.getElementById('formEnviarMensaje');
+    const inputTexto = document.getElementById('inputMensajeTexto');
+
+    if (formMensaje) {
+        formMensaje.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!destinatarioActivoId) {
+                alert("Selecciona un contacto primero.");
+                return;
+            }
+
+            const texto = inputTexto.value.trim();
+            if (!texto) return;
+
+            const { error } = await supabaseClient.from('mensajes').insert({
+                remitente_id: usuarioActualId,
+                destinatario_id: destinatarioActivoId,
+                contenido: texto
+            });
+
+            if (error) {
+                console.error("Error al enviar mensaje:", error.message);
+                alert("No se pudo enviar el mensaje.");
+            } else {
+                inputTexto.value = '';
+                cargarHistorialChat(supabaseClient, usuarioActualId, destinatarioActivoId);
+            }
+        });
+    }
+
+    supabaseClient
+        .channel('public:mensajes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, payload => {
+            const nuevoMsg = payload.new;
+            if (
+                (nuevoMsg.remitente_id === usuarioActualId && nuevoMsg.destinatario_id === destinatarioActivoId) ||
+                (nuevoMsg.remitente_id === destinatarioActivoId && nuevoMsg.destinatario_id === usuarioActualId)
+            ) {
+                cargarHistorialChat(supabaseClient, usuarioActualId, destinatarioActivoId);
+            }
+        })
+        .subscribe();
+}
+
+async function cargarHistorialChat(supabaseClient, miId, otroId) {
+    const bandeja = document.getElementById('chatBandeja');
+    if (!bandeja) return;
+
+    const { data: mensajes, error } = await supabaseClient
+        .from('mensajes')
+        .select('*')
+        .or(`and(remitente_id.eq.${miId},destinatario_id.eq.${otroId}),and(remitente_id.eq.${otroId},destinatario_id.eq.${miId})`)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error("Error al cargar historial:", error.message);
+        return;
+    }
+
+    bandeja.innerHTML = '';
+    if (mensajes.length === 0) {
+        bandeja.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: auto;">No hay mensajes aún. ¡Comienza la conversación!</p>';
+        return;
+    }
+
+    mensajes.forEach(msg => {
+        const esMio = msg.remitente_id === miId;
+        const burbuja = document.createElement('div');
+        burbuja.style.maxWidth = '70%';
+        burbuja.style.padding = '0.6rem 0.9rem';
+        burbuja.style.borderRadius = '10px';
+        burbuja.style.fontSize = '0.9rem';
+        burbuja.style.alignSelf = esMio ? 'flex-end' : 'flex-start';
+        burbuja.style.backgroundColor = esMio ? '#fef08a' : '#f1f5f9';
+        burbuja.style.color = esMio ? '#713f12' : '#1e293b';
+        burbuja.textContent = msg.contenido;
+        bandeja.appendChild(burbuja);
+    });
+
+    bandeja.scrollTop = bandeja.scrollHeight;
+}
+
+async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId, nombreEstudiante) {
+    destinatarioActivoId = estudianteId;
+    
+    const headerChat = document.getElementById('chatHeader');
+    headerChat.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>Chat con <strong>${nombreEstudiante}</strong></span>
+            <button id="btnConfirmarCita" class="btn" style="display: none; background: #16a34a; color: white; padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                ✅ Confirmar Coordinación y Enviar Mail
+            </button>
+        </div>
+    `;
+    
+    const { data: reserva } = await supabaseClient
+        .from('reservas')
+        .select('*')
+        .eq('tutor_id', tutorId)
+        .eq('estudiante_id', estudianteId)
+        .in('estado', ['Pendiente', 'Aceptada'])
+        .single();
+
+    const btnConfirmar = document.getElementById('btnConfirmarCita');
+    if (reserva && btnConfirmar) {
+        btnConfirmar.style.display = 'block';
+        btnConfirmar.onclick = () => confirmarCoordinacionYEnviarMail(supabaseClient, reserva.id, estudianteId);
+    }
+
+    cargarHistorialChat(supabaseClient, tutorId, estudianteId);
+}
+
+async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estudianteId) {
+    try {
+        const { data: reservaActualizada, error } = await supabaseClient
+            .from('reservas')
+            .update({ estado: 'Aceptada' })
+            .eq('id', reservaId)
+            .select(`*, estudiante:estudiante_id (nombre_completo, email), tutor:tutor_id (nombre_completo)`)
+            .single();
+
+        if (error) throw error;
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        await supabaseClient.from('mensajes').insert({
+            remitente_id: user.id,
+            destinatario_id: estudianteId,
+            contenido: "📌 [Sistema]: ¡Coordinación confirmada oficialmente! Se ha enviado un correo al estudiante con los detalles."
+        });
+
+        const { error: fnError } = await supabaseClient.functions.invoke('enviar-correo-reserva', {
+            body: {
+                reservaId: reservaId,
+                estado: 'Aceptada',
+                estudianteEmail: reservaActualizada.estudiante?.email,
+                estudianteNombre: reservaActualizada.estudiante?.nombre_completo || 'Estudiante',
+                tutorNombre: reservaActualizada.tutor?.nombre_completo || 'Tutor',
+                materia: reservaActualizada.materia
+            }
+        });
+
+        if (fnError) {
+            console.warn("La cita se confirmó, pero hubo un error al disparar la función de correo:", fnError);
+        }
+
+        alert("¡Cita confirmada y correo enviado con éxito al estudiante a través de Brevo!");
+        location.reload();
+    } catch (err) {
+        console.error("Error al confirmar la coordinación:", err);
+        alert("No se pudo completar la confirmación.");
+    }
 }

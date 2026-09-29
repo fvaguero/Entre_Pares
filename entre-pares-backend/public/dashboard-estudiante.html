@@ -90,7 +90,7 @@
             </div>
             
             <div class="auth-buttons" style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Selector de Roles (Si es Ambos o Tutor) -->
+                <!-- Selector de Roles -->
                 <div id="roleSwitcher" style="display: none; position: relative;">
                     <button id="btnRoleDropdown" class="btn" style="background-color: #1e293b; color: white; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                         Modo Estudiante ▼
@@ -120,7 +120,7 @@
         <aside class="sidebar">
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Estudiante</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-buscar', this)">🔍 Buscar Tutores</button>
-            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📅 Mis Tutorías</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📅 Mis Consultas</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
         </aside>
@@ -131,10 +131,10 @@
             <section id="seccion-buscar" class="content-section active">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Buscar Tutores Académicos</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Encuentra compañeros disponibles para resolver tus dudas por materia o sede.</p>
+                    <p style="color: #64748b; font-size: 0.9rem;">Encuentra compañeros disponibles para enviarles tu solicitud de consulta.</p>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem;">
+                <div style="display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start;">
                     <!-- Filtros y tarjetas de resultados -->
                     <div style="display: flex; flex-direction: column; gap: 1rem;">
                         <div class="panel-card">
@@ -150,9 +150,10 @@
                             <button id="btnAplicarFiltros" class="btn btn-yellow w-full" style="margin-top: 0.5rem;">Aplicar Filtros</button>
                         </div>
 
-                        <div class="panel-card">
+                        <!-- Contenedor con altura controlada y scroll interno para evitar desbordes -->
+                        <div class="panel-card" style="display: flex; flex-direction: column; max-height: 420px;">
                             <h3 style="margin-bottom: 0.8rem; font-size: 1rem;">Tutores Encontrados</h3>
-                            <div id="listaTutoresFiltrados" style="display: flex; flex-direction: column; gap: 0.8rem; max-height: 300px; overflow-y: auto;">
+                            <div id="listaTutoresFiltrados" style="display: flex; flex-direction: column; gap: 0.8rem; overflow-y: auto; padding-right: 4px; flex: 1;">
                                 <p style="color: #64748b; font-size: 0.85rem; text-align: center;">Aplica un filtro para ver tutores.</p>
                             </div>
                         </div>
@@ -168,27 +169,50 @@
                 </div>
             </section>
 
-            <!-- 2. SECCIÓN MIS TUTORÍAS -->
+            <!-- 2. SECCIÓN MIS CONSULTAS -->
             <section id="seccion-reservas" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Tutorías Solicitadas</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Haz seguimiento del estado de tus reservas y conéctate a las videollamadas a la hora pactada.</p>
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Solicitudes de Consulta</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Haz seguimiento del estado de tus consultas. Una vez que el tutor las apruebe, se habilitará el chat.</p>
                 </div>
                 <div class="panel-card">
                     <div id="listaMisReservas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando tus reservas...</p>
+                        <p style="color: #64748b; font-size: 0.9rem;">Cargando tus solicitudes...</p>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. SECCIÓN MENSAJES -->
+            <!-- 3. SECCIÓN MENSAJES (Chat por WebSockets) -->
             <section id="seccion-mensajes" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Comunícate directamente con tus tutores asignados.</p>
+                    <p style="color: #64748b; font-size: 0.9rem;">Comunícate en tiempo real con los tutores que aprobaron tus consultas.</p>
                 </div>
-                <div class="panel-card" style="text-align: center; padding: 3rem;">
-                    <p style="color: #64748b; font-size: 0.95rem;">Próximamente: Chat integrado en tiempo real con WebSockets.</p>
+
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; height: 500px;">
+                    <!-- Lista de Contactos / Conversaciones Habilitadas -->
+                    <div class="panel-card" style="display: flex; flex-direction: column; padding: 1rem; overflow-y: auto;">
+                        <h3 style="font-size: 0.95rem; margin-bottom: 0.8rem; color: #1e293b;">Chats Habilitados</h3>
+                        <div id="listaContactos" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 2rem;">No hay chats activos aún.</p>
+                        </div>
+                    </div>
+
+                    <!-- Ventana de Chat -->
+                    <div class="panel-card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+                        <div id="chatHeader" style="padding: 1rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 0.95rem;">
+                            Selecciona una conversación
+                        </div>
+                        
+                        <div id="chatBandeja" style="flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; background: #ffffff;">
+                            <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: auto;">Tus mensajes aparecerán aquí.</p>
+                        </div>
+
+                        <form id="formEnviarMensaje" style="display: flex; padding: 0.8rem; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 0.5rem;">
+                            <input type="text" id="inputMensajeTexto" class="form-control" placeholder="Escribe un mensaje..." required autocomplete="off" style="margin: 0;">
+                            <button type="submit" class="btn btn-yellow" style="white-space: nowrap;">Enviar</button>
+                        </form>
+                    </div>
                 </div>
             </section>
 
@@ -232,13 +256,13 @@
         </main>
     </div>
 
-    <!-- Modal de Reserva -->
+    <!-- Modal de Solicitud de Consulta -->
     <div id="modalReserva" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 2000; align-items: center; justify-content: center;">
         <div class="panel-card" style="width: 100%; max-width: 450px; position: relative;">
             <button id="cerrarModal" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">✕</button>
             
-            <h2 style="font-family: 'Lora', serif; font-size: 1.5rem; color: #0f172a; margin-bottom: 0.5rem;">Reservar Tutoría</h2>
-            <p id="tutorNombreModal" style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Coordiná tu encuentro académico</p>
+            <h2 style="font-family: 'Lora', serif; font-size: 1.5rem; color: #0f172a; margin-bottom: 0.5rem;">Solicitar Consulta Académica</h2>
+            <p id="tutorNombreModal" style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Envía tu duda al tutor</p>
 
             <form id="formReservaTutoria">
                 <input type="hidden" id="tutorIdModal">
@@ -249,27 +273,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Fecha de la Tutoría</label>
-                    <input type="date" id="fechaReserva" class="form-control" required>
+                    <label>¿Qué tipo de duda tenés?</label>
+                    <textarea id="comentariosReserva" class="form-control" rows="4" placeholder="Explicale brevemente al tutor cuál es tu inconveniente o qué ejercicio no te sale..." required></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label>Hora (Hora Local)</label>
-                    <input type="time" id="horaReserva" class="form-control" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Comentarios o Dudas Previas</label>
-                    <textarea id="comentariosReserva" class="form-control" rows="3" placeholder="Breve descripción de lo que querés consultar..."></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-yellow w-full" style="margin-top: 1rem;">Confirmar Reserva</button>
+                <button type="submit" class="btn btn-yellow w-full" style="margin-top: 1rem;">Enviar Solicitud</button>
             </form>
             <p id="mensajeReserva" style="text-align: center; margin-top: 1rem; font-size: 0.85rem; font-weight: 600;"></p>
         </div>
     </div>
 
-    <!-- Script para manejo de pestañas, colapso del menú y dropdowns -->
+    <!-- Script de control visual -->
     <script>
         function cambiarPestaña(idSeccion, btnElemento) {
             document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
@@ -283,7 +297,6 @@
             }
         }
 
-        // Lógica para abrir/cerrar el menú lateral
         document.getElementById('btnToggleSidebar').addEventListener('click', () => {
             const container = document.getElementById('dashboardContainer');
             container.classList.toggle('sidebar-closed');
@@ -293,7 +306,6 @@
             }
         });
 
-        // Dropdown del Usuario en la cabecera
         const btnUserDropdown = document.getElementById('btnUserDropdown');
         const userDropdownMenu = document.getElementById('userDropdownMenu');
         if (btnUserDropdown && userDropdownMenu) {
