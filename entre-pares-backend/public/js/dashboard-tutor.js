@@ -363,32 +363,38 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
 
     bandeja.scrollTop = bandeja.scrollHeight;
 }
-
 async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId, nombreEstudiante) {
     destinatarioActivoId = estudianteId;
     
     const headerChat = document.getElementById('chatHeader');
     headerChat.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
             <span>Chat con <strong>${nombreEstudiante}</strong></span>
             <button id="btnConfirmarCita" class="btn" style="display: none; background: #16a34a; color: white; padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                ✅ Confirmar Coordinación y Enviar Mail
+                ✅ Confirmar Cita y Enviar Mail
             </button>
         </div>
     `;
     
-    const { data: reserva } = await supabaseClient
+    // Buscamos todas las reservas asociadas a este tutor y estudiante para garantizar encontrar una activa
+    const { data: reservas, error } = await supabaseClient
         .from('reservas')
         .select('*')
         .eq('tutor_id', tutorId)
         .eq('estudiante_id', estudianteId)
-        .in('estado', ['Pendiente', 'Aceptada'])
-        .single();
+        .order('id', { ascending: false });
+
+    if (error) {
+        console.error("Error al buscar reserva para el chat:", error);
+    }
+
+    // Tomamos la más reciente o una que esté pendiente/aceptada
+    const reservaActiva = reservas && reservas.length > 0 ? reservas[0] : null;
 
     const btnConfirmar = document.getElementById('btnConfirmarCita');
-    if (reserva && btnConfirmar) {
+    if (reservaActiva && btnConfirmar) {
         btnConfirmar.style.display = 'block';
-        btnConfirmar.onclick = () => confirmarCoordinacionYEnviarMail(supabaseClient, reserva.id, estudianteId);
+        btnConfirmar.onclick = () => confirmarCoordinacionYEnviarMail(supabaseClient, reservaActiva.id, estudianteId);
     }
 
     cargarHistorialChat(supabaseClient, tutorId, estudianteId);
