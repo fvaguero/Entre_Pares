@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     usuarioActual = user;
 
-    // 1. Obtener perfil del tutor para el nombre superior y datos
     try {
         const { data: perfil } = await supabaseClient
             .from('perfiles')
@@ -433,9 +432,14 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
         }
 
         mostrarNotificacion("¡Cita confirmada y correo enviado con éxito al estudiante!", "exito");
-        setTimeout(() => {
-            location.reload();
-        }, 1500);
+
+        const btnConfirmar = document.getElementById('btnConfirmarCita');
+        if (btnConfirmar) {
+            btnConfirmar.style.display = 'none';
+        }
+
+        cargarSolicitudesYTutorias();
+        cargarContactos(supabaseClient, usuarioActual.id);
 
     } catch (err) {
         console.error("Error al confirmar la coordinación:", err);
