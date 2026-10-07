@@ -464,7 +464,7 @@ async function cargarPanelPagosTutor() {
     if (!tbody || !usuarioActual) return;
 
     try {
-        // Consultar las reservas asociadas a este tutor, trayendo también el nombre del estudiante
+        // Consultar las reservas asociadas a este tutor usando 'creado_at' (como está en tu BD)
         const { data: reservas, error } = await supabaseClient
             .from('reservas')
             .select(`
@@ -472,7 +472,7 @@ async function cargarPanelPagosTutor() {
                 materia,
                 precio,
                 estado_pago,
-                created_at,
+                creado_at,
                 estudiante:estudiante_id (nombre_completo)
             `)
             .eq('tutor_id', usuarioActual.id)
@@ -503,6 +503,9 @@ async function cargarPanelPagosTutor() {
                 badgeColor = '#166534';
             }
 
+            // Usamos 'creado_at' para formatear la fecha
+            const fechaFormateada = reserva.creado_at ? new Date(reserva.creado_at).toLocaleDateString() : 'Fecha no disp.';
+
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #e2e8f0';
             tr.innerHTML = `
@@ -514,7 +517,7 @@ async function cargarPanelPagosTutor() {
                         ${estado}
                     </span>
                 </td>
-                <td style="padding: 0.8rem; color: #64748b; font-size: 0.85rem;">${new Date(reserva.created_at).toLocaleDateString()}</td>
+                <td style="padding: 0.8rem; color: #64748b; font-size: 0.85rem;">${fechaFormateada}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -524,11 +527,3 @@ async function cargarPanelPagosTutor() {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: #dc2626;">Error al cargar los datos de pagos.</td></tr>`;
     }
 }
-
-// Asegurarnos de que se ejecute cuando cargue el DOM o después de obtener el usuario
-document.addEventListener('DOMContentLoaded', () => {
-    // Le damos un pequeño respiro para que tome el `usuarioActual` y luego cargue los pagos
-    setTimeout(() => {
-        cargarPanelPagosTutor();
-    }, 1000);
-});
