@@ -21,13 +21,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             .single();
 
         if (perfil) {
-            // Rellenar nombre en la barra superior
             const spanNombre = document.getElementById('nombreUsuarioHeader');
             if (spanNombre) {
                 spanNombre.textContent = perfil.nombre_completo || 'Tutor';
             }
 
-            // Rellenar pestaña de perfil
             const inputNombre = document.getElementById('perfilNombre');
             const inputEmail = document.getElementById('perfilEmail');
             const inputSede = document.getElementById('perfilSede');
@@ -38,7 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
             if (inputMaterias) inputMaterias.value = perfil.materias_impartidas || '';
 
-            // Selector de roles si es 'Ambos'
             if (perfil.rol === 'Ambos') {
                 const roleSwitcher = document.getElementById('roleSwitcher');
                 if (roleSwitcher) roleSwitcher.style.display = 'block';
@@ -48,7 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Error al cargar perfil del tutor:", err);
     }
 
-    // Dropdown de Rol
     const btnRoleDropdown = document.getElementById('btnRoleDropdown');
     const dropdownMenu = document.getElementById('dropdownMenu');
     if (btnRoleDropdown && dropdownMenu) {
@@ -186,24 +182,6 @@ async function cargarSolicitudesYTutorias() {
         console.error("Error al cargar solicitudes:", err);
     }
 }
-
-window.actualizarEstado = async function(id, nuevoEstado) {
-    try {
-        const { error } = await supabaseClient
-            .from('reservas')
-            .update({ estado: nuevoEstado })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        mostrarNotificacion(`¡Tutoría ${nuevoEstado.toLowerCase()} con éxito!`, "exito");
-        cargarSolicitudesYTutorias();
-        cargarContactos(supabaseClient, usuarioActual.id);
-    } catch (err) {
-        console.error("Error al actualizar estado:", err);
-        mostrarNotificacion("Error al actualizar la solicitud.", "error");
-    }
-};
 
 function mostrarNotificacion(mensaje, tipo) {
     const alerta = document.createElement('div');
@@ -397,14 +375,51 @@ async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId
 
     cargarHistorialChat(supabaseClient, tutorId, estudianteId);
 }
+// Función que se ejecuta cuando apretas "Aceptar" en la lista
+window.actualizarEstado = async function(id, nuevoEstado) {
+    try {
+        const { data: reservaActualizada, error } = await supabaseClient
+            .from('reservas')
+            .update({ estado: nuevoEstado })
+            .eq('id', id)
+            .select(`*, estudiante:estudiante_id (nombre_completo, email), tutor:tutor_id (nombre_completo)`)
+            .single();
 
+        if (error) throw error;
+
+        mostrarNotificacion(`¡Tutoría ${nuevoEstado.toLowerCase()} con éxito!`, "exito");
+
+        // Enviar mail de AVISO DE CHAT (sin Jitsi)
+        if (nuevoEstado === 'Aceptada') {
+            mostrarNotificacion("Notificando al estudiante por correo...", "exito");
+            
+            await supabaseClient.functions.invoke('enviar-correo-reserva', {
+                body: {
+                    reservaId: id,
+                    tipoCorreo: 'chat_aceptado', // Le indicamos a la función que mande el aviso simple
+                    estudianteEmail: reservaActualizada.estudiante?.email,
+                    estudianteNombre: reservaActualizada.estudiante?.nombre_completo || 'Estudiante',
+                    tutorNombre: reservaActualizada.tutor?.nombre_completo || 'Tutor',
+                    materia: reservaActualizada.materia
+                }
+            });
+        }
+
+        cargarSolicitudesYTutorias();
+        cargarContactos(supabaseClient, usuarioActual.id);
+    } catch (err) {
+        console.error("Error al actualizar estado:", err);
+        mostrarNotificacion("Error al actualizar la solicitud.", "error");
+    }
+};
+
+// Función que se ejecuta desde adentro del chat ("Confirmar Cita y Enviar Mail")
 async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estudianteId) {
     try {
         const { data: reservaActualizada, error } = await supabaseClient
             .from('reservas')
-            .update({ estado: 'Aceptada' })
-            .eq('id', reservaId)
             .select(`*, estudiante:estudiante_id (nombre_completo, email), tutor:tutor_id (nombre_completo)`)
+            .eq('id', reservaId)
             .single();
 
         if (error) throw error;
@@ -413,13 +428,14 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
         await supabaseClient.from('mensajes').insert({
             remitente_id: user.id,
             destinatario_id: estudianteId,
-            contenido: "📌 [Sistema]: ¡Coordinación confirmada oficialmente! Se ha enviado un correo al estudiante con los detalles."
+            contenido: "📌 [Sistema]: ¡Coordinación confirmada! Se ha enviado a tu correo el enlace oficial para la videollamada."
         });
 
+        // Enviar mail OFICIAL CON JITSI
         const { error: fnError } = await supabaseClient.functions.invoke('enviar-correo-reserva', {
             body: {
                 reservaId: reservaId,
-                estado: 'Aceptada',
+                tipoCorreo: 'cita_confirmada', // Le indicamos a la función que envíe el enlace de Jitsi
                 estudianteEmail: reservaActualizada.estudiante?.email,
                 estudianteNombre: reservaActualizada.estudiante?.nombre_completo || 'Estudiante',
                 tutorNombre: reservaActualizada.tutor?.nombre_completo || 'Tutor',
@@ -427,22 +443,15 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
             }
         });
 
-        if (fnError) {
-            console.warn("La cita se confirmó, pero hubo un error al disparar la función de correo:", fnError);
-        }
+        if (fnError) console.warn("Error correo:", fnError);
 
-        mostrarNotificacion("¡Cita confirmada y correo enviado con éxito al estudiante!", "exito");
+        mostrarNotificacion("¡Enlace de videollamada enviado al estudiante!", "exito");
 
         const btnConfirmar = document.getElementById('btnConfirmarCita');
-        if (btnConfirmar) {
-            btnConfirmar.style.display = 'none';
-        }
-
-        cargarSolicitudesYTutorias();
-        cargarContactos(supabaseClient, usuarioActual.id);
+        if (btnConfirmar) btnConfirmar.style.display = 'none';
 
     } catch (err) {
         console.error("Error al confirmar la coordinación:", err);
-        mostrarNotificacion("No se pudo completar la confirmación.", "error");
+        mostrarNotificacion("No se pudo enviar el correo de confirmación.", "error");
     }
 }
