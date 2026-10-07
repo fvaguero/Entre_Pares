@@ -100,7 +100,7 @@
                         <span id="nombreUsuarioHeader" style="font-weight: 600;">Cargando...</span> ▼
                     </button>
                     <div id="userDropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[3]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
+                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[4]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
                     </div>
                 </div>
                 
@@ -115,6 +115,7 @@
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Tutor</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-solicitudes', this)">📥 Solicitudes Pendientes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-agenda', this)">✅ Mis Tutorías Aceptadas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-pagos', this)">💰 Mis Pagos y Ganancias</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Materias</button>
         </aside>
@@ -147,7 +148,35 @@
                 </div>
             </section>
 
-            <!-- 3. MENSAJES (chat en tiempo real) -->
+            <!-- 3. MIS PAGOS Y GANANCIAS -->
+            <section id="seccion-pagos" class="content-section">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Pagos y Ganancias</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Aquí puedes ver el estado actual de tus cobros y transferencias por tutoría.</p>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table class="table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
+                                    <th style="padding: 0.8rem;">Estudiante</th>
+                                    <th style="padding: 0.8rem;">Tutoría</th>
+                                    <th style="padding: 0.8rem;">Monto</th>
+                                    <th style="padding: 0.8rem;">Estado del Pago</th>
+                                    <th style="padding: 0.8rem;">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-pagos-tutor">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 1.5rem; color: #64748b;">Cargando registros de pagos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. MENSAJES (chat en tiempo real) -->
             <section id="seccion-mensajes" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
@@ -181,7 +210,7 @@
                 </div>
             </section>
 
-            <!-- 4. PERFIL Y MATERIAS -->
+            <!-- 5. PERFIL Y MATERIAS -->
             <section id="seccion-perfil" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Perfil del Tutor</h1>

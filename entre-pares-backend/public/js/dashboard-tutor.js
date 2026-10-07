@@ -455,3 +455,80 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
         mostrarNotificacion("No se pudo enviar el correo de confirmación.", "error");
     }
 }
+/* ============================================================
+   PANEL DE PAGOS Y GANANCIAS DEL TUTOR
+   ============================================================ */
+
+async function cargarPanelPagosTutor() {
+    const tbody = document.getElementById('tabla-pagos-tutor');
+    if (!tbody || !usuarioActual) return;
+
+    try {
+        // Consultar las reservas asociadas a este tutor, trayendo también el nombre del estudiante
+        const { data: reservas, error } = await supabaseClient
+            .from('reservas')
+            .select(`
+                id,
+                materia,
+                precio,
+                estado_pago,
+                created_at,
+                estudiante:estudiante_id (nombre_completo)
+            `)
+            .eq('tutor_id', usuarioActual.id)
+            .order('id', { ascending: false });
+
+        if (error) throw error;
+
+        tbody.innerHTML = '';
+
+        if (!reservas || reservas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: #64748b;">No tienes registros de pagos todavía.</td></tr>`;
+            return;
+        }
+
+        reservas.forEach(reserva => {
+            let estado = reserva.estado_pago || 'Pendiente';
+            let badgeBg = '#f1f5f9';
+            let badgeColor = '#475569';
+
+            if (estado === 'Pagado') {
+                badgeBg = '#fef08a';
+                badgeColor = '#713f12';
+            } else if (estado === 'Completada') {
+                badgeBg = '#e0f2fe';
+                badgeColor = '#0369a1';
+            } else if (estado === 'Liquidado') {
+                badgeBg = '#dcfce7';
+                badgeColor = '#166534';
+            }
+
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #e2e8f0';
+            tr.innerHTML = `
+                <td style="padding: 0.8rem; color: #1e293b; font-weight: 500;">${reserva.estudiante?.nombre_completo || 'Estudiante'}</td>
+                <td style="padding: 0.8rem; color: #475569;">${reserva.materia || 'Tutoría'}</td>
+                <td style="padding: 0.8rem; color: #1e293b; font-weight: 600;">$${reserva.precio || 0} ARS</td>
+                <td style="padding: 0.8rem;">
+                    <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                        ${estado}
+                    </span>
+                </td>
+                <td style="padding: 0.8rem; color: #64748b; font-size: 0.85rem;">${new Date(reserva.created_at).toLocaleDateString()}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("Error al cargar los pagos del tutor:", err.message);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: #dc2626;">Error al cargar los datos de pagos.</td></tr>`;
+    }
+}
+
+// Asegurarnos de que se ejecute cuando cargue el DOM o después de obtener el usuario
+document.addEventListener('DOMContentLoaded', () => {
+    // Le damos un pequeño respiro para que tome el `usuarioActual` y luego cargue los pagos
+    setTimeout(() => {
+        cargarPanelPagosTutor();
+    }, 1000);
+});

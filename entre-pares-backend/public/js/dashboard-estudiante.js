@@ -605,3 +605,19 @@ window.pagarTutoria = async function(reservaId, materia, precio) {
         }
     }
 };
+async function confirmarFinTutoria(reservaId) {
+  try {
+    const { error } = await supabaseClient
+      .from('reservas')
+      .update({ estado: 'Completada' }) // O el campo que uses para el estado de la clase
+      .eq('id', reservaId);
+
+    if (error) throw error;
+
+    alert("¡Clase confirmada como finalizada! El administrador procederá a liberar el pago al tutor.");
+    location.reload(); // Recarga para actualizar la vista
+  } catch (err) {
+    console.error("Error al confirmar la tutoría:", err.message);
+    alert("Hubo un error al confirmar la clase.");
+  }
+}
