@@ -58,7 +58,7 @@
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                const email = document.getElementById('loginEmail').value;
+                const email = document.getElementById('loginEmail').value.trim();
                 const password = document.getElementById('loginPassword').value;
 
                 loginMensaje.textContent = "Iniciando sesión...";
@@ -78,15 +78,28 @@
                 loginMensaje.textContent = "¡Ingreso exitoso! Redirigiendo...";
                 loginMensaje.style.color = "green";
 
-                // Guardar el ID exacto y el rol del usuario en el localStorage
                 const userId = authData.user.id;
-                const rol = authData.user.user_metadata.rol;
+                let rol = authData.user.user_metadata?.rol;
+
+                // 🔒 DOBLE SEGURIDAD: Si es tu correo, forzamos el rol de Administrador
+                if (email === 'valentinaseco2004@gmail.com') {
+                    rol = 'Administrador';
+                } else if (!rol) {
+                    const { data: perfil } = await supabaseClient
+                        .from('perfiles')
+                        .select('rol')
+                        .eq('id', userId)
+                        .single();
+                    if (perfil) rol = perfil.rol;
+                }
                 
                 localStorage.setItem('usuarioId', userId);
-                localStorage.setItem('usuarioRol', rol);
+                localStorage.setItem('usuarioRol', rol || 'Estudiante');
                 
                 setTimeout(() => {
-                    if (rol === 'Ambos') {
+                    if (rol === 'Administrador' || email === 'valentinaseco2004@gmail.com') {
+                        window.location.href = 'admin.html';
+                    } else if (rol === 'Ambos') {
                         window.location.href = 'dashboard-ambos.html';
                     } else if (rol === 'Tutor') {
                         window.location.href = 'dashboard-tutor.html';
