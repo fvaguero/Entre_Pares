@@ -156,6 +156,7 @@
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📅 Mis Consultas</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
         </aside>
 
         <!-- Área de Contenido Dinámico por Pestañas -->
@@ -248,7 +249,7 @@
             <section id="seccion-perfil" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mi Perfil Académico</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Gestiona tu información personal y revisa tu progreso en la red.</p>
+                    <p style="color: #64748b; font-size: 0.9rem;">Gestiona tu information personal y revisa tu progreso en la red.</p>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;">
                     <div class="panel-card">
@@ -256,7 +257,11 @@
                         <form id="formPerfilEstudiante">
                             <div class="form-group">
                                 <label>Nombre Completo</label>
-                                <input type="text" id="perfilNombre" class="form-control" disabled>
+                                <input type="text" id="perfilNombre" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha de Nacimiento</label>
+                                <input type="date" id="perfilNacimiento" class="form-control">
                             </div>
                             <div class="form-group">
                                 <label>Correo Electrónico</label>
@@ -281,9 +286,21 @@
                     </div>
                 </div>
             </section>
+
+            <!-- 5. HISTORIAL DE NOTIFICACIONES DETALLADAS -->
+            <section id="seccion-notificaciones" class="content-section">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial de Notificaciones</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Revisa el detalle de todas tus alertas, avisos de reservas y mensajes del sistema.</p>
+                </div>
+                <div class="panel-card">
+                    <div id="listaDetalladaNotificaciones" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <p style="color: #64748b; font-size: 0.85rem; text-align: center;">No tienes notificaciones recientes.</p>
+                    </div>
+                </div>
+            </section>
         </main>
 
-        <!-- Footer integrado correctamente al final del layout -->
         <footer class="site-footer">
             <div class="footer-container">
                 <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
@@ -319,7 +336,6 @@
         </div>
     </div>
 
-    <!-- Script de control visual -->
     <script>
         function cambiarPestaña(idSeccion, btnElemento) {
             document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
@@ -355,7 +371,6 @@
         }
     </script>
 
-    <!-- Scripts principales y de notificaciones -->
     <script src="js/dashboard-estudiante.js"></script>
     <script src="js/notificaciones.js"></script>
 </body>

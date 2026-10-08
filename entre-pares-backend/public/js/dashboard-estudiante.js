@@ -3,7 +3,7 @@ let destinatarioActivoId = null;
 document.addEventListener('DOMContentLoaded', async () => {
     const SUPABASE_URL = "https://uecwotydamsjstpovbzz.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError || !session) {
@@ -26,12 +26,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (spanNombre) spanNombre.textContent = perfil.nombre_completo || 'Estudiante';
 
             const inputNombre = document.getElementById('perfilNombre');
+            const inputNacimiento = document.getElementById('perfilNacimiento'); // Nuevo
             const inputEmail = document.getElementById('perfilEmail');
             const inputCarrera = document.getElementById('perfilCarrera');
             const inputSede = document.getElementById('perfilSede');
             const spanPuntos = document.getElementById('puntosGamificacion');
 
             if (inputNombre) inputNombre.value = perfil.nombre_completo || '';
+            if (inputNacimiento) inputNacimiento.value = perfil.fecha_nacimiento || ''; // Nuevo
             if (inputEmail) inputEmail.value = perfil.email || '';
             if (inputCarrera) inputCarrera.value = perfil.carrera || '';
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
@@ -84,18 +86,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (formPerfil) {
         formPerfil.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Capturamos todos los campos del estudiante
+            const nombre = document.getElementById('perfilNombre').value;
+            const nacimiento = document.getElementById('perfilNacimiento').value;
             const carrera = document.getElementById('perfilCarrera').value;
             const sede = document.getElementById('perfilSede').value;
 
             const { error } = await supabaseClient
                 .from('perfiles')
-                .update({ carrera, sede_universitaria: sede })
+                .update({ 
+                    nombre_completo: nombre,
+                    fecha_nacimiento: nacimiento || null,
+                    carrera: carrera, 
+                    sede_universitaria: sede 
+                })
                 .eq('id', userId);
 
             if (!error) {
+                // Actualiza el nombre de la cabecera en tiempo real
+                const spanNombre = document.getElementById('nombreUsuarioHeader');
+                if (spanNombre) spanNombre.textContent = nombre;
+                
                 mostrarNotificacionEstudiante("¡Perfil actualizado con éxito!", "exito");
             } else {
                 mostrarNotificacionEstudiante("Error al actualizar el perfil.", "error");
+                console.error("Error BD:", error);
             }
         });
     }
@@ -605,6 +621,7 @@ window.pagarTutoria = async function(reservaId, materia, precio) {
         }
     }
 };
+
 async function confirmarFinTutoria(reservaId) {
   try {
     const { error } = await supabaseClient

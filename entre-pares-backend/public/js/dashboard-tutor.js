@@ -30,11 +30,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const inputEmail = document.getElementById('perfilEmail');
             const inputSede = document.getElementById('perfilSede');
             const inputMaterias = document.getElementById('perfilMaterias');
+            const inputPrecio = document.getElementById('perfilPrecio'); // Nuevo campo
 
             if (inputNombre) inputNombre.value = perfil.nombre_completo || '';
             if (inputEmail) inputEmail.value = perfil.email || '';
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
             if (inputMaterias) inputMaterias.value = perfil.materias_impartidas || '';
+            if (inputPrecio) inputPrecio.value = perfil.precio_hora || ''; // Cargar precio
 
             if (perfil.rol === 'Ambos') {
                 const roleSwitcher = document.getElementById('roleSwitcher');
@@ -83,19 +85,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (formPerfilTutor) {
         formPerfilTutor.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const nombre = document.getElementById('perfilNombre').value;
             const sede = document.getElementById('perfilSede').value;
             const materias = document.getElementById('perfilMaterias').value;
+            const precio = document.getElementById('perfilPrecio') ? document.getElementById('perfilPrecio').value : null;
 
             try {
                 const { error } = await supabaseClient
                     .from('perfiles')
                     .update({ 
+                        nombre_completo: nombre,
                         sede_universitaria: sede, 
-                        materias_impartidas: materias 
+                        materias_impartidas: materias,
+                        precio_hora: precio // Asegúrate de que esta columna exista en tu tabla 'perfiles'
                     })
                     .eq('id', usuarioActual.id);
 
                 if (error) throw error;
+                
+                // Actualizar nombre en la cabecera inmediatamente
+                document.getElementById('nombreUsuarioHeader').textContent = nombre;
+                
                 mostrarNotificacion("¡Perfil y materias actualizados con éxito!", "exito");
             } catch (error) {
                 mostrarNotificacion("Error al actualizar: " + error.message, "error");
@@ -105,6 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Cargar solicitudes pendientes y agenda aceptada
     cargarSolicitudesYTutorias();
+    cargarPanelPagosTutor();
 
     // Chat en tiempo real
     inicializarChat(supabaseClient, usuarioActual.id);
@@ -375,6 +386,7 @@ async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId
 
     cargarHistorialChat(supabaseClient, tutorId, estudianteId);
 }
+
 // Función que se ejecuta cuando apretas "Aceptar" en la lista
 window.actualizarEstado = async function(id, nuevoEstado) {
     try {
@@ -389,14 +401,13 @@ window.actualizarEstado = async function(id, nuevoEstado) {
 
         mostrarNotificacion(`¡Tutoría ${nuevoEstado.toLowerCase()} con éxito!`, "exito");
 
-        // Enviar mail de AVISO DE CHAT (sin Jitsi)
         if (nuevoEstado === 'Aceptada') {
             mostrarNotificacion("Notificando al estudiante por correo...", "exito");
             
             await supabaseClient.functions.invoke('enviar-correo-reserva', {
                 body: {
                     reservaId: id,
-                    tipoCorreo: 'chat_aceptado', // Le indicamos a la función que mande el aviso simple
+                    tipoCorreo: 'chat_aceptado', 
                     estudianteEmail: reservaActualizada.estudiante?.email,
                     estudianteNombre: reservaActualizada.estudiante?.nombre_completo || 'Estudiante',
                     tutorNombre: reservaActualizada.tutor?.nombre_completo || 'Tutor',
@@ -431,11 +442,10 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
             contenido: "📌 [Sistema]: ¡Coordinación confirmada! Se ha enviado a tu correo el enlace oficial para la videollamada."
         });
 
-        // Enviar mail OFICIAL CON JITSI
         const { error: fnError } = await supabaseClient.functions.invoke('enviar-correo-reserva', {
             body: {
                 reservaId: reservaId,
-                tipoCorreo: 'cita_confirmada', // Le indicamos a la función que envíe el enlace de Jitsi
+                tipoCorreo: 'cita_confirmada',
                 estudianteEmail: reservaActualizada.estudiante?.email,
                 estudianteNombre: reservaActualizada.estudiante?.nombre_completo || 'Estudiante',
                 tutorNombre: reservaActualizada.tutor?.nombre_completo || 'Tutor',
@@ -455,6 +465,7 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
         mostrarNotificacion("No se pudo enviar el correo de confirmación.", "error");
     }
 }
+
 /* ============================================================
    PANEL DE PAGOS Y GANANCIAS DEL TUTOR
    ============================================================ */
@@ -464,7 +475,6 @@ async function cargarPanelPagosTutor() {
     if (!tbody || !usuarioActual) return;
 
     try {
-        // Consultar las reservas asociadas a este tutor usando 'creado_at' (como está en tu BD)
         const { data: reservas, error } = await supabaseClient
             .from('reservas')
             .select(`
@@ -503,7 +513,6 @@ async function cargarPanelPagosTutor() {
                 badgeColor = '#166534';
             }
 
-            // Usamos 'creado_at' para formatear la fecha
             const fechaFormateada = reserva.creado_at ? new Date(reserva.creado_at).toLocaleDateString() : 'Fecha no disp.';
 
             const tr = document.createElement('tr');

@@ -1,17 +1,15 @@
 // ==========================================
-// SISTEMA GLOBAL DE NOTIFICACIONES EN TIEMPO REAL
+// SISTEMA GLOBAL DE NOTIFICACIONES (MODO PRUEBAS / DEBUG)
 // ==========================================
 
 let notificacionesNoLeidas = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Verificamos si existe el contenedor de la campanita en la página actual
     const btnCampanita = document.getElementById('btnCampanita');
     if (!btnCampanita) return; 
 
     const dropdownNotificaciones = document.getElementById('dropdownNotificaciones');
 
-    // Usamos la instancia global de Supabase si existe, sino creamos una única fallback segura
     const client = window.supabaseClient || (window.supabase ? window.supabase.createClient('https://uecwotydamsjstpovbzz.supabase.co', 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2') : null);
     
     if (!client) {
@@ -35,59 +33,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (dropdownNotificaciones) dropdownNotificaciones.style.display = 'none';
     });
 
-    // Obtener el usuario actual logueado
+    // Obtener el usuario actual (opcional para pruebas directas)
     const { data: { user } } = await client.auth.getUser();
-    if (!user) return;
 
-    const usuarioId = user.id;
-    const rolActual = localStorage.getItem('usuarioRol') || 'Estudiante';
-
-    // Escuchar cambios en la tabla reservas en tiempo real
+    // ESCUCHAR CAMBIOS EN TIEMPO REAL SIN FILTROS RESTRINGIDOS (Ideal para probar)
     client
-        .channel('public:reservas_global')
+        .channel('public:reservas_global_test')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, payload => {
             const res = payload.new;
             const eventType = payload.eventType;
 
-            // Filtros inteligentes según el rol
-            if (rolActual === 'Administrador' || user.email === 'valentinaseco2004@gmail.com') {
-                if (eventType === 'INSERT') {
-                    agregarNotificacionUI(`Nueva reserva creada: ${res.materia || 'Clase'}`);
-                }
-            } else if (rolActual === 'Tutor') {
-                if (res.tutor_id === usuarioId) {
-                    if (eventType === 'INSERT') {
-                        agregarNotificacionUI(`¡Te han agendado una nueva reserva de ${res.materia}!`);
-                    } else if (eventType === 'UPDATE') {
-                        agregarNotificacionUI(`Una reserva de ${res.materia} cambió de estado.`);
-                    }
-                }
-            } else { // Estudiante
-                if (res.estudiante_id === usuarioId) {
-                    if (eventType === 'UPDATE') {
-                        agregarNotificacionUI(`Tu reserva de ${res.materia} fue actualizada.`);
-                    }
-                }
+            console.log("¡Evento de Realtime recibido!", payload);
+
+            if (eventType === 'INSERT') {
+                agregarNotificacionUI(`Nueva reserva detectada: ${res.materia || 'Clase General'}`);
+            } else if (eventType === 'UPDATE') {
+                // Notificar sobre el nuevo estado de la reserva
+                agregarNotificacionUI(`La reserva de ${res.materia || 'Clase'} cambió a estado: ${res.estado || 'Pendiente'}`);
             }
         })
-        .subscribe();
+        .subscribe((status) => {
+            console.log("Estado de suscripción Realtime:", status);
+        });
 });
 
 function agregarNotificacionUI(mensaje) {
+    // 1. Agregar a la campanita superior (mini notificación)
     const lista = document.getElementById('listaNotificaciones');
-    if (!lista) return;
-
-    if (lista.innerHTML.includes('No hay notificaciones')) {
-        lista.innerHTML = '';
+    if (lista) {
+        if (lista.innerHTML.includes('No hay notificaciones')) {
+            lista.innerHTML = '';
+        }
+        const item = document.createElement('div');
+        item.style.padding = '8px 6px';
+        item.style.borderBottom = '1px solid #f1f5f9';
+        item.style.fontSize = '0.8rem';
+        item.innerHTML = `🔔 <strong>${mensaje}</strong><div style="font-size: 0.7rem; color: #94a3b8;">Hace un momento</div>`;
+        
+        lista.prepend(item);
     }
 
-    const item = document.createElement('div');
-    item.style.padding = '8px 6px';
-    item.style.borderBottom = '1px solid #f1f5f9';
-    item.style.fontSize = '0.8rem';
-    item.innerHTML = `🔔 <strong>${mensaje}</strong><div style="font-size: 0.7rem; color: #94a3b8;">Hace un momento</div>`;
-    
-    lista.prepend(item);
+    // 2. Agregar a la nueva sección detallada (panel principal)
+    const listaDetalle = document.getElementById('listaDetalladaNotificaciones');
+    if (listaDetalle) {
+        if (listaDetalle.innerHTML.includes('No tienes notificaciones recientes')) {
+            listaDetalle.innerHTML = '';
+        }
+        const itemDetalle = document.createElement('div');
+        itemDetalle.style.cssText = "padding: 1rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; display: flex; align-items: center; gap: 1rem; animation: fadeIn 0.3s ease-in-out; margin-bottom: 0.8rem;";
+        itemDetalle.innerHTML = `
+            <span style="font-size: 1.5rem;">🔔</span> 
+            <div>
+                <strong style="color: #0f172a; font-size: 0.95rem;">${mensaje}</strong>
+                <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">Recibido en la sesión actual</p>
+            </div>
+        `;
+        listaDetalle.prepend(itemDetalle);
+    }
+
+    // Aumentar el contador del globo rojo
     notificacionesNoLeidas++;
     actualizarBadgeNotificaciones();
 }

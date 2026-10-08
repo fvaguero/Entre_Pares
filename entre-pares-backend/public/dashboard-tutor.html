@@ -114,7 +114,7 @@
                         <span id="nombreUsuarioHeader" style="font-weight: 600;">Cargando...</span> ▼
                     </button>
                     <div id="userDropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[4]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
+                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[5]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
                     </div>
                 </div>
                 
@@ -132,6 +132,7 @@
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-pagos', this)">💰 Mis Pagos y Ganancias</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Materias</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
         </aside>
 
         <!-- Área de Contenido Dinámico -->
@@ -234,7 +235,7 @@
                     <form id="formPerfilTutor">
                         <div class="form-group">
                             <label>Nombre Completo</label>
-                            <input type="text" id="perfilNombre" class="form-control" disabled>
+                            <input type="text" id="perfilNombre" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label>Correo Electrónico</label>
@@ -248,8 +249,25 @@
                             <label>Materias que Impartes (separadas por comas)</label>
                             <input type="text" id="perfilMaterias" class="form-control" placeholder="Ej: Álgebra, Física I, Análisis Matemático">
                         </div>
+                        <div class="form-group">
+                            <label>Precio por Tutoría (ARS)</label>
+                            <input type="number" id="perfilPrecio" class="form-control" placeholder="Ej: 2500" min="0">
+                        </div>
                         <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Guardar Cambios</button>
                     </form>
+                </div>
+            </section>
+
+            <!-- 6. HISTORIAL DE NOTIFICACIONES DETALLADAS -->
+            <section id="seccion-notificaciones" class="content-section">
+                <div class="panel-card" style="margin-bottom: 1.5rem;">
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial de Notificaciones</h1>
+                    <p style="color: #64748b; font-size: 0.9rem;">Revisa el detalle de todas tus alertas, avisos de reservas y mensajes del sistema.</p>
+                </div>
+                <div class="panel-card">
+                    <div id="listaDetalladaNotificaciones" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <p style="color: #64748b; font-size: 0.85rem; text-align: center;">No tienes notificaciones recientes.</p>
+                    </div>
                 </div>
             </section>
         </main>
