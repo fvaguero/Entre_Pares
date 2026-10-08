@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Entre Pares</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .admin-tab { display: none; }
+        .admin-tab.active { display: block; }
+        .tab-btn.active { background-color: #1e293b !important; color: white !important; }
+    </style>
+</head>
+<body style="background-color: #f8fafc; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0;">
+
+    <header>
+        <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: white; border-bottom: 1px solid #e2e8f0;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <a href="index.html" class="logo">
+                    <img src="img/logo-cuaderno.png" alt="Logo" style="height:40px;">
+                </a>
+                <span style="background: #fee2e2; color: #dc2626; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">ADMINISTRADOR</span>
+            </div>
+            <div class="auth-buttons">
+                <button id="btnCerrarSesionAdmin" class="btn" style="background-color: #fee2e2; color: #dc2626; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem; flex: 1; width: 100%; box-sizing: border-box;">
+        
+        <!-- Encabezado -->
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-family: 'Lora', serif; font-size: 2rem; color: #0f172a; margin-bottom: 0.3rem;">Centro de Control Global</h1>
+            <p style="color: #64748b; font-size: 0.95rem;">Supervisa la economía, administra la comunidad de usuarios y audita el estado de las tutorías.</p>
+        </div>
+
+        <!-- Botones de Pestañas (Navegación Admin) -->
+        <div style="display: flex; gap: 0.8rem; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; flex-wrap: wrap;">
+            <button onclick="cambiarTabAdmin('tab-finanzas', this)" class="tab-btn active btn" style="background: #1e293b; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer;">💰 Finanzas y Liquidaciones</button>
+            <button onclick="cambiarTabAdmin('tab-usuarios', this)" class="tab-btn btn" style="background: #e2e8f0; color: #1e293b; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer;">👥 Gestión de Usuarios</button>
+            <button onclick="cambiarTabAdmin('tab-reservas', this)" class="tab-btn btn" style="background: #e2e8f0; color: #1e293b; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer;">📚 Auditoría de Tutorías</button>
+        </div>
+
+        <!-- 1. PESTAÑA FINANZAS -->
+        <div id="tab-finanzas" class="admin-tab active">
+            <!-- Tarjetas de KPIs Financieros -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem; font-weight: 500;">Total Recaudado (Pagado)</p>
+                    <h3 id="kpiRecaudado" style="font-size: 1.8rem; color: #16a34a; font-weight: 700;">$0 ARS</h3>
+                </div>
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem; font-weight: 500;">Pendientes de Liquidación</p>
+                    <h3 id="kpiPendientes" style="font-size: 1.8rem; color: #d97706; font-weight: 700;">0</h3>
+                </div>
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem; font-weight: 500;">Clases Liquidadas</p>
+                    <h3 id="kpiLiquidadas" style="font-size: 1.8rem; color: #2563eb; font-weight: 700;">0</h3>
+                </div>
+            </div>
+
+            <!-- Tabla de Liquidaciones -->
+            <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                    <h3 style="font-size: 1.1rem; color: #1e293b; margin: 0;">Retención de Fondos y Transferencias a Tutores</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e2e8f0; background: #fff; font-size: 0.85rem; color: #475569;">
+                                <th style="padding: 1rem;">Estudiante</th>
+                                <th style="padding: 1rem;">Tutor (CVU/Alias)</th>
+                                <th style="padding: 1rem;">Materia</th>
+                                <th style="padding: 1rem;">Monto</th>
+                                <th style="padding: 1rem;">Estado del Pago</th>
+                                <th style="padding: 1rem; text-align: center;">Acción Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAdminFinanzas">
+                            <tr><td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">Cargando finanzas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PESTAÑA USUARIOS -->
+        <div id="tab-usuarios" class="admin-tab">
+            <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                    <h3 style="font-size: 1.1rem; color: #1e293b; margin: 0;">Directorio de Usuarios Registrados</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e2e8f0; background: #fff; font-size: 0.85rem; color: #475569;">
+                                <th style="padding: 1rem;">Nombre Completo</th>
+                                <th style="padding: 1rem;">Correo Electrónico</th>
+                                <th style="padding: 1rem;">Rol</th>
+                                <th style="padding: 1rem;">Sede Universitaria</th>
+                                <th style="padding: 1rem;">Puntos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAdminUsuarios">
+                            <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">Cargando usuarios...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PESTAÑA RESERVAS -->
+        <div id="tab-reservas" class="admin-tab">
+            <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                    <h3 style="font-size: 1.1rem; color: #1e293b; margin: 0;">Historial General de Tutorías</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e2e8f0; background: #fff; font-size: 0.85rem; color: #475569;">
+                                <th style="padding: 1rem;">Materia</th>
+                                <th style="padding: 1rem;">Estudiante</th>
+                                <th style="padding: 1rem;">Tutor</th>
+                                <th style="padding: 1rem;">Estado Clase</th>
+                                <th style="padding: 1rem;">Comentarios / Dudas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAdminTodasReservas">
+                            <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">Cargando reservas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>Entre Pares</h3>
+                <p>Plataforma de gestión y backoffice administrativo institucional.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Navegación</h4>
+                <a href="index.html">Volver al Inicio</a>
+            </div>
+            <div class="footer-col">
+                <h4>Soporte</h4>
+                <p>Panel exclusivo para administración de finanzas y auditoría de usuarios.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 Entre Pares. Catamarca, Argentina.
+        </div>
+    </footer>
+
+    <script>
+        function cambiarTabAdmin(idTab, btnElemento) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = '#e2e8f0';
+                b.style.color = '#1e293b';
+            });
+
+            document.getElementById(idTab).classList.add('active');
+            btnElemento.classList.add('active');
+            btnElemento.style.background = '#1e293b';
+            btnElemento.style.color = 'white';
+        }
+    </script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
