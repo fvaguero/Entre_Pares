@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mensaje.style.color = "#2563eb";
 
             try {
-              // Opción A: Usando directamente tu URL de Render
 const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://entre-pares.onrender.com/actualizar-password.html',
 });
