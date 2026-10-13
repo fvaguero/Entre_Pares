@@ -42,6 +42,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarTodasLasTutorias();
     cargarMetricas();
 });
+ // 5. Botón Cerrar Sesión (Con SweetAlert2)
+    const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+    if (btnCerrarSesion) {
+        btnCerrarSesion.addEventListener('click', async () => {
+            const result = await Swal.fire({
+                title: '¿Cerrar sesión?',
+                text: "¿Estás seguro que deseas salir de tu cuenta?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626', // Rojo para salir
+                cancelButtonColor: '#64748b', // Gris para cancelar
+                confirmButtonText: 'Sí, salir',
+                cancelButtonText: 'Cancelar',
+                backdrop: `rgba(0,0,0,0.5)`
+            });
+
+            if (result.isConfirmed) {
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            }
+        }); 
 
 async function cargarTutoresPendientes() {
     const contenedor = document.getElementById('listaTutoresPendientes');
@@ -146,4 +167,4 @@ async function cargarMetricas() {
     } catch (err) {
         console.error("Error al cargar métricas:", err);
     }
-}
+} }

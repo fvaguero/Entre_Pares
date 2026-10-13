@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/favicon.png">
     <title>Panel Tutor - Entre Pares</title>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <!-- Importar SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
@@ -67,6 +70,65 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* =========================================
+           ESTILOS PREMIUM PARA EL CHAT
+           ========================================= */
+        #chatBandeja::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chatBandeja::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chatBandeja::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(15px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .msg-animado {
+            animation: slideUpFade 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 24px;
+            padding: 0.4rem 0.6rem 0.4rem 1.2rem;
+            flex: 1;
+        }
+        .chat-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 0.95rem;
+            color: #1e293b;
+            padding: 0;
+        }
+        .chat-btn-send {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            flex-shrink: 0;
+        }
+        .chat-btn-send:hover {
+            background: #1d4ed8;
+            transform: scale(1.05);
+        }
+        .chat-btn-send:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -207,19 +269,39 @@
                         </div>
                     </div>
 
-                    <!-- Ventana de Chat -->
-                    <div class="panel-card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-                        <div id="chatHeader" style="padding: 1rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 0.95rem;">
-                            Selecciona una conversación
+                    <!-- Ventana de Chat (NUEVO DISEÑO FLUIDO) -->
+                    <div class="panel-card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #ffffff;">
+                        
+                        <!-- Cabecera del Chat -->
+                        <div id="chatHeader" style="padding: 1rem 1.5rem; background: #ffffff; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); z-index: 10;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                👤
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span id="chatHeaderNombre">Selecciona una conversación</span>
+                                <span id="chatHeaderEstado" style="font-size: 0.75rem; color: #16a34a; font-weight: 500; display: none;">En línea</span>
+                            </div>
                         </div>
                         
-                        <div id="chatBandeja" style="flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; background: #ffffff;">
-                            <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: auto;">Tus mensajes aparecerán aquí.</p>
+                        <!-- Bandeja de Mensajes -->
+                        <div id="chatBandeja" style="flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; background: #f8fafc; scroll-behavior: smooth;">
+                            <div style="margin: auto; text-align: center; color: #94a3b8; padding: 2rem;">
+                                <span style="font-size: 2.5rem; display: block; margin-bottom: 0.8rem;">💬</span>
+                                <p style="font-size: 1rem; font-weight: 500; color: #64748b;">No hay mensajes aún.</p>
+                                <p style="font-size: 0.85rem; margin-top: 0.3rem;">Selecciona un chat a la izquierda para empezar.</p>
+                            </div>
                         </div>
 
-                        <form id="formEnviarMensaje" style="display: flex; padding: 0.8rem; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 0.5rem;">
-                            <input type="text" id="inputMensajeTexto" class="form-control" placeholder="Escribe un mensaje..." required autocomplete="off" style="margin: 0;">
-                            <button type="submit" class="btn btn-yellow" style="white-space: nowrap;">Enviar</button>
+                        <!-- Formulario de Envío Moderno -->
+                        <form id="formEnviarMensaje" style="display: flex; padding: 1rem 1.5rem; background: #ffffff; border-top: 1px solid #e2e8f0; gap: 0.8rem; align-items: center;">
+                            <div class="chat-input-wrapper">
+                                <input type="text" id="inputMensajeTexto" placeholder="Escribe tu mensaje aquí..." required autocomplete="off">
+                            </div>
+                            <button type="submit" class="chat-btn-send" title="Enviar">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px; margin-left: 2px;">
+                                    <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
+                                </svg>
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -253,6 +335,11 @@
                             <label>Precio por Tutoría (ARS)</label>
                             <input type="number" id="perfilPrecio" class="form-control" placeholder="Ej: 2500" min="0">
                         </div>
+                        <div class="form-group">
+                            <label>CBU o Alias Bancario</label>
+                            <input type="text" id="perfilCbuTutor" class="form-control" placeholder="Ej: 0000003100012345678901 o mi.alias.mp">
+                            <small style="color: #64748b;">Aquí se registrarán tus datos para recibir las transferencias de tus tutorías.</small>
+                        </div>
                         <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Guardar Cambios</button>
                     </form>
                 </div>
@@ -271,6 +358,62 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- MODAL DE RESEÑA DEL TUTOR AL ESTUDIANTE -->
+    <div id="modalResenaTutor" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <h3 style="margin-bottom: 0.5rem; color: #0f172a;">Calificar a <span id="nombreEstudianteResena"></span></h3>
+            <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.2rem;">¿Cómo fue el comportamiento y participación del estudiante en la tutoría?</p>
+            
+            <form id="formResenaTutor">
+                <input type="hidden" id="reservaIdResenaTutor">
+                <input type="hidden" id="estudianteIdResenaTutor">
+                
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600;">Calificación (Estrellas)</label>
+                    <select id="estrellasResenaTutor" class="form-control" required>
+                        <option value="5">⭐⭐⭐⭐⭐ (Excelente)</option>
+                        <option value="4">⭐⭐⭐⭐ (Muy Bueno)</option>
+                        <option value="3">⭐⭐⭐ (Bueno)</option>
+                        <option value="2">⭐⭐ (Regular)</option>
+                        <option value="1">⭐ (Malo)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.2rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600;">Comentario u Opinión</label>
+                    <textarea id="comentarioResenaTutor" class="form-control" rows="3" placeholder="Ej: Muy atento, puntual y con buena predisposición para aprender." required></textarea>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn btn-yellow" style="flex: 1; font-weight: 600;">Enviar Calificación</button>
+                    <button type="button" onclick="document.getElementById('modalResenaTutor').style.display='none'" class="btn" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #1e293b; flex: 1;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE PERFIL PÚBLICO DEL ESTUDIANTE -->
+    <div id="modalPerfilEstudiante" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <h2 id="modalEstudianteNombre" style="color: #0f172a; margin-bottom: 0.5rem; font-size: 1.25rem;">Cargando perfil...</h2>
+            
+            <div style="margin: 1rem 0; font-size: 0.9rem; color: #475569; display: flex; flex-direction: column; gap: 0.5rem;">
+                <p><strong>📧 Correo:</strong> <span id="modalEstudianteEmail">...</span></p>
+                <p><strong>🎓 Carrera:</strong> <span id="modalEstudianteCarrera">...</span></p>
+                <p><strong>🏫 Sede Universitaria:</strong> <span id="modalEstudianteSede">...</span></p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0;">
+
+            <h4 style="font-size: 0.95rem; color: #1e293b; margin-bottom: 0.5rem;">⭐ Opiniones de otros tutores sobre este estudiante:</h4>
+            <div id="modalEstudianteListaResenas" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.2rem;">
+                <p style="color: #64748b; font-size: 0.85rem; text-align: center;">Cargando reseñas...</p>
+            </div>
+
+            <button type="button" onclick="document.getElementById('modalPerfilEstudiante').style.display='none'" class="btn" style="width: 100%; background: #f1f5f9; border: 1px solid #cbd5e1; color: #1e293b; font-weight: 600;">Cerrar</button>
+        </div>
     </div>
 
     <!-- Script de pestañas y menú -->

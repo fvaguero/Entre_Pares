@@ -30,13 +30,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const inputEmail = document.getElementById('perfilEmail');
             const inputSede = document.getElementById('perfilSede');
             const inputMaterias = document.getElementById('perfilMaterias');
-            const inputPrecio = document.getElementById('perfilPrecio'); // Nuevo campo
+            const inputPrecio = document.getElementById('perfilPrecio');
+            const inputCbu = document.getElementById('perfilCbuTutor');
 
             if (inputNombre) inputNombre.value = perfil.nombre_completo || '';
             if (inputEmail) inputEmail.value = perfil.email || '';
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
             if (inputMaterias) inputMaterias.value = perfil.materias_impartidas || '';
-            if (inputPrecio) inputPrecio.value = perfil.precio_hora || ''; // Cargar precio
+            if (inputPrecio) inputPrecio.value = perfil.precio_hora || '';
+            if (inputCbu) inputCbu.value = perfil.cbu || '';
 
             if (perfil.rol === 'Ambos') {
                 const roleSwitcher = document.getElementById('roleSwitcher');
@@ -56,7 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Dropdown de Usuario en la cabecera
     const btnUserDropdown = document.getElementById('btnUserDropdown');
     const userDropdownMenu = document.getElementById('userDropdownMenu');
     if (btnUserDropdown && userDropdownMenu) {
@@ -71,16 +72,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (userDropdownMenu) userDropdownMenu.style.display = 'none';
     });
 
-    // Botón Cerrar Sesión
-    const btnCerrarSesion = document.getElementById('btnCerrarSesion');
-    if (btnCerrarSesion) {
-        btnCerrarSesion.addEventListener('click', async () => {
+   const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+if (btnCerrarSesion) {
+    btnCerrarSesion.addEventListener('click', async () => {
+        const result = await Swal.fire({
+            title: '¿Cerrar sesión?',
+            text: "¿Estás seguro que deseas salir de tu cuenta?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626', // Rojo para salir
+            cancelButtonColor: '#64748b', // Gris para cancelar
+            confirmButtonText: 'Sí, salir',
+            cancelButtonText: 'Cancelar',
+            backdrop: `rgba(0,0,0,0.5)`
+        });
+
+        if (result.isConfirmed) {
             await supabaseClient.auth.signOut();
             window.location.href = 'login.html';
-        });
-    }
+        }
+    });
+}
 
-    // Formulario de Actualizar Perfil y Materias
     const formPerfilTutor = document.getElementById('formPerfilTutor');
     if (formPerfilTutor) {
         formPerfilTutor.addEventListener('submit', async (e) => {
@@ -89,6 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sede = document.getElementById('perfilSede').value;
             const materias = document.getElementById('perfilMaterias').value;
             const precio = document.getElementById('perfilPrecio') ? document.getElementById('perfilPrecio').value : null;
+            const cbu = document.getElementById('perfilCbuTutor') ? document.getElementById('perfilCbuTutor').value.trim() : null;
 
             try {
                 const { error } = await supabaseClient
@@ -97,27 +111,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                         nombre_completo: nombre,
                         sede_universitaria: sede, 
                         materias_impartidas: materias,
-                        precio_hora: precio // Asegúrate de que esta columna exista en tu tabla 'perfiles'
+                        precio_hora: precio,
+                        cbu: cbu
                     })
                     .eq('id', usuarioActual.id);
 
                 if (error) throw error;
                 
-                // Actualizar nombre en la cabecera inmediatamente
                 document.getElementById('nombreUsuarioHeader').textContent = nombre;
-                
-                mostrarNotificacion("¡Perfil y materias actualizados con éxito!", "exito");
+                mostrarNotificacion("¡Perfil y datos bancarios actualizados con éxito!", "exito");
             } catch (error) {
                 mostrarNotificacion("Error al actualizar: " + error.message, "error");
             }
         });
     }
 
-    // Cargar solicitudes pendientes y agenda aceptada
+    // Manejar envío del formulario de reseña del tutor al estudiante
+    const formResenaTutor = document.getElementById('formResenaTutor');
+    if (formResenaTutor) {
+        formResenaTutor.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const reservaId = document.getElementById('reservaIdResenaTutor').value;
+            const estudianteId = document.getElementById('estudianteIdResenaTutor').value;
+            const calificacion = parseInt(document.getElementById('estrellasResenaTutor').value);
+            const comentario = document.getElementById('comentarioResenaTutor').value;
+
+            try {
+                const { error: errorResena } = await supabaseClient
+                    .from('resenas')
+                    .insert([{
+                        reserva_id: reservaId,
+                        tutor_id: usuarioActual.id,
+                        estudiante_id: estudianteId,
+                        calificacion: calificacion,
+                        comentario: comentario,
+                        calificado_por: 'tutor'
+                    }]);
+
+                if (errorResena) throw errorResena;
+
+                document.getElementById('modalResenaTutor').style.display = 'none';
+                mostrarNotificacion("¡Calificación enviada al estudiante con éxito!", "exito");
+                e.target.reset();
+            } catch (err) {
+                console.error("Error al guardar reseña del tutor:", err);
+                mostrarNotificacion("No se pudo guardar la calificación.", "error");
+            }
+        });
+    }
+
     cargarSolicitudesYTutorias();
     cargarPanelPagosTutor();
 
-    // Chat en tiempo real
     inicializarChat(supabaseClient, usuarioActual.id);
     cargarContactos(supabaseClient, usuarioActual.id);
 });
@@ -131,7 +176,7 @@ async function cargarSolicitudesYTutorias() {
     try {
         const { data: reservas, error } = await supabaseClient
             .from('reservas')
-            .select(`*, estudiante:estudiante_id (nombre_completo, email)`)
+            .select(`*, estudiante:estudiante_id (id, nombre_completo, email, carrera, sede_universitaria)`)
             .eq('tutor_id', usuarioActual.id)
             .order('id', { ascending: false });
 
@@ -144,18 +189,23 @@ async function cargarSolicitudesYTutorias() {
         }
 
         const pendientes = reservas.filter(r => r.estado && r.estado.toLowerCase() === 'pendiente');
-        const aceptadas = reservas.filter(r => r.estado && (r.estado.toLowerCase() === 'aceptada' || r.estado.toLowerCase() === 'aprobada'));
+        const aceptadas = reservas.filter(r => r.estado && (r.estado.toLowerCase() === 'aceptada' || r.estado.toLowerCase() === 'aprobada' || r.estado.toLowerCase() === 'finalizada'));
 
-        // Renderizar Pendientes
         if (contenedorPendientes) {
             if (pendientes.length === 0) {
                 contenedorPendientes.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No hay solicitudes pendientes.</p>`;
             } else {
                 contenedorPendientes.innerHTML = pendientes.map(res => {
+                    const nombreEst = res.estudiante?.nombre_completo || 'Anónimo';
+                    const estId = res.estudiante?.id;
+
                     return `
                         <div style="border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                             <h4 style="color: #0f172a; margin-bottom: 0.4rem; font-size: 1rem;">📚 ${res.materia}</h4>
-                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;"><strong>Estudiante:</strong> ${res.estudiante?.nombre_completo || 'Anónimo'}</p>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">
+                                <strong>Estudiante:</strong> 
+                                <span onclick="verPerfilEstudiante('${estId}')" style="color: #2563eb; cursor: pointer; text-decoration: underline; font-weight: 600;">${nombreEst}</span>
+                            </p>
                             <p style="color: #475569; font-size: 0.85rem; margin: 0.4rem 0;"><strong>Duda / Consulta:</strong> ${res.comentarios || 'Sin descripción'}</p>
                             
                             <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
@@ -168,21 +218,47 @@ async function cargarSolicitudesYTutorias() {
             }
         }
 
-        // Renderizar Aceptadas / Agenda
         if (contenedorAceptadas) {
             if (aceptadas.length === 0) {
                 contenedorAceptadas.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center; grid-column: 1/-1;">No tienes tutorías confirmadas en tu agenda.</p>`;
             } else {
                 contenedorAceptadas.innerHTML = aceptadas.map(res => {
+                    const esFinalizada = res.estado.toLowerCase() === 'finalizada';
+                    let badgeColor = esFinalizada ? '#2563eb' : '#16a34a';
+                    let estadoTexto = esFinalizada ? 'Finalizada' : 'Aceptada';
+                    const nombreEst = res.estudiante?.nombre_completo || 'Asignado';
+                    const estId = res.estudiante?.id;
+
+                    let botonAccionTutor = '';
+                    if (esFinalizada) {
+                        botonAccionTutor = `
+                            <button onclick="abrirModalResenaTutor('${res.id}', '${estId}', '${nombreEst}')" class="btn btn-yellow" style="width: 100%; margin-top: 0.8rem; font-size: 0.8rem; font-weight: 600; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+                                ⭐ Calificar Estudiante
+                            </button>
+                        `;
+                    } else {
+                        botonAccionTutor = `
+                            <a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.8rem; background: #2563eb; color: white; padding: 0.4rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px; font-weight: 600;">Unirse a Videollamada</a>
+                            
+                            <button onclick="marcarTutoriaFinalizada('${res.id}')" class="btn" style="width: 100%; margin-top: 0.5rem; background: #0f172a; color: white; border: none; padding: 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+                                🏁 Marcar como Finalizada
+                            </button>
+                        `;
+                    }
+
                     return `
                         <div style="border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                                 <strong style="color: #0f172a;">${res.materia}</strong>
-                                <span style="background: #16a34a; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">Aceptada</span>
+                                <span style="background: ${badgeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">${estadoTexto}</span>
                             </div>
-                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Estudiante: ${res.estudiante?.nombre_completo || 'Asignado'}</p>
+                            <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">
+                                Estudiante: 
+                                <span onclick="verPerfilEstudiante('${estId}')" style="color: #2563eb; cursor: pointer; text-decoration: underline; font-weight: 600;">${nombreEst}</span>
+                            </p>
                             <p style="color: #475569; font-size: 0.85rem; margin: 0.2rem 0;">Consulta: ${res.comentarios || 'Sin descripción'}</p>
-                            <a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.8rem; background: #2563eb; color: white; padding: 0.4rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px; font-weight: 600;">Unirse a Videollamada</a>
+                            
+                            ${botonAccionTutor}
                         </div>
                     `;
                 }).join('');
@@ -193,6 +269,96 @@ async function cargarSolicitudesYTutorias() {
         console.error("Error al cargar solicitudes:", err);
     }
 }
+
+// FUNCIONALIDAD PARA VER PERFIL PÚBLICO DEL ESTUDIANTE
+window.verPerfilEstudiante = async function(estudianteId) {
+    if (!estudianteId) return;
+
+    const modal = document.getElementById('modalPerfilEstudiante');
+    const lblNombre = document.getElementById('modalEstudianteNombre');
+    const lblEmail = document.getElementById('modalEstudianteEmail');
+    const lblCarrera = document.getElementById('modalEstudianteCarrera');
+    const lblSede = document.getElementById('modalEstudianteSede');
+    const contenedorResenas = document.getElementById('modalEstudianteListaResenas');
+
+    modal.style.display = 'flex';
+    lblNombre.textContent = "Cargando perfil...";
+    lblEmail.textContent = "...";
+    lblCarrera.textContent = "...";
+    lblSede.textContent = "...";
+    contenedorResenas.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">Cargando opiniones...</p>';
+
+    try {
+        const { data: estudiante, error: errEstudiante } = await supabaseClient
+            .from('perfiles')
+            .select('*')
+            .eq('id', estudianteId)
+            .single();
+
+        if (errEstudiante) throw errEstudiante;
+
+        lblNombre.textContent = estudiante.nombre_completo || 'Estudiante';
+        lblEmail.textContent = estudiante.email || 'No disponible';
+        lblCarrera.textContent = estudiante.carrera || 'No especificada';
+        lblSede.textContent = estudiante.sede_universitaria || 'Catamarca';
+
+        // Buscar reseñas recibidas como estudiante
+        const { data: resenas, error: errResenas } = await supabaseClient
+            .from('resenas')
+            .select(`*, tutor:tutor_id (nombre_completo)`)
+            .eq('estudiante_id', estudianteId)
+            .eq('calificado_por', 'tutor')
+            .order('id', { ascending: false });
+
+        if (errResenas) throw errResenas;
+
+        if (!resenas || resenas.length === 0) {
+            contenedorResenas.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">El estudiante aún no tiene valoraciones registradas.</p>';
+            return;
+        }
+
+        contenedorResenas.innerHTML = resenas.map(r => {
+            const estrellas = '⭐'.repeat(r.calificacion || 5);
+            return `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.6rem; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                        <strong style="color: #0f172a; font-size: 0.8rem;">Tutor: ${r.tutor?.nombre_completo || 'Par'}</strong>
+                        <span style="color: #ca8a04; font-size: 0.75rem;">${estrellas}</span>
+                    </div>
+                    <p style="color: #475569; font-size: 0.75rem; margin: 0; font-style: italic;">"${r.comentario || 'Sin comentarios'}"</p>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Error al cargar perfil del estudiante:", err);
+        contenedorResenas.innerHTML = '<p style="color: #dc2626; font-size: 0.85rem; text-align: center;">No se pudo cargar la información del estudiante.</p>';
+    }
+};
+
+window.marcarTutoriaFinalizada = async function(reservaId) {
+    try {
+        const { error } = await supabaseClient
+            .from('reservas')
+            .update({ estado: 'Finalizada' })
+            .eq('id', reservaId);
+
+        if (error) throw error;
+
+        mostrarNotificacion("¡Tutoría marcada como finalizada con éxito!", "exito");
+        cargarSolicitudesYTutorias();
+    } catch (err) {
+        console.error("Error al finalizar tutoría:", err);
+        mostrarNotificacion("No se pudo marcar como finalizada.", "error");
+    }
+};
+
+window.abrirModalResenaTutor = function(reservaId, estudianteId, estudianteNombre) {
+    document.getElementById('reservaIdResenaTutor').value = reservaId;
+    document.getElementById('estudianteIdResenaTutor').value = estudianteId;
+    document.getElementById('nombreEstudianteResena').textContent = estudianteNombre || 'el estudiante';
+    document.getElementById('modalResenaTutor').style.display = 'flex';
+};
 
 function mostrarNotificacion(mensaje, tipo) {
     const alerta = document.createElement('div');
@@ -214,10 +380,6 @@ function mostrarNotificacion(mensaje, tipo) {
     document.body.appendChild(alerta);
     setTimeout(() => { alerta.remove(); }, 3000);
 }
-
-/* ============================================================
-   CHAT EN TIEMPO REAL Y COORDINACIÓN
-   ============================================================ */
 
 async function cargarContactos(supabaseClient, miId) {
     const lista = document.getElementById('listaContactos');
@@ -313,16 +475,22 @@ function inicializarChat(supabaseClient, usuarioActualId) {
         })
         .subscribe();
 }
-
 async function cargarHistorialChat(supabaseClient, miId, otroId) {
     const bandeja = document.getElementById('chatBandeja');
     if (!bandeja) return;
 
+    // Configurar estilos de la bandeja
+    bandeja.style.display = 'flex';
+    bandeja.style.flexDirection = 'column'; 
+    bandeja.style.gap = '1rem';
+    bandeja.style.padding = '1.5rem';
+
+    // ORDENAR ESTRICTAMENTE POR created_at (cronológico real)
     const { data: mensajes, error } = await supabaseClient
         .from('mensajes')
         .select('*')
         .or(`and(remitente_id.eq.${miId},destinatario_id.eq.${otroId}),and(remitente_id.eq.${otroId},destinatario_id.eq.${miId})`)
-        .order('id', { ascending: true });
+        .order('created_at', { ascending: true }); 
 
     if (error) {
         console.error("Error al cargar historial:", error.message);
@@ -330,28 +498,100 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     }
 
     bandeja.innerHTML = '';
-    if (mensajes.length === 0) {
-        bandeja.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: auto;">No hay mensajes aún. ¡Comienza la conversación!</p>';
+    
+    if (!mensajes || mensajes.length === 0) {
+        bandeja.innerHTML = `
+            <div class="msg-animado" style="margin: auto; text-align: center; color: #94a3b8; padding: 2rem;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 0.8rem;">💬</span>
+                <p style="font-size: 0.95rem; font-weight: 500;">¡Rompe el hielo! 👋</p>
+                <p style="font-size: 0.8rem; margin-top: 0.3rem;">Comienza la conversación enviando un mensaje.</p>
+            </div>
+        `;
         return;
     }
 
     mensajes.forEach(msg => {
-        const esMio = msg.remitente_id === miId;
-        const burbuja = document.createElement('div');
-        burbuja.style.maxWidth = '70%';
-        burbuja.style.padding = '0.6rem 0.9rem';
-        burbuja.style.borderRadius = '10px';
-        burbuja.style.fontSize = '0.9rem';
-        burbuja.style.alignSelf = esMio ? 'flex-end' : 'flex-start';
-        burbuja.style.backgroundColor = esMio ? '#fef08a' : '#f1f5f9';
-        burbuja.style.color = esMio ? '#713f12' : '#1e293b';
-        burbuja.textContent = msg.contenido;
-        bandeja.appendChild(burbuja);
+        // Detectar si el mensaje es del sistema/notificación o de un usuario
+        const esDelSistema = !msg.remitente_id || msg.remitente_id === 'sistema' || msg.remitente_id === null;
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg-animado';
+        wrapper.style.display = 'flex';
+        wrapper.style.width = '100%';
+
+        if (esDelSistema) {
+            // Estilo especial para los avisos del sistema (centrados y estéticos)
+            wrapper.style.justifyContent = 'center';
+            const aviso = document.createElement('div');
+            aviso.style.background = '#fef08a';
+            aviso.style.color = '#713f12';
+            aviso.style.padding = '0.5rem 1rem';
+            aviso.style.borderRadius = '12px';
+            aviso.style.fontSize = '0.85rem';
+            aviso.style.textAlign = 'center';
+            aviso.style.maxWidth = '90%';
+            aviso.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+            aviso.textContent = msg.contenido;
+            wrapper.appendChild(aviso);
+        } else {
+            // Mensajes normales de chat entre usuarios
+            const esMio = msg.remitente_id === miId;
+            wrapper.style.justifyContent = esMio ? 'flex-end' : 'flex-start';
+
+            const burbuja = document.createElement('div');
+            burbuja.style.maxWidth = '75%';
+            burbuja.style.padding = '0.8rem 1.2rem';
+            burbuja.style.fontSize = '0.95rem';
+            burbuja.style.lineHeight = '1.4';
+            burbuja.style.wordBreak = 'break-word';
+            burbuja.style.boxShadow = '0 2px 5px rgba(0,0,0,0.06)';
+
+            if (esMio) {
+                burbuja.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+                burbuja.style.color = '#ffffff'; 
+                burbuja.style.borderRadius = '18px 18px 4px 18px'; 
+            } else {
+                burbuja.style.background = '#ffffff';
+                burbuja.style.color = '#1e293b';
+                burbuja.style.border = '1px solid #e2e8f0';
+                burbuja.style.borderRadius = '18px 18px 18px 4px';
+            }
+
+            const textoP = document.createElement('div');
+            textoP.textContent = msg.contenido;
+            burbuja.appendChild(textoP);
+
+            const timestamp = msg.created_at || msg.creado_at;
+            if (timestamp) {
+                const horaSpan = document.createElement('span');
+                const fechaObj = new Date(timestamp);
+                const horaFormateada = fechaObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                horaSpan.textContent = horaFormateada;
+                horaSpan.style.display = 'block';
+                horaSpan.style.fontSize = '0.7rem';
+                horaSpan.style.marginTop = '0.4rem';
+                horaSpan.style.textAlign = 'right';
+                horaSpan.style.opacity = '0.8';
+                horaSpan.style.color = esMio ? '#bfdbfe' : '#94a3b8';
+                
+                burbuja.appendChild(horaSpan);
+            }
+
+            wrapper.appendChild(burbuja);
+        }
+
+        bandeja.appendChild(wrapper);
     });
 
-    bandeja.scrollTop = bandeja.scrollHeight;
+    // Scroll automático hacia abajo
+    setTimeout(() => {
+        bandeja.scrollTo({
+            top: bandeja.scrollHeight,
+            behavior: 'smooth'
+        });
+    }, 50);
 }
-
 async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId, nombreEstudiante) {
     destinatarioActivoId = estudianteId;
     
@@ -387,7 +627,6 @@ async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId
     cargarHistorialChat(supabaseClient, tutorId, estudianteId);
 }
 
-// Función que se ejecuta cuando apretas "Aceptar" en la lista
 window.actualizarEstado = async function(id, nuevoEstado) {
     try {
         const { data: reservaActualizada, error } = await supabaseClient
@@ -424,7 +663,6 @@ window.actualizarEstado = async function(id, nuevoEstado) {
     }
 };
 
-// Función que se ejecuta desde adentro del chat ("Confirmar Cita y Enviar Mail")
 async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estudianteId) {
     try {
         const { data: reservaActualizada, error } = await supabaseClient
@@ -465,10 +703,6 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
         mostrarNotificacion("No se pudo enviar el correo de confirmación.", "error");
     }
 }
-
-/* ============================================================
-   PANEL DE PAGOS Y GANANCIAS DEL TUTOR
-   ============================================================ */
 
 async function cargarPanelPagosTutor() {
     const tbody = document.getElementById('tabla-pagos-tutor');

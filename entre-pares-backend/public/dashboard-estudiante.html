@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/favicon.png">
     <title>Panel Estudiante - Entre Pares</title>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Importar SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -94,6 +97,65 @@
             width: 100%;
             grid-column: 1 / -1;
             border-top: 1px solid #1e293b;
+        }
+
+        /* =========================================
+           ESTILOS PREMIUM PARA EL CHAT
+           ========================================= */
+        #chatBandeja::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chatBandeja::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chatBandeja::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(15px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .msg-animado {
+            animation: slideUpFade 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 24px;
+            padding: 0.4rem 0.6rem 0.4rem 1.2rem;
+            flex: 1;
+        }
+        .chat-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 0.95rem;
+            color: #1e293b;
+            padding: 0;
+        }
+        .chat-btn-send {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            flex-shrink: 0;
+        }
+        .chat-btn-send:hover {
+            background: #1d4ed8;
+            transform: scale(1.05);
+        }
+        .chat-btn-send:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -213,7 +275,7 @@
                 </div>
             </section>
 
-            <!-- 3. SECCIÓN MENSAJES -->
+            <!-- 3. SECCIÓN MENSAJES (AHORA SÍ CON ESTILO MODERNO) -->
             <section id="seccion-mensajes" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
@@ -228,18 +290,39 @@
                         </div>
                     </div>
 
-                    <div class="panel-card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-                        <div id="chatHeader" style="padding: 1rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 0.95rem;">
-                            Selecciona una conversación
+                    <!-- NUEVA VENTANA DE CHAT -->
+                    <div class="panel-card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #ffffff;">
+                        
+                        <!-- Cabecera del Chat -->
+                        <div id="chatHeader" style="padding: 1rem 1.5rem; background: #ffffff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 0.8rem; z-index: 10;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                👤
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span id="chatHeaderNombre" style="font-weight: 600; font-size: 1rem; color: #0f172a;">Selecciona una conversación</span>
+                                <span id="chatHeaderEstado" style="font-size: 0.75rem; color: #16a34a; font-weight: 500; display: none;">En línea</span>
+                            </div>
                         </div>
                         
-                        <div id="chatBandeja" style="flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; background: #ffffff;">
-                            <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: auto;">Tus mensajes aparecerán aquí.</p>
+                        <!-- Bandeja de Mensajes -->
+                        <div id="chatBandeja" style="flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; background: #f8fafc; scroll-behavior: smooth;">
+                            <div style="margin: auto; text-align: center; color: #94a3b8; padding: 2rem;">
+                                <span style="font-size: 2.5rem; display: block; margin-bottom: 0.8rem;">💬</span>
+                                <p style="font-size: 1rem; font-weight: 500; color: #64748b;">No hay mensajes aún.</p>
+                                <p style="font-size: 0.85rem; margin-top: 0.3rem;">Selecciona un chat a la izquierda para empezar.</p>
+                            </div>
                         </div>
 
-                        <form id="formEnviarMensaje" style="display: flex; padding: 0.8rem; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 0.5rem;">
-                            <input type="text" id="inputMensajeTexto" class="form-control" placeholder="Escribe un mensaje..." required autocomplete="off" style="margin: 0;">
-                            <button type="submit" class="btn btn-yellow" style="white-space: nowrap;">Enviar</button>
+                        <!-- Formulario de Envío Moderno -->
+                        <form id="formEnviarMensaje" style="display: flex; padding: 1rem 1.5rem; background: #ffffff; border-top: 1px solid #e2e8f0; gap: 0.8rem; align-items: center;">
+                            <div class="chat-input-wrapper">
+                                <input type="text" id="inputMensajeTexto" placeholder="Escribe tu mensaje aquí..." required autocomplete="off">
+                            </div>
+                            <button type="submit" class="chat-btn-send" title="Enviar">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px; margin-left: 2px;">
+                                    <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
+                                </svg>
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -333,6 +416,74 @@
                 <button type="submit" class="btn btn-yellow w-full" style="margin-top: 1rem;">Enviar Solicitud</button>
             </form>
             <p id="mensajeReserva" style="text-align: center; margin-top: 1rem; font-size: 0.85rem; font-weight: 600;"></p>
+        </div>
+    </div>
+
+    <!-- Modal de Reseña / Calificación -->
+    <div id="modalResena" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="panel-card" style="width: 100%; max-width: 450px; position: relative;">
+            <button onclick="document.getElementById('modalResena').style.display='none'" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">✕</button>
+            
+            <h2 style="font-family: 'Lora', serif; font-size: 1.5rem; color: #0f172a; margin-bottom: 0.5rem;">Calificar Tutoría</h2>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Deja tu opinión sobre <strong id="nombreTutorResena">el tutor</strong></p>
+
+            <form id="formResena">
+                <input type="hidden" id="reservaIdResena">
+                <input type="hidden" id="tutorIdResena">
+                
+                <div class="form-group">
+                    <label>Calificación (Estrellas)</label>
+                    <select id="estrellasResena" class="form-control" required>
+                        <option value="5">⭐⭐⭐⭐⭐ (5 - Excelente)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 - Muy bueno)</option>
+                        <option value="3">⭐⭐⭐ (3 - Bueno)</option>
+                        <option value="2">⭐⭐ (2 - Regular)</option>
+                        <option value="1">⭐ (1 - Malo)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Comentario o Reseña</label>
+                    <textarea id="comentarioResena" class="form-control" rows="4" placeholder="Escribe tu experiencia con el tutor..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-yellow w-full" style="margin-top: 1rem;">Enviar Calificación</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Perfil Público del Tutor -->
+    <div id="modalPerfilTutorPublico" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="panel-card" style="width: 100%; max-width: 500px; position: relative; max-height: 85vh; overflow-y: auto;">
+            <button onclick="document.getElementById('modalPerfilTutorPublico').style.display='none'" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">✕</button>
+            
+            <div style="text-align: center; margin-bottom: 1.2rem;">
+                <div style="width: 70px; height: 70px; background: #fef08a; color: #713f12; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; margin: 0 auto 0.5rem auto;">👤</div>
+                <h2 id="modalTutorNombre" style="font-family: 'Lora', serif; font-size: 1.4rem; color: #0f172a; margin: 0;">Nombre del Tutor</h2>
+                <p id="modalTutorEstrellas" style="color: #ca8a04; font-weight: bold; font-size: 0.95rem; margin: 0.2rem 0;">⭐ 0.0 (0 reseñas)</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.9rem; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 1rem 0; margin-bottom: 1rem;">
+                <div>
+                    <strong style="color: #64748b; font-size: 0.8rem; display: block; text-transform: uppercase;">Sede Universitaria</strong>
+                    <span id="modalTutorSede" style="color: #1e293b; font-weight: 500;">Catamarca</span>
+                </div>
+                <div>
+                    <strong style="color: #64748b; font-size: 0.8rem; display: block; text-transform: uppercase;">Materias que Imparte</strong>
+                    <span id="modalTutorMaterias" style="color: #1e293b; font-weight: 500;">Álgebra, Física I</span>
+                </div>
+                <div>
+                    <strong style="color: #64748b; font-size: 0.8rem; display: block; text-transform: uppercase;">Precio por Hora</strong>
+                    <span id="modalTutorPrecio" style="color: #16a34a; font-weight: 700; font-size: 1.1rem;">$3000 ARS</span>
+                </div>
+            </div>
+
+            <h4 style="font-size: 1rem; color: #0f172a; margin-bottom: 0.5rem;">Opiniones de Estudiantes</h4>
+            <div id="modalTutorListaResenas" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 180px; overflow-y: auto; margin-bottom: 1.2rem;">
+                <p style="color: #64748b; font-size: 0.85rem; text-align: center;">Cargando opiniones...</p>
+            </div>
+
+            <button id="modalTutorBtnSolicitar" class="btn btn-yellow w-full" style="padding: 0.6rem; font-weight: 600;">Solicitar Consulta con este Tutor</button>
         </div>
     </div>
 

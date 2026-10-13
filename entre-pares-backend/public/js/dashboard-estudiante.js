@@ -1,10 +1,10 @@
+const SUPABASE_URL = "https://uecwotydamsjstpovbzz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let destinatarioActivoId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const SUPABASE_URL = "https://uecwotydamsjstpovbzz.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2";
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError || !session) {
         window.location.href = 'login.html';
@@ -26,18 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (spanNombre) spanNombre.textContent = perfil.nombre_completo || 'Estudiante';
 
             const inputNombre = document.getElementById('perfilNombre');
-            const inputNacimiento = document.getElementById('perfilNacimiento'); // Nuevo
+            const inputNacimiento = document.getElementById('perfilNacimiento');
             const inputEmail = document.getElementById('perfilEmail');
             const inputCarrera = document.getElementById('perfilCarrera');
             const inputSede = document.getElementById('perfilSede');
             const spanPuntos = document.getElementById('puntosGamificacion');
 
             if (inputNombre) inputNombre.value = perfil.nombre_completo || '';
-            if (inputNacimiento) inputNacimiento.value = perfil.fecha_nacimiento || ''; // Nuevo
+            if (inputNacimiento) inputNacimiento.value = perfil.fecha_nacimiento || '';
             if (inputEmail) inputEmail.value = perfil.email || '';
             if (inputCarrera) inputCarrera.value = perfil.carrera || '';
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
-            if (spanPuntos) spanPuntos.textContent = `${perfil.puntos_gamificacion || 0} pts`;
+            if (spanPuntos) spanPuntos.textContent = `${perfil.puntos_gamificacion || perfil.puntos || 0} pts`;
 
             if (perfil.rol === 'Ambos' || perfil.rol === 'Tutor') {
                 const roleSwitcher = document.getElementById('roleSwitcher');
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Error al verificar perfil:", err);
     }
 
-    // 2. Inicializar Mapa (Leaflet)
+    // 2. Inicializar Mapa (Leaflet) limpio de inicio
     const mapa = L.map('mapa').setView([-28.4696, -65.7852], 13);
     window.mapaLeaflet = mapa; 
     
@@ -64,14 +64,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         mapa.invalidateSize();
     }, 250);
 
-    // Cargar datos iniciales y activar Realtime
-    cargarTutoresEnMapa(supabaseClient, mapa);
+    // Dejar la lista lateral limpia con un mensaje guía inicial
+    const listaTutoresContenedor = document.getElementById('listaTutoresFiltrados');
+    if (listaTutoresContenedor) {
+        listaTutoresContenedor.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 2rem 0;">Aplica un filtro para buscar tutores y verlos en el mapa.</p>';
+    }
+
+    // Cargar datos del estudiante y activar Realtime
     cargarMisReservas(supabaseClient, userId);
     inicializarChat(supabaseClient, userId);
     cargarContactos(supabaseClient, userId);
     inicializarNotificacionesReservas(supabaseClient, userId);
 
-    // 3. Botón de Filtros
+    // 3. Botón de Filtros (Único momento en que se cargan los tutores)
     const btnAplicarFiltros = document.getElementById('btnAplicarFiltros');
     if (btnAplicarFiltros) {
         btnAplicarFiltros.addEventListener('click', () => {
@@ -87,7 +92,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         formPerfil.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Capturamos todos los campos del estudiante
             const nombre = document.getElementById('perfilNombre').value;
             const nacimiento = document.getElementById('perfilNacimiento').value;
             const carrera = document.getElementById('perfilCarrera').value;
@@ -104,7 +108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .eq('id', userId);
 
             if (!error) {
-                // Actualiza el nombre de la cabecera en tiempo real
                 const spanNombre = document.getElementById('nombreUsuarioHeader');
                 if (spanNombre) spanNombre.textContent = nombre;
                 
@@ -116,11 +119,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 5. Botón Cerrar Sesión
-    document.getElementById('btnCerrarSesion').addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        window.location.href = 'login.html';
-    });
+    // 5. Botón Cerrar Sesión (Con SweetAlert2)
+    const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+    if (btnCerrarSesion) {
+        btnCerrarSesion.addEventListener('click', async () => {
+            const result = await Swal.fire({
+                title: '¿Cerrar sesión?',
+                text: "¿Estás seguro que deseas salir de tu cuenta?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, salir',
+                cancelButtonText: 'Cancelar',
+                backdrop: `rgba(0,0,0,0.5)`
+            });
+
+            if (result.isConfirmed) {
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            }
+        });
+    }
 
     // Dropdown Rol
     const btnRoleDropdown = document.getElementById('btnRoleDropdown');
@@ -133,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('click', () => { dropdownMenu.style.display = 'none'; });
     }
 
-    // Modal
+    // Modal de Reserva
     const modalReserva = document.getElementById('modalReserva');
     const cerrarModal = document.getElementById('cerrarModal');
     if (cerrarModal) {
@@ -167,9 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         estado_pago: 'Pendiente'
                     }]);
 
-                if (insertError) {
-                    throw insertError;
-                }
+                if (insertError) throw insertError;
 
                 mensajeEstado.style.color = '#16a34a';
                 mensajeEstado.textContent = "¡Solicitud enviada con éxito! Esperando aprobación del tutor.";
@@ -199,7 +217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const comentario = document.getElementById('comentarioResena').value;
 
             try {
-                // Guardar reseña en tabla resenas
                 const { error: errorResena } = await supabaseClient
                     .from('resenas')
                     .insert([{
@@ -212,7 +229,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (errorResena) throw errorResena;
 
-                // Marcar reserva como Finalizada
                 await supabaseClient
                     .from('reservas')
                     .update({ estado: 'Finalizada' })
@@ -222,7 +238,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mostrarNotificacionEstudiante("¡Gracias por calificar al tutor!", "exito");
                 
                 cargarMisReservas(supabaseClient, userId);
-                setTimeout(() => cargarTutoresEnMapa(supabaseClient, mapa), 1000);
 
             } catch (err) {
                 console.error("Error al guardar reseña:", err);
@@ -252,6 +267,9 @@ function inicializarNotificacionesReservas(supabaseClient, estudianteId) {
             } else if (reservaActualizada.estado === 'Rechazada' || reservaActualizada.estado === 'rechazada') {
                 mostrarNotificacionEstudiante("Tu solicitud de consulta fue rechazada. Puedes intentar con otro tutor.", "error");
                 cargarMisReservas(supabaseClient, estudianteId);
+            } else if (reservaActualizada.estado === 'Finalizada') {
+                mostrarNotificacionEstudiante("⭐ ¡La tutoría ha finalizado! Ya puedes calificar la clase.", "exito");
+                cargarMisReservas(supabaseClient, estudianteId);
             }
         })
         .subscribe();
@@ -280,8 +298,15 @@ function mostrarNotificacionEstudiante(mensaje, tipo) {
 }
 
 /* ============================================================
-   MAPA Y RESERVAS
+   MAPA Y RESERVAS (FILTRADO BAJO DEMANDA)
    ============================================================ */
+let marcadoresActuales = [];
+
+function limpiarMarcadoresDelMapa(mapa) {
+    marcadoresActuales.forEach(m => mapa.removeLayer(m));
+    marcadoresActuales = [];
+}
+
 async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', filtroCiudad = '') {
     const listaTutoresContenedor = document.getElementById('listaTutoresFiltrados');
     if (listaTutoresContenedor) {
@@ -306,6 +331,8 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
             return;
         }
 
+        limpiarMarcadoresDelMapa(mapa);
+
         if (!tutores || tutores.length === 0) {
             if (listaTutoresContenedor) listaTutoresContenedor.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No se encontraron tutores disponibles.</p>';
             return;
@@ -313,12 +340,16 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
 
         if (listaTutoresContenedor) listaTutoresContenedor.innerHTML = '';
 
+        let tutoresMostrados = 0;
+
         tutores.forEach((tutor, index) => {
             if (filtroMateria && tutor.materias_impartidas) {
                 if (!tutor.materias_impartidas.toLowerCase().includes(filtroMateria.toLowerCase())) {
                     return;
                 }
             }
+
+            tutoresMostrados++;
 
             const estrellasTexto = tutor.total_resenas > 0 
                 ? `⭐ ${tutor.calificacion_promedio} (${tutor.total_resenas} reseñas)` 
@@ -329,12 +360,15 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
                 card.className = "panel-card";
                 card.style.cssText = "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.8rem; font-size: 0.85rem; margin-bottom: 0.5rem;";
                 card.innerHTML = `
-                    <strong style="color: #0f172a; display: block; margin-bottom: 0.2rem;">${tutor.nombre_completo || 'Tutor Entre Pares'}</strong>
+                    <strong onclick="verPerfilTutor('${tutor.id}')" style="color: #2563eb; cursor: pointer; display: block; margin-bottom: 0.2rem; font-size: 0.95rem; text-decoration: underline;">${tutor.nombre_completo || 'Tutor Entre Pares'}</strong>
                     <p style="color: #ca8a04; font-weight: bold; margin: 0.1rem 0; font-size: 0.85rem;">${estrellasTexto}</p>
                     <p style="color: #475569; margin: 0.1rem 0;">Sede: ${tutor.sede_universitaria || 'Catamarca'}</p>
                     <p style="color: #475569; margin: 0.1rem 0;">Materias: ${tutor.materias_impartidas || 'Varias'}</p>
                     <p style="color: #16a34a; font-weight: bold; margin: 0.2rem 0;">Precio: $${tutor.precio_hora || 3000}</p>
-                    <button onclick="abrirModalReserva('${tutor.id}', '${tutor.nombre_completo || 'Tutor'}')" class="btn btn-yellow" style="margin-top: 0.5rem; width: 100%; font-size: 0.75rem; padding: 0.4rem;">Solicitar Consulta</button>
+                    <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem;">
+                        <button onclick="verPerfilTutor('${tutor.id}')" class="btn" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #1e293b; flex: 1; font-size: 0.75rem; padding: 0.4rem; cursor: pointer;">Ver Perfil</button>
+                        <button onclick="abrirModalReserva('${tutor.id}', '${tutor.nombre_completo || 'Tutor'}')" class="btn btn-yellow" style="flex: 1; font-size: 0.75rem; padding: 0.4rem; cursor: pointer;">Solicitar</button>
+                    </div>
                 `;
                 listaTutoresContenedor.appendChild(card);
             }
@@ -344,17 +378,18 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
 
             const marker = L.marker([lat, lng]).addTo(mapa);
             marker.bindPopup(`
-                <b>${tutor.nombre_completo || 'Tutor Entre Pares'}</b><br>
+                <b><a href="#" onclick="verPerfilTutor('${tutor.id}'); return false;" style="color: #2563eb;">${tutor.nombre_completo || 'Tutor Entre Pares'}</a></b><br>
                 ${estrellasTexto}<br>
                 Sede: ${tutor.sede_universitaria || 'Catamarca'}<br>
                 Materias: ${tutor.materias_impartidas || 'Varias'}<br>
                 Precio: $${tutor.precio_hora || 3000}<br>
-                <button onclick="abrirModalReserva('${tutor.id}', '${tutor.nombre_completo || 'Tutor'}')" style="margin-top: 6px; background: #eab308; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem;">Solicitar Consulta</button>
+                <button onclick="verPerfilTutor('${tutor.id}')" style="margin-top: 6px; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">Ver Perfil</button>
             `);
+            marcadoresActuales.push(marker);
         });
 
-        if (listaTutoresContenedor && listaTutoresContenedor.innerHTML === '') {
-            listaTutoresContenedor.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No hay tutores que coincidan con la materia buscada.</p>';
+        if (tutoresMostrados === 0 && listaTutoresContenedor) {
+            listaTutoresContenedor.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No hay tutores que coincidan con los filtros aplicados.</p>';
         }
 
     } catch (err) {
@@ -383,7 +418,6 @@ async function cargarMisReservas(supabaseClient, estudianteId) {
             if (res.estado === 'Rechazada' || res.estado === 'rechazada') badgeColor = '#dc2626';
             if (res.estado === 'Finalizada') badgeColor = '#2563eb';
 
-            // Lógica para botones de acción
             let botonAccion = '';
             if (res.estado === 'Aceptada' || res.estado === 'aprobada') {
                 if (res.estado_pago === 'Pendiente' || !res.estado_pago) {
@@ -392,11 +426,14 @@ async function cargarMisReservas(supabaseClient, estudianteId) {
                 } else {
                     botonAccion = `
                         <a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.8rem; background: #2563eb; color: white; padding: 0.5rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px; font-weight:600;">🎥 Unirse a Videollamada</a>
-                        <button onclick="abrirModalResena('${res.id}', '${res.tutor_id}', '${res.tutor?.nombre_completo}')" class="btn" style="width: 100%; margin-top: 0.5rem; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 0.8rem; font-weight: 600; padding: 0.5rem; border-radius: 4px; cursor: pointer;">⭐ Finalizar y Calificar</button>
                     `;
                 }
             } else if (res.estado === 'Finalizada') {
-                botonAccion = `<p style="color: #2563eb; font-weight: bold; text-align: center; margin-top: 0.8rem; font-size: 0.8rem;">✅ Tutoría Completada y Calificada</p>`;
+                botonAccion = `
+                    <button onclick="abrirModalResena('${res.id}', '${res.tutor_id}', '${res.tutor?.nombre_completo}')" class="btn btn-yellow" style="width: 100%; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+                        ⭐ Calificar Tutoría
+                    </button>
+                `;
             }
 
             const card = document.createElement('div');
@@ -433,7 +470,84 @@ window.abrirModalResena = function(reservaId, tutorId, tutorNombre) {
 };
 
 /* ============================================================
-   CHAT EN TIEMPO REAL (Supabase Realtime)
+   PERFIL PÚBLICO DEL TUTOR
+   ============================================================ */
+window.verPerfilTutor = async function(tutorId) {
+    const modal = document.getElementById('modalPerfilTutorPublico');
+    const lblNombre = document.getElementById('modalTutorNombre');
+    const lblEstrellas = document.getElementById('modalTutorEstrellas');
+    const lblSede = document.getElementById('modalTutorSede');
+    const lblMaterias = document.getElementById('modalTutorMaterias');
+    const lblPrecio = document.getElementById('modalTutorPrecio');
+    const contenedorResenasModal = document.getElementById('modalTutorListaResenas');
+    const btnSolicitarModal = document.getElementById('modalTutorBtnSolicitar');
+
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    lblNombre.textContent = "Cargando perfil...";
+    lblEstrellas.textContent = "⭐ ...";
+    lblSede.textContent = "...";
+    lblMaterias.textContent = "...";
+    lblPrecio.textContent = "$...";
+    contenedorResenasModal.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">Cargando opiniones...</p>';
+
+    try {
+        const { data: tutor, error: errorTutor } = await supabaseClient
+            .from('perfiles')
+            .select('*')
+            .eq('id', tutorId)
+            .single();
+
+        if (errorTutor) throw errorTutor;
+
+        lblNombre.textContent = tutor.nombre_completo || 'Tutor Entre Pares';
+        lblEstrellas.textContent = tutor.total_resenas > 0 
+            ? `⭐ ${tutor.calificacion_promedio} (${tutor.total_resenas} reseñas)` 
+            : '⭐ Nuevo tutor (Sin reseñas aún)';
+        lblSede.textContent = tutor.sede_universitaria || 'Catamarca';
+        lblMaterias.textContent = tutor.materias_impartidas || 'No especificadas';
+        lblPrecio.textContent = `$${tutor.precio_hora || 3000} ARS`;
+
+        btnSolicitarModal.onclick = () => {
+            modal.style.display = 'none';
+            abrirModalReserva(tutor.id, tutor.nombre_completo || 'Tutor');
+        };
+
+        const { data: resenas, error: errorResenas } = await supabaseClient
+            .from('resenas')
+            .select(`*, estudiante:estudiante_id (nombre_completo)`)
+            .eq('tutor_id', tutorId)
+            .order('id', { ascending: false });
+
+        if (errorResenas) throw errorResenas;
+
+        if (!resenas || resenas.length === 0) {
+            contenedorResenasModal.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">Este tutor aún no tiene opiniones registradas.</p>';
+            return;
+        }
+
+        contenedorResenasModal.innerHTML = resenas.map(r => {
+            const estrellas = '⭐'.repeat(r.calificacion || 5);
+            return `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.7rem; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                        <strong style="color: #0f172a; font-size: 0.85rem;">${r.estudiante?.nombre_completo || 'Estudiante'}</strong>
+                        <span style="color: #ca8a04; font-size: 0.8rem;">${estrellas}</span>
+                    </div>
+                    <p style="color: #475569; font-size: 0.8rem; margin: 0; font-style: italic;">"${r.comentario || 'Sin comentarios'}"</p>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Error al cargar perfil público del tutor:", err);
+        contenedorResenasModal.innerHTML = '<p style="color: #dc2626; font-size: 0.85rem; text-align: center;">No se pudo cargar la información del tutor.</p>';
+    }
+};
+
+/* ============================================================
+   CHAT EN TIEMPO REAL Y HISTORIAL FLUIDO
    ============================================================ */
 async function cargarContactos(supabaseClient, miId) {
     const lista = document.getElementById('listaContactos');
@@ -474,7 +588,8 @@ async function cargarContactos(supabaseClient, miId) {
                 destinatarioActivoId = c.id;
                 document.querySelectorAll('.contacto-chat').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                document.getElementById('chatHeader').textContent = c.nombre;
+                document.getElementById('chatHeaderNombre').textContent = c.nombre;
+                document.getElementById('chatHeaderEstado').style.display = 'block';
                 cargarHistorialChat(supabaseClient, miId, c.id);
             });
             lista.appendChild(btn);
@@ -534,11 +649,16 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     const bandeja = document.getElementById('chatBandeja');
     if (!bandeja) return;
 
+    bandeja.style.display = 'flex';
+    bandeja.style.flexDirection = 'column'; 
+    bandeja.style.gap = '1rem';
+    bandeja.style.padding = '1.5rem';
+
     const { data: mensajes, error } = await supabaseClient
         .from('mensajes')
         .select('*')
         .or(`and(remitente_id.eq.${miId},destinatario_id.eq.${otroId}),and(remitente_id.eq.${otroId},destinatario_id.eq.${miId})`)
-        .order('id', { ascending: true });
+        .order('created_at', { ascending: true }); 
 
     if (error) {
         console.error("Error al cargar historial:", error.message);
@@ -546,37 +666,95 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     }
 
     bandeja.innerHTML = '';
-    if (mensajes.length === 0) {
-        bandeja.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: auto;">No hay mensajes aún. ¡Comienza la conversación para coordinar el día y la hora!</p>';
+    
+    if (!mensajes || mensajes.length === 0) {
+        bandeja.innerHTML = `
+            <div class="msg-animado" style="margin: auto; text-align: center; color: #94a3b8; padding: 2rem;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 0.8rem;">💬</span>
+                <p style="font-size: 0.95rem; font-weight: 500;">¡Rompe el hielo! 👋</p>
+                <p style="font-size: 0.8rem; margin-top: 0.3rem;">Comienza la conversación enviando un mensaje.</p>
+            </div>
+        `;
         return;
     }
 
     mensajes.forEach(msg => {
-        const esMio = msg.remitente_id === miId;
-        const burbuja = document.createElement('div');
+        const esDelSistema = !msg.remitente_id || msg.remitente_id === 'sistema' || msg.remitente_id === null;
         
-        burbuja.style.maxWidth = '75%';
-        burbuja.style.padding = '0.7rem 1rem';
-        burbuja.style.fontSize = '0.9rem';
-        burbuja.style.marginBottom = '0.5rem';
-        burbuja.style.alignSelf = esMio ? 'flex-end' : 'flex-start';
-        
-        if (esMio) {
-            burbuja.style.background = 'linear-gradient(135deg, #fef08a 0%, #fde047 100%)';
-            burbuja.style.color = '#713f12';
-            burbuja.style.borderRadius = '14px 14px 2px 14px';
-            burbuja.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg-animado';
+        wrapper.style.display = 'flex';
+        wrapper.style.width = '100%';
+
+        if (esDelSistema) {
+            wrapper.style.justifyContent = 'center';
+            const aviso = document.createElement('div');
+            aviso.style.background = '#fef08a';
+            aviso.style.color = '#713f12';
+            aviso.style.padding = '0.5rem 1rem';
+            aviso.style.borderRadius = '12px';
+            aviso.style.fontSize = '0.85rem';
+            aviso.style.textAlign = 'center';
+            aviso.style.maxWidth = '90%';
+            aviso.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+            aviso.textContent = msg.contenido;
+            wrapper.appendChild(aviso);
         } else {
-            burbuja.style.background = '#f1f5f9';
-            burbuja.style.color = '#1e293b';
-            burbuja.style.borderRadius = '14px 14px 14px 2px';
+            const esMio = msg.remitente_id === miId;
+            wrapper.style.justifyContent = esMio ? 'flex-end' : 'flex-start';
+
+            const burbuja = document.createElement('div');
+            burbuja.style.maxWidth = '75%';
+            burbuja.style.padding = '0.8rem 1.2rem';
+            burbuja.style.fontSize = '0.95rem';
+            burbuja.style.lineHeight = '1.4';
+            burbuja.style.wordBreak = 'break-word';
+            burbuja.style.boxShadow = '0 2px 5px rgba(0,0,0,0.06)';
+
+            if (esMio) {
+                burbuja.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+                burbuja.style.color = '#ffffff'; 
+                burbuja.style.borderRadius = '18px 18px 4px 18px'; 
+            } else {
+                burbuja.style.background = '#ffffff';
+                burbuja.style.color = '#1e293b';
+                burbuja.style.border = '1px solid #e2e8f0';
+                burbuja.style.borderRadius = '18px 18px 18px 4px';
+            }
+
+            const textoP = document.createElement('div');
+            textoP.textContent = msg.contenido;
+            burbuja.appendChild(textoP);
+
+            const timestamp = msg.created_at || msg.creado_at;
+            if (timestamp) {
+                const horaSpan = document.createElement('span');
+                const fechaObj = new Date(timestamp);
+                const horaFormateada = fechaObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                horaSpan.textContent = horaFormateada;
+                horaSpan.style.display = 'block';
+                horaSpan.style.fontSize = '0.7rem';
+                horaSpan.style.marginTop = '0.4rem';
+                horaSpan.style.textAlign = 'right';
+                horaSpan.style.opacity = '0.8';
+                horaSpan.style.color = esMio ? '#bfdbfe' : '#94a3b8';
+                
+                burbuja.appendChild(horaSpan);
+            }
+
+            wrapper.appendChild(burbuja);
         }
 
-        burbuja.textContent = msg.contenido;
-        bandeja.appendChild(burbuja);
+        bandeja.appendChild(wrapper);
     });
 
-    bandeja.scrollTop = bandeja.scrollHeight;
+    setTimeout(() => {
+        bandeja.scrollTo({
+            top: bandeja.scrollHeight,
+            behavior: 'smooth'
+        });
+    }, 50);
 }
 
 /* ============================================================
@@ -592,7 +770,6 @@ window.pagarTutoria = async function(reservaId, materia, precio) {
     try {
         mostrarNotificacionEstudiante("Generando link de pago seguro...", "exito");
         
-        const supabaseClient = window.supabase.createClient("https://uecwotydamsjstpovbzz.supabase.co", "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2");
         const { data: { session } } = await supabaseClient.auth.getSession();
         
         const { data, error } = await supabaseClient.functions.invoke('crear-pago-mp', {
@@ -621,20 +798,3 @@ window.pagarTutoria = async function(reservaId, materia, precio) {
         }
     }
 };
-
-async function confirmarFinTutoria(reservaId) {
-  try {
-    const { error } = await supabaseClient
-      .from('reservas')
-      .update({ estado: 'Completada' }) // O el campo que uses para el estado de la clase
-      .eq('id', reservaId);
-
-    if (error) throw error;
-
-    alert("¡Clase confirmada como finalizada! El administrador procederá a liberar el pago al tutor.");
-    location.reload(); // Recarga para actualizar la vista
-  } catch (err) {
-    console.error("Error al confirmar la tutoría:", err.message);
-    alert("Hubo un error al confirmar la clase.");
-  }
-}
