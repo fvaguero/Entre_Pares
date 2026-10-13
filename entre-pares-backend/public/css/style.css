@@ -534,3 +534,34 @@ footer {
         scroll-behavior: auto !important;
     }
 }
+
+/* =========================================
+   ESTILOS PARA CAMPO DE CONTRASEÑA CON ÍCONOS
+   ========================================= */
+.input-contenedor {
+  position: relative;
+  width: 100%;
+}
+
+.icono-izq, .icono-der {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.icono-izq {
+  left: 12px;
+}
+
+.icono-der {
+  right: 12px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.icono-der:hover {
+  color: #0f172a;
+}

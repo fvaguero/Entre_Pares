@@ -31,8 +31,21 @@
             <form id="recoverForm">
                 <div class="form-group">
                     <label>Correo Institucional</label>
-                    <input type="email" id="email" class="form-control" placeholder="nombre@universidad.edu.ar" required>
+                    
+                    <!-- CONTENEDOR CON ÍCONO PARA EL EMAIL -->
+                    <div class="input-contenedor">
+                        <span class="icono-izq">
+                            <!-- Ícono de Correo/Carta -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        
+                        <input type="email" id="email" class="form-control" placeholder="nombre@universidad.edu.ar" required style="padding-left: 40px;">
+                    </div>
                 </div>
+                
                 <button type="submit" class="btn btn-dark w-full" style="margin-top: 1rem;">Enviar instrucciones</button>
             </form>
 

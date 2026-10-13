@@ -99,11 +99,20 @@
                     </div>
                 </div>
 
-                <!-- Perfil / Nombre de Usuario con Desplegable -->
+                <!-- Perfil / Nombre de Usuario con Desplegable y Avatar -->
                 <div style="position: relative;">
-                    <button id="btnUserDropdown" class="btn" style="background-color: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <span id="nombreUsuarioHeader" style="font-weight: 600;">Administrador</span> ▼
+                    <button id="btnUserDropdown" class="btn" style="background-color: #f1f5f9; color: #1e293b; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 6px;">
+                        
+                        <!-- Ícono de Avatar -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748b;">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+
+                        <span id="nombreUsuarioHeader" style="font-weight: 600;">Administrador</span> 
+                        <span style="font-size: 0.8rem; color: #94a3b8;">▼</span>
                     </button>
+
                     <div id="userDropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
                         <a href="#" onclick="cambiarPestaña('seccion-metricas', document.querySelectorAll('.sidebar-btn')[2]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver Métricas</a>
                     </div>
