@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Acceso denegado. No tienes permisos de administrador.'); window.location.href='index.html'; return;
     }
     conectarFiltrosPagos();
+    conectarFiltrosUsuariosAdmin();
     conectarFiltrosTutorias();
     await Promise.all([cargarDatosAdminFinanzas(),cargarDatosAdminUsuarios(),cargarDatosAdminReservas(),cargarHistorialPagosAdmin()]);
     const salir=document.getElementById('btnCerrarSesionAdmin');
@@ -118,12 +119,71 @@ function exportarCSV(){
  const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');
  a.href=url;a.download='reporte_pagos_entre_pares_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
+let usuariosAdminCache = [];
+function rolUsuarioAdmin(v){return normalizar(v)||'estudiante';}
+function conectarFiltrosUsuariosAdmin(){
+ ['buscarUsuariosAdmin','filtroRolUsuariosAdmin'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el){el.addEventListener('input',renderizarUsuariosAdmin);el.addEventListener('change',renderizarUsuariosAdmin);}
+ });
+ const limpiar=document.getElementById('limpiarFiltrosUsuariosAdmin');
+ if(limpiar)limpiar.addEventListener('click',()=>{
+  const buscar=document.getElementById('buscarUsuariosAdmin');
+  const rol=document.getElementById('filtroRolUsuariosAdmin');
+  if(buscar)buscar.value='';
+  if(rol)rol.value='todos';
+  renderizarUsuariosAdmin();
+ });
+}
 async function cargarDatosAdminUsuarios(){
  const tbody=document.getElementById('tablaAdminUsuarios');if(!tbody)return;
- try{const {data,error}=await supabaseClient.from('perfiles').select('*').order('nombre_completo',{ascending:true});if(error)throw error;tbody.innerHTML='';
-  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;">No hay usuarios registrados.</td></tr>';return;}
-  data.forEach(p=>{const tr=document.createElement('tr');tr.style.borderBottom='1px solid #e2e8f0';tr.innerHTML='<td style="padding:1rem;font-weight:500;">'+esc(p.nombre_completo||'Sin nombre')+'</td><td style="padding:1rem;">'+esc(p.email||'Sin correo')+'</td><td style="padding:1rem;">'+esc(p.rol||'Estudiante')+'</td><td style="padding:1rem;">'+esc(p.sede_universitaria||'No especificada')+'</td><td style="padding:1rem;color:#d97706;font-weight:bold;">⭐ '+(Number(p.puntos_gamificacion)||0)+' pts</td>';tbody.appendChild(tr);});
- }catch(e){console.error('Error al cargar usuarios:',e);}
+ try{
+  const {data,error}=await supabaseClient.from('perfiles').select('*').order('nombre_completo',{ascending:true});
+  if(error)throw error;
+  usuariosAdminCache=data||[];
+  renderizarUsuariosAdmin();
+ }catch(e){
+  console.error('Error al cargar usuarios:',e);
+  tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:#b91c1c;">No se pudieron cargar los usuarios. Revisá la conexión y los permisos.</td></tr>';
+ }
+}
+function renderizarUsuariosAdmin(){
+ const tbody=document.getElementById('tablaAdminUsuarios');if(!tbody)return;
+ const q=normalizar((document.getElementById('buscarUsuariosAdmin')||{}).value);
+ const filtro=(document.getElementById('filtroRolUsuariosAdmin')||{}).value||'todos';
+ const total=usuariosAdminCache.length;
+ const contar=rol=>usuariosAdminCache.filter(p=>rolUsuarioAdmin(p.rol)===rol).length;
+ const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=String(v);};
+ set('kpiTotalUsuariosAdmin',total);
+ set('kpiEstudiantesAdmin',contar('estudiante'));
+ set('kpiTutoresAdmin',contar('tutor'));
+ set('kpiAdminsAdmin',contar('administrador'));
+ const filas=usuariosAdminCache.filter(p=>{
+  const rol=rolUsuarioAdmin(p.rol);
+  const texto=[p.nombre_completo,p.email,p.sede_universitaria,p.rol].map(normalizar).join(' ');
+  return (!q||texto.includes(q))&&(filtro==='todos'||rol===filtro);
+ });
+ const contador=document.getElementById('contadorUsuariosAdmin');
+ if(contador)contador.textContent=filas.length+' de '+total+' usuarios mostrados';
+ tbody.innerHTML='';
+ if(!filas.length){
+  tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2.5rem;color:#64748b;"><div style="font-size:1.5rem;margin-bottom:.4rem;">⌕</div><strong>No se encontraron usuarios</strong><div style="font-size:.85rem;margin-top:.25rem;">Probá otra búsqueda o limpiá los filtros.</div></td></tr>';
+  return;
+ }
+ filas.forEach(p=>{
+  const rol=rolUsuarioAdmin(p.rol);
+  const estilo=rol==='administrador'?['#ede9fe','#6d28d9']:rol==='tutor'?['#dcfce7','#166534']:rol==='ambos'?['#dbeafe','#1d4ed8']:['#f1f5f9','#475569'];
+  const etiqueta=rol==='administrador'?'Administrador':rol==='tutor'?'Tutor':rol==='ambos'?'Ambos':(p.rol||'Estudiante');
+  const nombre=p.nombre_completo||'Sin nombre';
+  const tr=document.createElement('tr');tr.style.borderBottom='1px solid #f1f5f9';
+  tr.innerHTML=
+   '<td style="padding:1rem;min-width:165px;"><strong style="color:#0f172a;">'+esc(nombre)+'</strong></td>'+
+   '<td style="padding:1rem;min-width:210px;color:#475569;overflow-wrap:anywhere;">'+esc(p.email||'Sin correo')+'</td>'+
+   '<td style="padding:1rem;white-space:nowrap;"><span style="display:inline-flex;background:'+estilo[0]+';color:'+estilo[1]+';padding:.35rem .65rem;border-radius:999px;font-size:.76rem;font-weight:700;">'+esc(etiqueta)+'</span></td>'+
+   '<td style="padding:1rem;min-width:190px;max-width:340px;color:#64748b;font-size:.84rem;line-height:1.45;overflow-wrap:anywhere;">'+esc(p.sede_universitaria||'No especificada')+'</td>'+
+   '<td style="padding:1rem;white-space:nowrap;color:#b45309;font-weight:700;">⭐ '+(Number(p.puntos_gamificacion)||0)+' <span style="font-size:.78rem;font-weight:500;">pts</span></td>';
+  tbody.appendChild(tr);
+ });
 }
 let reservasTutoriasAdminCache = [];
 
