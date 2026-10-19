@@ -71,3 +71,5 @@ EXECUTE FUNCTION public.registrar_cambio_estado_pago_admin();
 
 -- Backfill conservador: no se inventan fechas históricas para pagos ya existentes.
 -- Las fechas se completan a partir de ahora cuando cambie el estado correspondiente.
+
+GRANT SELECT ON public.historial_pagos_admin TO authenticated;
