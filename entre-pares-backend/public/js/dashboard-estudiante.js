@@ -1,3 +1,31 @@
+// Gamificación: niveles y progreso del usuario.
+function obtenerNivelGamificacion(puntos) {
+    const total = Math.max(0, Number(puntos) || 0);
+    if (total <= 100) return { nombre: 'Principiante', insignia: '🌱', minimo: 0, maximo: 100, siguiente: 101 };
+    if (total <= 300) return { nombre: 'Colaborador', insignia: '⭐', minimo: 101, maximo: 300, siguiente: 301 };
+    if (total <= 600) return { nombre: 'Académico Pro', insignia: '🔥', minimo: 301, maximo: 600, siguiente: 601 };
+    return { nombre: 'Leyenda Entre Pares', insignia: '👑', minimo: 601, maximo: null, siguiente: null };
+}
+
+function mostrarNivelGamificacion(puntos) {
+    const total = Math.max(0, Number(puntos) || 0);
+    const nivel = obtenerNivelGamificacion(total);
+    const nombre = document.getElementById('nivelGamificacion');
+    const barra = document.getElementById('progresoGamificacion');
+    const texto = document.getElementById('textoProgresoGamificacion');
+    if (nombre) nombre.textContent = nivel.insignia + ' ' + nivel.nombre;
+    if (!nivel.maximo) {
+        if (barra) barra.style.width = '100%';
+        if (texto) texto.textContent = '¡Felicitaciones! Alcanzaste el nivel máximo con ' + total + ' puntos.';
+        return;
+    }
+    const puntosDelNivel = total - nivel.minimo;
+    const puntosDelTramo = nivel.maximo - nivel.minimo + 1;
+    const porcentaje = Math.max(0, Math.min(100, ((puntosDelNivel + 1) / puntosDelTramo) * 100));
+    if (barra) barra.style.width = porcentaje + '%';
+    if (texto) texto.textContent = 'Tenés ' + total + ' puntos. Te faltan ' + (nivel.siguiente - total) + ' para el próximo nivel.';
+}
+
 const SUPABASE_URL = "https://uecwotydamsjstpovbzz.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -37,7 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (inputEmail) inputEmail.value = perfil.email || '';
             if (inputCarrera) inputCarrera.value = perfil.carrera || '';
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
-            if (spanPuntos) spanPuntos.textContent = `${perfil.puntos_gamificacion || perfil.puntos || 0} pts`;
+            const puntosActuales = Number(perfil.puntos_gamificacion ?? perfil.puntos ?? 0);
+            if (spanPuntos) spanPuntos.textContent = puntosActuales + ' pts';
+            mostrarNivelGamificacion(puntosActuales);
 
             if (perfil.rol === 'Ambos' || perfil.rol === 'Tutor') {
                 const roleSwitcher = document.getElementById('roleSwitcher');
