@@ -81,16 +81,34 @@ function renderizarFinanzas(){
  });
 }
 function renderizarAlertas(){
- const cont=document.getElementById('alertasPagosAdmin');if(!cont)return;const now=Date.now(),alerts=[];
+ const cont=document.getElementById('alertasPagosAdmin');if(!cont)return;
+ const now=Date.now(),porTipo={sinPago:[],pendientes:[],sinLiquidar:[]};
+ const vistos=new Set();
  reservasFinanzasCache.forEach(r=>{
-  const pago=tipoPagoSolo(r),liquidacion=tipoLiquidacion(r),clase=normalizar(r.estado),dias=r.creado_at?(now-new Date(r.creado_at).getTime())/86400000:0;
+  const pago=tipoPagoSolo(r),liquidacion=tipoLiquidacion(r),clase=normalizar(r.estado);
   const alumno=r.estudiante&&r.estudiante.nombre_completo||'Estudiante',materia=r.materia||'Sin materia';
-  if(clase==='finalizada'&&pago==='pendiente')alerts.push(['error','Tutoría finalizada sin pago registrado: '+materia+' — '+alumno]);
-  if(pago==='pendiente'&&dias>=7)alerts.push(['warning','Pago pendiente hace '+Math.floor(dias)+' días: '+materia+' — '+alumno]);
-  if(pago==='pagado'&&liquidacion!=='liquidado'){const base=r.fecha_pago?new Date(r.fecha_pago).getTime():new Date(r.creado_at||0).getTime();if(base&&now-base>=7*86400000)alerts.push(['warning','Pago recibido sin liquidar hace al menos 7 días: '+materia+' — tutor '+(r.tutor&&r.tutor.nombre_completo||'sin nombre')]);}
+  const fechaBase=r.creado_at||r.fecha_hora;
+  const timestamp=fechaBase?new Date(fechaBase).getTime():NaN;
+  const dias=Number.isFinite(timestamp)?Math.max(0,Math.floor((now-timestamp)/86400000)):0;
+  const key=r.id||[materia,alumno,r.fecha_hora||''].join('|');
+  const agregar=(tipo,mensaje)=>{const id=tipo+'|'+key;if(vistos.has(id))return;vistos.add(id);porTipo[tipo].push({mensaje,id});};
+  if(['finalizada','completada','completado'].includes(clase)&&pago==='pendiente')agregar('sinPago',materia+' — '+alumno);
+  if(pago==='pendiente'&&dias>=7)agregar('pendientes','Hace '+dias+' días · '+materia+' — '+alumno);
+  if(pago==='pagado'&&liquidacion!=='liquidado'){
+   const base=r.fecha_pago?new Date(r.fecha_pago).getTime():timestamp;
+   if(Number.isFinite(base)&&base>0&&now-base>=7*86400000)agregar('sinLiquidar','Pago recibido hace '+Math.floor((now-base)/86400000)+' días · '+materia+' — tutor '+(r.tutor&&r.tutor.nombre_completo||'Sin nombre'));
+  }
  });
- if(!alerts.length){cont.style.background='#f0fdf4';cont.innerHTML='<p style="margin:0;color:#166534;">✓ No se detectaron inconsistencias con las reglas actuales.</p>';return;}
- cont.style.background='#fffbeb';cont.innerHTML='<strong style="color:#92400e;">Alertas de control ('+alerts.length+')</strong>'+alerts.slice(0,30).map(a=>'<p style="margin:.2rem 0;color:'+(a[0]==='error'?'#b91c1c':'#92400e')+';">• '+esc(a[1])+'</p>').join('')+(alerts.length>30?'<p>Se muestran las primeras 30 alertas.</p>':'');
+ const grupos=[
+  {id:'sinPago',titulo:'Tutorías finalizadas sin pago',color:'#b91c1c',fondo:'#fef2f2',items:porTipo.sinPago},
+  {id:'pendientes',titulo:'Pagos pendientes hace 7 días o más',color:'#92400e',fondo:'#fffbeb',items:porTipo.pendientes},
+  {id:'sinLiquidar',titulo:'Pagos recibidos sin liquidar hace 7 días o más',color:'#1d4ed8',fondo:'#eff6ff',items:porTipo.sinLiquidar}
+ ];
+ const total=grupos.reduce((n,g)=>n+g.items.length,0);
+ if(!total){cont.style.background='#f0fdf4';cont.style.padding='1rem 1.5rem';cont.innerHTML='<div style="display:flex;gap:.7rem;align-items:center;color:#166534;"><span style="font-size:1.35rem;">✓</span><div><strong>Todo en orden</strong><p style="margin:.2rem 0 0;font-size:.9rem;">No se detectaron alertas con las reglas actuales.</p></div></div>';return;}
+ cont.style.background='#fff';cont.style.padding='1rem 1.25rem';
+ cont.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;"><div><strong style="font-size:1rem;color:#0f172a;">Alertas de control</strong><p style="margin:.2rem 0 0;font-size:.85rem;color:#64748b;">Hay '+total+' situaciones que requieren revisión.</p></div><span style="background:#fee2e2;color:#b91c1c;padding:.35rem .7rem;border-radius:999px;font-weight:700;font-size:.85rem;">'+total+' pendientes</span></div>'+
+ grupos.filter(g=>g.items.length).map(g=>'<details style="border:1px solid #e2e8f0;border-radius:10px;margin:.65rem 0;overflow:hidden;"><summary style="cursor:pointer;list-style-position:inside;padding:.85rem 1rem;background:'+g.fondo+';color:'+g.color+';font-weight:600;display:flex;justify-content:space-between;gap:.7rem;"><span>'+g.titulo+'</span><span style="background:white;border:1px solid #e2e8f0;border-radius:999px;padding:.1rem .55rem;font-size:.8rem;">'+g.items.length+'</span></summary><ul style="margin:0;padding:.5rem 1rem .8rem 2.5rem;color:#334155;">'+g.items.map(x=>'<li style="padding:.35rem 0;border-bottom:1px solid #f1f5f9;">'+esc(x.mensaje)+'</li>').join('')+'</ul></details>').join('');
 }
 function exportarCSV(){
  const headers=['Reserva ID','Estudiante','Correo estudiante','Tutor','CVU/Alias tutor','Materia','Fecha tutoria','Fecha pago','Fecha liquidacion','Importe ARS','Estado tutoria','Estado pago','Estado liquidacion'];
