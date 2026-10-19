@@ -41,9 +41,9 @@ async function cargarDatosAdminFinanzas(){
  try{
   const consulta='id,materia,precio,estado_pago,estado_liquidacion,estado,fecha_hora,creado_at,fecha_pago,fecha_liquidacion,estudiante:estudiante_id(nombre_completo,email),tutor:tutor_id(nombre_completo,cvu_alias)';
   const {data,error}=await supabaseClient.from('reservas').select(consulta).order('creado_at',{ascending:false});
-  if(error){if(String(error.message||'').includes('fecha_pago')||String(error.message||'').includes('fecha_liquidacion'))throw new Error('Faltan fecha_pago y fecha_liquidacion. Aplicá la migración SQL 20261020_control_financiero_admin.sql en Supabase.');throw error;}
+  if(error){if(String(error.message||'').includes('fecha_pago')||String(error.message||'').includes('fecha_liquidacion')||String(error.message||'').includes('estado_liquidacion'))throw new Error('Faltan columnas del control financiero. Aplicá la migración SQL 20261020_control_financiero_admin.sql en Supabase.');throw error;}
   reservasFinanzasCache=data||[];renderizarFinanzas();renderizarAlertas();
- }catch(e){console.error('Error al cargar finanzas:',e);tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:2rem;color:#b91c1c;">'+esc(e.message||'No se pudieron cargar las finanzas.')+'</td></tr>';const a=document.getElementById('alertasPagosAdmin');if(a)a.innerHTML='<p style="margin:0;color:#92400e;">Para activar fechas reales e historial, aplicá primero la migración SQL de control financiero.</p>';}
+ }catch(e){console.error('Error al cargar finanzas:',e);tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:#b91c1c;">'+esc(e.message||'No se pudieron cargar las finanzas.')+'</td></tr>';const a=document.getElementById('alertasPagosAdmin');if(a)a.innerHTML='<p style="margin:0;color:#92400e;">Para activar fechas reales e historial, aplicá primero la migración SQL de control financiero.</p>';}
 }
 function filtradas(){
  const q=normalizar((document.getElementById('buscarPagoAdmin')||{}).value),estado=(document.getElementById('filtroEstadoPagoAdmin')||{}).value||'todos';
@@ -63,7 +63,7 @@ function renderizarFinanzas(){
  if(k1)k1.textContent=ars(totalPagado);if(k2)k2.textContent=String(pendientes);if(k3)k3.textContent=String(liquidadas);
  const tbody=document.getElementById('tablaAdminFinanzas');if(!tbody)return;const rows=filtradas();tbody.innerHTML='';
  const contador=document.getElementById('contadorPagosAdmin');if(contador)contador.textContent=rows.length+' de '+reservasFinanzasCache.length+' registros mostrados.';
- if(!rows.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:2rem;color:#64748b;">No hay pagos que coincidan con los filtros.</td></tr>';return;}
+ if(!rows.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:#64748b;">No hay pagos que coincidan con los filtros.</td></tr>';return;}
  rows.forEach(r=>{
   const tipo=tipoPagoSolo(r),estado=r.estado_pago||'Pendiente',tipoLiq=tipoLiquidacion(r),estadoLiq=r.estado_liquidacion||(tipoPago(r.estado_pago)==='liquidado'?'Liquidado':'Pendiente'),monto=Number(r.precio)||0;
   const colores=tipo==='pagado'?['#fef3c7','#92400e']:tipo==='pendiente'?['#fee2e2','#991b1b']:['#e2e8f0','#334155'];
