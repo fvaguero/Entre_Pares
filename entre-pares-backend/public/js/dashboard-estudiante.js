@@ -509,6 +509,24 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
             return;
         }
 
+        const { data: resenasPublicas, error: errorResenasPublicas } = await supabaseClient
+            .from('resenas').select('tutor_id, calificacion, calificado_por');
+        if (errorResenasPublicas) console.warn('No se pudieron calcular los promedios de reseñas:', errorResenasPublicas.message);
+        const resumenResenas = new Map();
+        (resenasPublicas || []).forEach(resena => {
+            if (!resena.tutor_id || (resena.calificado_por && String(resena.calificado_por).toLowerCase() !== 'estudiante')) return;
+            const actual = resumenResenas.get(String(resena.tutor_id)) || { suma: 0, cantidad: 0 };
+            const nota = Number(resena.calificacion);
+            if (nota >= 1 && nota <= 5) { actual.suma += nota; actual.cantidad += 1; resumenResenas.set(String(resena.tutor_id), actual); }
+        });
+        (tutores || []).forEach(tutor => {
+            const resumen = resumenResenas.get(String(tutor.id));
+            if (resumen?.cantidad) {
+                tutor.total_resenas = resumen.cantidad;
+                tutor.calificacion_promedio = Number((resumen.suma / resumen.cantidad).toFixed(1));
+            }
+        });
+
         limpiarMarcadoresDelMapa(mapa);
 
         let tutoresOcupados = new Set();
