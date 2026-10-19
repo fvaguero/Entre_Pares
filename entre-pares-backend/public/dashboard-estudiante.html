@@ -228,7 +228,8 @@
         <aside class="sidebar">
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Estudiante</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-buscar', this)">🔍 Buscar Tutores</button>
-            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📅 Mis Consultas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📋 Mis Consultas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario', this)">📅 Calendario</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
@@ -289,19 +290,26 @@
                         <button id="btnLimpiarFiltrosReservas" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
                     </div>
                 </div>
-                <div class="panel-card" style="margin-bottom:1.5rem;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
-                        <h2 style="font-size:1.15rem;margin:0;">Calendario de tutorías</h2>
-                        <div style="display:flex;align-items:center;gap:.75rem;"><button id="btnMesAnterior" type="button" class="btn" aria-label="Mes anterior" style="background:#f1f5f9;color:#334155;">‹</button><strong id="tituloMesCalendario" style="min-width:150px;text-align:center;"></strong><button id="btnMesSiguiente" type="button" class="btn" aria-label="Mes siguiente" style="background:#f1f5f9;color:#334155;">›</button></div>
-                    </div>
-                    <div id="calendarioReservas" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;"></div>
-                    <p style="font-size:.8rem;color:#64748b;margin:.8rem 0 0;">Los días marcados tienen tutorías programadas. Seleccioná un día para ver sus detalles.</p>
-                    <div id="detalleDiaCalendario" style="margin-top:1rem;"></div>
-                </div>
                 <div class="panel-card"><h2 style="font-size:1.15rem;margin-bottom:1rem;">Mis consultas</h2><div id="listaMisReservas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"><p style="color:#64748b;font-size:.9rem;">Cargando tus solicitudes...</p></div></div>
             </section>
 
-            <!-- 3. SECCIÓN MENSAJES (AHORA SÍ CON ESTILO MODERNO) -->
+            <!-- 3. CALENDARIO DE TUTORÍAS -->
+            <section id="seccion-calendario" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Calendario de tutorías</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Elegí un día para ver las tarjetas de las consultas programadas. Los días marcados tienen consultas.</p>
+                </div>
+                <div class="panel-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        <h2 style="font-size:1.15rem;margin:0;">Mis fechas</h2>
+                        <div style="display:flex;align-items:center;gap:.75rem;"><button id="btnMesAnterior" type="button" class="btn" aria-label="Mes anterior" style="background:#f1f5f9;color:#334155;">‹</button><strong id="tituloMesCalendario" style="min-width:150px;text-align:center;"></strong><button id="btnMesSiguiente" type="button" class="btn" aria-label="Mes siguiente" style="background:#f1f5f9;color:#334155;">›</button></div>
+                    </div>
+                    <div id="calendarioReservas" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;"></div>
+                    <div id="detalleDiaCalendario" style="margin-top:1rem;"></div>
+                </div>
+            </section>
+
+            <!-- 4. SECCIÓN MENSAJES (AHORA SÍ CON ESTILO MODERNO) -->
             <section id="seccion-mensajes" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
