@@ -508,13 +508,10 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
         const card=document.createElement('div');card.className='panel-card';card.style.cssText='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;font-size:.85rem;';
         const cab=document.createElement('div');cab.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.4rem;';
         const titulo=document.createElement('strong');titulo.style.cssText='color:#0f172a;font-size:1rem;';titulo.textContent=res.materia||'Consulta';
-        const badge=document.createElement('span');badge.style.cssText='background:'+color+';color:white;padding:2px 8px;border-radius:4px;font-size:.72rem;';badge.textContent=estado==='Aceptada'?'Confirmada':estado;cab.append(titulo,badge);
-        if (estado === 'Finalizada' && yaCalificada) {
-            const badgeCalificada = document.createElement('span');
-            badgeCalificada.style.cssText = 'background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:700;white-space:nowrap;';
-            badgeCalificada.textContent = '⭐ Calificada';
-            cab.appendChild(badgeCalificada);
-        }
+        const badge=document.createElement('span');
+        badge.style.cssText='background:'+color+';color:white;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:700;';
+        badge.textContent=estado==='Aceptada'?'Confirmada':(estado==='Finalizada'?(yaCalificada?'Finalizada · Calificada':'Finalizada · Sin calificar'):estado);
+        cab.append(titulo,badge);
         const tutor=document.createElement('p');tutor.style.cssText='color:#475569;margin:.3rem 0;';tutor.textContent='Tutor: '+(res.tutor?.nombre_completo||'Asignado');
         const fecha=document.createElement('p');fecha.style.cssText='color:#475569;margin:.3rem 0;';fecha.textContent='📅 '+mostrarFechaReserva(res.fecha_hora);
         const duda=document.createElement('p');duda.style.cssText='color:#475569;margin:.3rem 0;';duda.textContent='Duda: '+(res.comentarios||'Sin descripción');
