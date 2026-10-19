@@ -849,3 +849,121 @@ document.getElementById('limpiarFiltrosPagosTutor')?.addEventListener('click', (
     if(estado) estado.value='';
     renderizarPagosTutor();
 });
+
+const recompensasCanjeTutor = [
+    { id: 'insignia', nombre: 'Insignia especial', puntos: 50, icono: '🌟', descripcion: 'Desbloqueá un reconocimiento para destacar tu perfil de tutor.' },
+    { id: 'experto', nombre: 'Insignia Tutor Experto', puntos: 150, icono: '🎓', descripcion: 'Un distintivo especial por tu compromiso con la comunidad.' },
+    { id: 'destacado', nombre: 'Perfil destacado', puntos: 200, icono: '🚀', descripcion: 'Solicitá aparecer como tutor destacado durante una semana. Sujeto a revisión.' },
+    { id: 'mes', nombre: 'Reconocimiento especial', puntos: 300, icono: '🏆', descripcion: 'Solicitá una distinción por tu participación y constancia. Sujeto a revisión.' },
+    { id: 'premio', nombre: 'Recompensa especial', puntos: 500, icono: '🎁', descripcion: 'Solicitá un beneficio especial disponible en la plataforma. Sujeto a disponibilidad.' }
+];
+
+window.cargarCatalogoCanjesTutor = async function() {
+    const catalogo = document.getElementById('catalogoCanjesTutor');
+    const historial = document.getElementById('historialCanjesTutor');
+    if (!catalogo || !historial || !usuarioActual) return;
+    catalogo.innerHTML = '<p style="color:#64748b;">Cargando recompensas...</p>';
+    historial.innerHTML = '<p style="color:#64748b;">Cargando historial...</p>';
+    try {
+        const { data: perfil, error: errorPerfil } = await supabaseClient
+            .from('perfiles').select('puntos_gamificacion').eq('id', usuarioActual.id).single();
+        if (errorPerfil) throw errorPerfil;
+        const saldo = Number(perfil?.puntos_gamificacion || 0);
+        const saldoEl = document.getElementById('saldoCanjesTutor');
+        if (saldoEl) saldoEl.textContent = 'Saldo disponible: ' + saldo + ' pts';
+
+        catalogo.innerHTML = '';
+        recompensasCanjeTutor.forEach(recompensa => {
+            const tarjeta = document.createElement('article');
+            tarjeta.style.cssText = 'border:1px solid #e2e8f0;border-radius:12px;padding:1rem;background:#fff;display:flex;flex-direction:column;gap:.65rem;';
+            const icono = document.createElement('div');
+            icono.textContent = recompensa.icono;
+            icono.style.fontSize = '2rem';
+            const titulo = document.createElement('h3');
+            titulo.textContent = recompensa.nombre;
+            titulo.style.cssText = 'margin:0;font-size:1rem;color:#1e293b;';
+            const descripcion = document.createElement('p');
+            descripcion.textContent = recompensa.descripcion;
+            descripcion.style.cssText = 'margin:0;color:#64748b;font-size:.85rem;flex:1;';
+            const costo = document.createElement('strong');
+            costo.textContent = recompensa.puntos + ' puntos';
+            costo.style.color = '#854d0e';
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'btn';
+            boton.textContent = saldo >= recompensa.puntos ? 'Solicitar canje' : 'Puntos insuficientes';
+            boton.disabled = saldo < recompensa.puntos;
+            boton.style.cssText = 'background:'+(boton.disabled?'#e2e8f0':'#713f12')+';color:'+(boton.disabled?'#64748b':'#fff')+';padding:.7rem;border-radius:8px;cursor:'+(boton.disabled?'not-allowed':'pointer')+';';
+            boton.addEventListener('click', () => solicitarCanjeTutor(recompensa));
+            tarjeta.append(icono,titulo,descripcion,costo,boton);
+            catalogo.appendChild(tarjeta);
+        });
+
+        const { data: canjes, error: errorCanjes } = await supabaseClient
+            .from('canjes_puntos').select('id, beneficio, puntos, estado, creado_at')
+            .eq('usuario_id', usuarioActual.id).order('creado_at', { ascending: false });
+        if (errorCanjes) throw errorCanjes;
+        historial.innerHTML = '';
+        if (!canjes || canjes.length === 0) {
+            historial.innerHTML = '<p style="color:#64748b;">Todavía no realizaste ningún canje.</p>';
+            return;
+        }
+        canjes.forEach(canje => {
+            const fila = document.createElement('div');
+            fila.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;padding:.8rem;border:1px solid #e2e8f0;border-radius:8px;';
+            const info = document.createElement('div');
+            const nombre = document.createElement('strong');
+            nombre.textContent = canje.beneficio;
+            const detalle = document.createElement('p');
+            detalle.textContent = Number(canje.puntos) + ' puntos · ' + (canje.creado_at ? new Date(canje.creado_at).toLocaleDateString('es-AR') : 'Fecha no disponible');
+            detalle.style.cssText = 'margin:.25rem 0 0;color:#64748b;font-size:.85rem;';
+            info.append(nombre,detalle);
+            const estado = document.createElement('span');
+            const estadoNormalizado = String(canje.estado || 'pendiente').toLowerCase();
+            estado.textContent = estadoNormalizado === 'confirmado' ? 'Confirmado' : estadoNormalizado === 'cancelado' ? 'Cancelado' : 'Pendiente de revisión';
+            estado.style.cssText = 'background:'+(estadoNormalizado==='confirmado'?'#dcfce7':estadoNormalizado==='cancelado'?'#fee2e2':'#fef3c7')+';color:'+(estadoNormalizado==='confirmado'?'#166534':estadoNormalizado==='cancelado'?'#991b1b':'#92400e')+';padding:.35rem .6rem;border-radius:6px;font-size:.8rem;font-weight:600;';
+            fila.append(info,estado);
+            historial.appendChild(fila);
+        });
+    } catch (err) {
+        console.error('Error al cargar catálogo de canjes:', err);
+        catalogo.innerHTML = '<p style="color:#dc2626;">No se pudo cargar el catálogo. Verificá que las tablas y políticas de canjes estén configuradas en Supabase.</p>';
+        historial.innerHTML = '<p style="color:#dc2626;">No se pudo cargar el historial de canjes.</p>';
+    }
+};
+
+async function solicitarCanjeTutor(recompensa) {
+    const confirmacion = await Swal.fire({
+        title: '¿Solicitar este canje?',
+        html: '<strong>' + recompensa.nombre + '</strong><br>Se solicitarán ' + recompensa.puntos + ' puntos. El saldo se descontará cuando el canje sea confirmado.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, solicitar',
+        cancelButtonText: 'Volver',
+        confirmButtonColor: '#713f12'
+    });
+    if (!confirmacion.isConfirmed) return;
+    try {
+        const { data: perfil, error: errorPerfil } = await supabaseClient
+            .from('perfiles').select('puntos_gamificacion').eq('id', usuarioActual.id).single();
+        if (errorPerfil) throw errorPerfil;
+        if (Number(perfil?.puntos_gamificacion || 0) < recompensa.puntos) {
+            mostrarNotificacion('No tenés puntos suficientes para este canje.', 'error');
+            await cargarCatalogoCanjesTutor();
+            return;
+        }
+        const { error } = await supabaseClient.from('canjes_puntos').insert({
+            usuario_id: usuarioActual.id,
+            beneficio: recompensa.nombre,
+            puntos: recompensa.puntos,
+            estado: 'pendiente'
+        });
+        if (error) throw error;
+        mostrarNotificacion('Solicitud de canje enviada. Quedó pendiente de revisión.', 'exito');
+        await cargarCatalogoCanjesTutor();
+    } catch (err) {
+        console.error('Error al solicitar canje:', err);
+        mostrarNotificacion('No se pudo solicitar el canje. Revisá las políticas de canjes en Supabase.', 'error');
+    }
+}
+
