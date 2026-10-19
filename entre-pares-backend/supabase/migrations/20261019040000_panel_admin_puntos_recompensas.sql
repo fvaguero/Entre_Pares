@@ -13,6 +13,10 @@ create table if not exists public.recompensas_puntos (
   actualizado_at timestamptz not null default now()
 );
 
+-- Asegura las columnas de auditoría si canjes_puntos ya existía en una versión anterior.
+alter table public.canjes_puntos add column if not exists confirmado_por uuid;
+alter table public.canjes_puntos add column if not exists confirmado_at timestamptz;
+
 create table if not exists public.reclamos_puntos (
   id uuid primary key default gen_random_uuid(),
   usuario_id uuid not null,
