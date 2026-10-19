@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     usuarioActual = user;
+    inicializarPanelRecordatorios(usuarioActual.id);
 
     try {
         const { data: perfil } = await supabaseClient
@@ -965,5 +966,85 @@ async function solicitarCanjeTutor(recompensa) {
         console.error('Error al solicitar canje:', err);
         mostrarNotificacion('No se pudo solicitar el canje. Revisá las políticas de canjes en Supabase.', 'error');
     }
+}
+
+
+
+
+/* Recordatorios persistentes de tutorías: se generan desde Supabase, no desde el navegador. */
+async function inicializarPanelRecordatorios(usuarioId) {
+    const boton = document.getElementById('btnCampanita');
+    const dropdown = document.getElementById('dropdownNotificaciones');
+    const lista = document.getElementById('listaNotificaciones');
+    const badge = document.getElementById('badgeNoti');
+    if (!boton || !dropdown || !lista) return;
+
+    const cargar = async () => {
+        const { data, error } = await supabaseClient
+            .from('recordatorios_notificaciones')
+            .select('id, titulo, mensaje, fecha_tutoria, creado_at, leida')
+            .eq('usuario_id', usuarioId)
+            .order('creado_at', { ascending: false })
+            .limit(10);
+        if (error) {
+            console.error('No se pudieron cargar los recordatorios:', error);
+            lista.textContent = 'No se pudieron cargar las notificaciones.';
+            return;
+        }
+        const avisos = data || [];
+        const noLeidas = avisos.filter(a => !a.leida).length;
+        if (badge) {
+            badge.textContent = String(noLeidas);
+            badge.style.display = noLeidas ? 'inline-block' : 'none';
+        }
+        lista.replaceChildren();
+        if (!avisos.length) {
+            const vacio = document.createElement('p');
+            vacio.textContent = 'No tenés recordatorios de tutorías por ahora.';
+            vacio.style.cssText = 'text-align:center;color:#94a3b8;padding:10px;';
+            lista.appendChild(vacio);
+            return;
+        }
+        avisos.forEach(aviso => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:8px;border-bottom:1px solid #e2e8f0;' + (!aviso.leida ? 'background:#fffbeb;' : '');
+            const titulo = document.createElement('strong');
+            titulo.textContent = aviso.titulo || 'Recordatorio de tutoría';
+            titulo.style.display = 'block';
+            const mensaje = document.createElement('p');
+            mensaje.textContent = aviso.mensaje || '';
+            mensaje.style.cssText = 'margin:4px 0;color:#475569;';
+            const fecha = document.createElement('small');
+            fecha.textContent = aviso.fecha_tutoria
+                ? 'Tutoría: ' + new Date(aviso.fecha_tutoria).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' })
+                : '';
+            fecha.style.color = '#64748b';
+            item.append(titulo, mensaje, fecha);
+            lista.appendChild(item);
+        });
+        if (dropdown.style.display === 'block' && noLeidas) {
+            const ids = avisos.filter(a => !a.leida).map(a => a.id);
+            if (ids.length) {
+                const { error: errorLectura } = await supabaseClient
+                    .from('recordatorios_notificaciones')
+                    .update({ leida: true })
+                    .in('id', ids);
+                if (!errorLectura && badge) {
+                    badge.textContent = '0';
+                    badge.style.display = 'none';
+                }
+            }
+        }
+    };
+
+    boton.addEventListener('click', async (evento) => {
+        evento.stopPropagation();
+        const abrir = dropdown.style.display !== 'block';
+        dropdown.style.display = abrir ? 'block' : 'none';
+        await cargar();
+    });
+    dropdown.addEventListener('click', evento => evento.stopPropagation());
+    document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+    await cargar();
 }
 
