@@ -596,6 +596,24 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
         const fecha=document.createElement('p');fecha.style.cssText='color:#475569;margin:.3rem 0;';fecha.textContent='📅 '+mostrarFechaReserva(res.fecha_hora);
         const duda=document.createElement('p');duda.style.cssText='color:#475569;margin:.3rem 0;';duda.textContent='Duda: '+(res.comentarios||'Sin descripción');
         card.append(cab,tutor,fecha,duda);
+        if (['Aceptada','Pendiente'].includes(estado) && res.fecha_hora && new Date(res.fecha_hora) > new Date()) {
+            const acciones = document.createElement('div');
+            acciones.style.cssText = 'display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap;';
+            const btnReprogramar = document.createElement('button');
+            btnReprogramar.type = 'button';
+            btnReprogramar.className = 'btn';
+            btnReprogramar.textContent = '📅 Reprogramar';
+            btnReprogramar.style.cssText = 'flex:1;background:#e0f2fe;color:#075985;padding:.5rem;';
+            btnReprogramar.onclick = () => reprogramarReservaEstudiante(res.id, res.fecha_hora);
+            const btnCancelar = document.createElement('button');
+            btnCancelar.type = 'button';
+            btnCancelar.className = 'btn';
+            btnCancelar.textContent = '✖ Cancelar tutoría';
+            btnCancelar.style.cssText = 'flex:1;background:#fee2e2;color:#991b1b;padding:.5rem;';
+            btnCancelar.onclick = () => cancelarReservaEstudiante(res.id);
+            acciones.append(btnReprogramar, btnCancelar);
+            card.appendChild(acciones);
+        }
         if(estado==='Aceptada'){
             if(res.estado_pago==='Pendiente'||!res.estado_pago){
                 const btn=document.createElement('button');btn.id='btn-pagar-'+res.id;btn.className='btn btn-yellow';btn.style.cssText='width:100%;margin-top:.8rem;padding:.5rem;font-size:.85rem;';btn.textContent='💳 Pagar Tutoría ($'+(res.precio||res.tutor?.precio_hora||3000)+')';btn.onclick=()=>pagarTutoria(res.id,res.materia,Number(res.precio||res.tutor?.precio_hora||3000));card.appendChild(btn);
@@ -615,6 +633,67 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
         cont.appendChild(card);
     });
 }
+
+/* Cancelación y reprogramación desde el panel del estudiante. */
+async function cancelarReservaEstudiante(reservaId) {
+    const confirmacion = await Swal.fire({
+        title: '¿Cancelar esta tutoría?',
+        text: 'La tutoría dejará de figurar como confirmada y no debería generar recordatorios.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'Volver',
+        confirmButtonColor: '#dc2626'
+    });
+    if (!confirmacion.isConfirmed) return;
+    try {
+        const { error } = await supabaseClient
+            .from('reservas')
+            .update({ estado: 'Cancelada' })
+            .eq('id', reservaId)
+            .eq('estudiante_id', userId)
+            .in('estado', ['Pendiente', 'Aceptada', 'Aprobada', 'Confirmada']);
+        if (error) throw error;
+        mostrarNotificacionEstudiante('La solicitud de cancelación se guardó.', 'exito');
+        await cargarMisReservas(supabaseClient, userId);
+    } catch (error) {
+        console.error('Error al cancelar tutoría:', error);
+        mostrarNotificacionEstudiante('No se pudo cancelar. Revisá los permisos de reservas en Supabase.', 'error');
+    }
+}
+async function reprogramarReservaEstudiante(reservaId, fechaActual) {
+    const valorLocal = (() => {
+        const f = new Date(fechaActual);
+        f.setMinutes(f.getMinutes() - f.getTimezoneOffset());
+        return f.toISOString().slice(0,16);
+    })();
+    const { value: nuevaFecha } = await Swal.fire({
+        title: 'Reprogramar tutoría',
+        input: 'datetime-local',
+        inputValue: valorLocal,
+        inputAttributes: { min: (() => { const n = new Date(); n.setMinutes(n.getMinutes()-n.getTimezoneOffset()); return n.toISOString().slice(0,16); })() },
+        showCancelButton: true,
+        confirmButtonText: 'Guardar horario',
+        cancelButtonText: 'Cancelar',
+        inputValidator: value => !value ? 'Elegí una fecha y hora.' : (new Date(value) <= new Date() ? 'La fecha debe ser futura.' : undefined)
+    });
+    if (!nuevaFecha) return;
+    try {
+        const { error } = await supabaseClient
+            .from('reservas')
+            .update({ fecha_hora: new Date(nuevaFecha).toISOString() })
+            .eq('id', reservaId)
+            .eq('estudiante_id', userId)
+            .in('estado', ['Pendiente', 'Aceptada', 'Aprobada', 'Confirmada']);
+        if (error) throw error;
+        mostrarNotificacionEstudiante('Horario actualizado. Coordiná el cambio con el tutor por mensajes.', 'exito');
+        await cargarMisReservas(supabaseClient, userId);
+    } catch (error) {
+        console.error('Error al reprogramar tutoría:', error);
+        mostrarNotificacionEstudiante('No se pudo reprogramar. Revisá los permisos de reservas en Supabase.', 'error');
+    }
+}
+
 function renderizarCalendarioReservas() {
     const cal=document.getElementById('calendarioReservas'),titulo=document.getElementById('tituloMesCalendario'),detalle=document.getElementById('detalleDiaCalendario');
     if(!cal||!titulo||!detalle)return;
