@@ -322,3 +322,80 @@ async function cargarMetricas() {
         console.error('Error al cargar métricas:',err);
     }
 }
+
+
+function inicializarHerramientasPuntosAdmin() {
+    const formAjuste=document.getElementById('formAjustePuntosAdmin');
+    if(formAjuste) formAjuste.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const usuarioId=document.getElementById('ajusteUsuarioId').value.trim();
+        const puntos=Number(document.getElementById('ajustePuntos').value);
+        const referencia=document.getElementById('ajusteReferencia').value.trim();
+        const descripcion=document.getElementById('ajusteDescripcion').value.trim();
+        if(!usuarioId||!Number.isInteger(puntos)||puntos===0||!referencia||descripcion.length<5){alert('Completá todos los campos con valores válidos.');return;}
+        const {data,error}=await supabaseClient.rpc('admin_ajustar_puntos',{p_usuario_id:usuarioId,p_puntos:puntos,p_descripcion:descripcion,p_referencia_id:referencia});
+        if(error){alert('No se pudo registrar el ajuste: '+error.message);return;}
+        if(data===false){alert('Esta operación ya se había registrado con esa referencia.');return;}
+        formAjuste.reset();alert('Ajuste registrado correctamente.');await cargarPanelPuntosAdmin();await cargarMetricas();
+    });
+    const formRecompensa=document.getElementById('formRecompensaAdmin');
+    if(formRecompensa) formRecompensa.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const nombre=document.getElementById('recompensaNombre').value.trim(),costo=Number(document.getElementById('recompensaCosto').value),descripcion=document.getElementById('recompensaDescripcion').value.trim();
+        if(nombre.length<3||!Number.isInteger(costo)||costo<1){alert('Revisá el nombre y el costo.');return;}
+        const {data:{user}}=await supabaseClient.auth.getUser();
+        const {error}=await supabaseClient.from('recompensas_puntos').insert({nombre,costo_puntos:costo,descripcion,activa:true,creado_por:user.id});
+        if(error){alert('No se pudo crear la recompensa: '+error.message);return;}
+        formRecompensa.reset();await cargarRecompensasAdmin();
+    });
+}
+function crearTablaAdmin(contenedor,encabezados,filas){
+    if(!contenedor)return;contenedor.replaceChildren();if(!filas.length){contenedor.textContent='No hay registros para mostrar.';return;}
+    const tabla=document.createElement('table');tabla.style.cssText='width:100%;border-collapse:collapse;font-size:.85rem;';
+    const thead=document.createElement('thead'),hr=document.createElement('tr');
+    encabezados.forEach(t=>{const th=document.createElement('th');th.textContent=t;th.style.cssText='text-align:left;padding:.65rem;border-bottom:1px solid #e2e8f0;';hr.appendChild(th);});
+    thead.appendChild(hr);tabla.appendChild(thead);const tbody=document.createElement('tbody');
+    filas.forEach(celdas=>{const tr=document.createElement('tr');celdas.forEach(celda=>{const td=document.createElement('td');td.style.cssText='padding:.65rem;border-bottom:1px solid #f1f5f9;vertical-align:top;';if(celda instanceof Node)td.appendChild(celda);else td.textContent=String(celda??'');tr.appendChild(td);});tbody.appendChild(tr);});
+    tabla.appendChild(tbody);contenedor.appendChild(tabla);
+}
+function botonAdmin(texto,color,accion){const b=document.createElement('button');b.type='button';b.textContent=texto;b.style.cssText='border:0;border-radius:5px;padding:.4rem .6rem;margin:.1rem;background:'+color+';color:white;cursor:pointer;';b.addEventListener('click',accion);return b;}
+async function cargarPanelPuntosAdmin(){
+    const canjesCont=document.getElementById('listaCanjesAdmin'),movCont=document.getElementById('listaMovimientosPuntosAdmin');
+    try{
+        const [{data:canjes,error:errCanjes},{data:movimientos,error:errMov}]=await Promise.all([
+            supabaseClient.from('canjes_puntos').select('id,usuario_id,beneficio,puntos,estado,creado_at').order('creado_at',{ascending:false}).limit(100),
+            supabaseClient.from('movimientos_puntos').select('id,usuario_id,tipo,referencia_id,puntos,descripcion,creado_at').order('creado_at',{ascending:false}).limit(100)
+        ]);
+        if(errCanjes)throw errCanjes;if(errMov)throw errMov;
+        const pendientes=(canjes||[]).filter(x=>String(x.estado).toLowerCase()==='pendiente');
+        crearTablaAdmin(canjesCont,['Usuario','Recompensa','Costo','Fecha','Acciones'],pendientes.map(x=>{const a=document.createElement('div');a.append(botonAdmin('Confirmar','#15803d',()=>resolverCanjeAdmin(x.id,'confirmar')),botonAdmin('Rechazar','#b91c1c',()=>resolverCanjeAdmin(x.id,'rechazar')));return[x.usuario_id,x.beneficio,x.puntos,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
+        crearTablaAdmin(movCont,['Fecha','Usuario','Tipo','Puntos','Descripción / referencia'],(movimientos||[]).map(x=>[new Date(x.creado_at).toLocaleString('es-AR'),x.usuario_id,x.tipo,(x.puntos>0?'+':'')+x.puntos,x.descripcion+' · '+x.referencia_id]));
+    }catch(error){if(canjesCont)canjesCont.textContent='No se pudieron cargar los canjes. Aplicá la migración del panel administrativo y revisá las políticas RLS.';if(movCont)movCont.textContent='No se pudieron cargar los movimientos: '+error.message;console.error(error);}
+}
+async function resolverCanjeAdmin(id,accion){
+    if(!confirm('¿Querés '+(accion==='confirmar'?'confirmar y descontar los puntos':'rechazar')+' este canje? Esta acción no se puede repetir.'))return;
+    const {error}=await supabaseClient.rpc('admin_resolver_canje',{p_canje_id:id,p_accion:accion});
+    if(error){alert('No se pudo resolver el canje: '+error.message);return;}await cargarPanelPuntosAdmin();await cargarMetricas();
+}
+async function cargarRecompensasAdmin(){
+    const cont=document.getElementById('listaRecompensasAdmin');if(!cont)return;
+    const {data,error}=await supabaseClient.from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos,activa,actualizado_at').order('creado_at',{ascending:false});
+    if(error){cont.textContent='No se pudo cargar el catálogo. Aplicá la migración de recompensas y revisá los permisos.';return;}
+    crearTablaAdmin(cont,['Recompensa','Descripción','Costo','Estado','Acciones'],(data||[]).map(x=>{
+        const a=document.createElement('div');
+        a.append(botonAdmin('Cambiar costo','#1d4ed8',async()=>{const v=prompt('Nuevo costo en puntos:',String(x.costo_puntos));if(v===null)return;const costo=Number(v);if(!Number.isInteger(costo)||costo<1){alert('El costo debe ser mayor a cero.');return;}const {error}=await supabaseClient.from('recompensas_puntos').update({costo_puntos:costo,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}),
+        botonAdmin(x.activa?'Desactivar':'Activar',x.activa?'#b91c1c':'#15803d',async()=>{const {error}=await supabaseClient.from('recompensas_puntos').update({activa:!x.activa,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}));
+        return[x.nombre,x.descripcion,x.costo_puntos,x.activa?'Activa':'Inactiva',a];
+    }));
+}
+async function cargarReclamosAdmin(){
+    const cont=document.getElementById('listaReclamosAdmin');if(!cont)return;
+    const {data,error}=await supabaseClient.from('reclamos_puntos').select('id,usuario_id,asunto,descripcion,estado,respuesta_admin,creado_at').order('creado_at',{ascending:false}).limit(100);
+    if(error){cont.textContent='No se pudieron cargar los reclamos. Aplicá la migración del panel administrativo.';return;}
+    crearTablaAdmin(cont,['Usuario','Asunto / descripción','Estado','Fecha','Acciones'],(data||[]).map(x=>{const a=document.createElement('div');a.append(botonAdmin('En revisión','#b45309',()=>resolverReclamoAdmin(x.id,'en_revision')),botonAdmin('Resolver','#15803d',()=>resolverReclamoAdmin(x.id,'resuelto')),botonAdmin('Rechazar','#b91c1c',()=>resolverReclamoAdmin(x.id,'rechazado')));return[x.usuario_id,x.asunto+' — '+x.descripcion,x.estado,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
+}
+async function resolverReclamoAdmin(id,estado){
+    const respuesta=prompt('Respuesta para el usuario (opcional):','');if(respuesta===null)return;
+    const {error}=await supabaseClient.rpc('admin_resolver_reclamo',{p_reclamo_id:id,p_estado:estado,p_respuesta:respuesta});
+    if(error){alert('No se pudo actualizar el reclamo: '+error.message);return;}await cargarReclamosAdmin();await cargarMetricas();
+}
