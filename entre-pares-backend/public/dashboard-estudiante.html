@@ -232,6 +232,7 @@
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario', this)">📅 Calendario</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes-estudiante', this); cargarCatalogoCanjesEstudiante()">🏆 Canjear Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
         </aside>
 
@@ -404,6 +405,28 @@
                             <div id="progresoGamificacion" style="height:100%;width:0%;background:#713f12;border-radius:999px;transition:width .25s ease;"></div>
                         </div>
                         <p id="textoProgresoGamificacion" style="font-size: 0.8rem; margin: 0; opacity: 0.9;">Sumá puntos para avanzar de nivel.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CANJE DE PUNTOS DEL ESTUDIANTE -->
+            <section id="seccion-canjes-estudiante" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;background:linear-gradient(135deg,#fef08a 0%,#fde047 100%);color:#713f12;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .5rem;">🏆 Canjear Puntos</h1>
+                    <p style="margin:.2rem 0;">Usá tus puntos para obtener reconocimientos y beneficios en Entre Pares.</p>
+                    <p id="saldoCanjesEstudiante" style="font-size:1.6rem;font-weight:700;margin:.5rem 0;">Saldo disponible: -- pts</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .5rem;">Catálogo de recompensas</h2>
+                    <p style="color:#64748b;font-size:.9rem;">Los canjes quedan pendientes hasta que sean revisados y confirmados.</p>
+                    <div id="catalogoCanjesEstudiante" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin-top:1rem;">
+                        <p style="color:#64748b;">Ingresá a esta sección para cargar las recompensas.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <h2 style="font-size:1.1rem;margin:0 0 1rem;">Mis canjes</h2>
+                    <div id="historialCanjesEstudiante" style="display:flex;flex-direction:column;gap:.75rem;">
+                        <p style="color:#64748b;">Ingresá a esta sección para consultar tu historial.</p>
                     </div>
                 </div>
             </section>
