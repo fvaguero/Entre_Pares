@@ -155,6 +155,21 @@ if (btnCerrarSesion) {
             const comentario = document.getElementById('comentarioResenaTutor').value;
 
             try {
+                // Evitar calificaciones repetidas del tutor para la misma reserva.
+                const { data: resenaExistente, error: errorConsultaResena } = await supabaseClient
+                    .from('resenas')
+                    .select('reserva_id')
+                    .eq('reserva_id', reservaId)
+                    .eq('tutor_id', usuarioActual.id)
+                    .eq('calificado_por', 'tutor')
+                    .maybeSingle();
+
+                if (errorConsultaResena) throw errorConsultaResena;
+                if (resenaExistente) {
+                    mostrarNotificacion("Ya calificaste esta tutoría.", "error");
+                    return;
+                }
+
                 const { error: errorResena } = await supabaseClient
                     .from('resenas')
                     .insert([{
