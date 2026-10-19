@@ -260,6 +260,14 @@
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Pagos y Ganancias</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Aquí puedes ver el estado actual de tus cobros y transferencias por tutoría.</p>
                 </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar pagos</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="filtroMateriaPagosTutor">Materia</label><select id="filtroMateriaPagosTutor" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoPagoTutor">Estado del pago</label><select id="filtroEstadoPagoTutor" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Pagado">Pagado</option><option value="Completada">Completada</option><option value="Liquidado">Liquidado</option></select></div>
+                        <button id="limpiarFiltrosPagosTutor" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
+                    </div>
+                </div>
                 <div class="panel-card">
                     <div class="table-responsive">
                         <table class="table" style="width: 100%; border-collapse: collapse;">
