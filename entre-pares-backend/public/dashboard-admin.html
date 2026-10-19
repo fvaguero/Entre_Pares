@@ -153,8 +153,36 @@
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial y Control de Tutorías</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Visualiza todas las reservas y encuentros agendados en el sistema.</p>
                 </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1rem;">
+                    <div class="panel-card" style="padding:1rem;">
+                        <p style="margin:0;color:#64748b;font-size:.82rem;">Pendientes para hoy</p>
+                        <strong id="statPagosHoyAdmin" style="display:block;font-size:1.7rem;color:#b45309;">-</strong>
+                        <small style="color:#64748b;">Tutorías de hoy sin pago registrado</small>
+                    </div>
+                    <div class="panel-card" style="padding:1rem;">
+                        <p style="margin:0;color:#64748b;font-size:.82rem;">Pagos pendientes</p>
+                        <strong id="statPagosPendientesAdmin" style="display:block;font-size:1.7rem;color:#dc2626;">-</strong>
+                        <small style="color:#64748b;">Reservas con pago pendiente</small>
+                    </div>
+                    <div class="panel-card" style="padding:1rem;">
+                        <p style="margin:0;color:#64748b;font-size:.82rem;">Pagos registrados</p>
+                        <strong id="statPagosPagadosAdmin" style="display:block;font-size:1.7rem;color:#15803d;">-</strong>
+                        <small style="color:#64748b;">Pagado, completado o liquidado</small>
+                    </div>
+                </div>
                 <div class="panel-card" style="margin-bottom:1rem;">
                     <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar tutorías y pagos</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;align-items:end;margin-bottom:1rem;">
+                        <div class="form-group" style="margin:0;">
+                            <label for="filtroVistaPagoAdmin">Vista rápida de pagos</label>
+                            <select id="filtroVistaPagoAdmin" class="form-control">
+                                <option value="">Todos los pagos</option>
+                                <option value="pagar_hoy">A pagar hoy</option>
+                                <option value="pendientes">Pendientes</option>
+                                <option value="pagados">Pagados</option>
+                            </select>
+                        </div>
+                    </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;align-items:end;">
                         <div class="form-group" style="margin:0;"><label for="filtroMateriaAdmin">Materia</label><select id="filtroMateriaAdmin" class="form-control"><option value="">Todas las materias</option></select></div>
                         <div class="form-group" style="margin:0;"><label for="filtroEstadoReservaAdmin">Estado de tutoría</label><select id="filtroEstadoReservaAdmin" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Aceptada">Aceptada</option><option value="Rechazada">Rechazada</option><option value="Finalizada">Finalizada</option></select></div>
