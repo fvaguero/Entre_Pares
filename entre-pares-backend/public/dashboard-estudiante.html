@@ -230,6 +230,7 @@
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-buscar', this)">🔍 Buscar Tutores</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📋 Mis Consultas</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario', this)">📅 Calendario</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-estadisticas', this); cargarEstadisticasPersonales()">📊 Mi progreso</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes-estudiante', this); cargarCatalogoCanjesEstudiante()">🏆 Canjear Puntos</button>
@@ -252,6 +253,18 @@
                             <div class="form-group">
                                 <label>Materia</label>
                                 <input type="text" id="filtroMateria" class="form-control" placeholder="Ej: Álgebra">
+                            </div>
+                            <div class="form-group">
+                                <label>Valoración mínima</label>
+                                <select id="filtroValoracion" class="form-control"><option value="">Cualquier valoración</option><option value="4">4 estrellas o más</option><option value="4.5">4,5 estrellas o más</option><option value="5">Solo 5 estrellas</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Precio máximo por hora (ARS)</label>
+                                <input type="number" id="filtroPrecioMaximo" class="form-control" min="0" placeholder="Sin límite">
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha y hora para consultar disponibilidad</label>
+                                <input type="datetime-local" id="filtroDisponibilidad" class="form-control">
                             </div>
                             <div class="form-group">
                                 <label>Sede o Ciudad</label>
@@ -360,6 +373,23 @@
                             </button>
                         </form>
                     </div>
+                </div>
+            </section>
+
+            <section id="seccion-estadisticas" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">📊 Mis estadísticas y progreso</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Un resumen de tus tutorías, calificaciones y actividad en Entre Pares.</p>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Tutorías completadas</p><strong id="estadisticaTutoriasCompletadas" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Promedio de mis calificaciones recibidas</p><strong id="estadisticaPromedioResenas" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Puntos acumulados</p><strong id="estadisticaPuntos" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Reseñas escritas</p><strong id="estadisticaResenasEscritas" style="font-size:2rem;">—</strong></div>
+                </div>
+                <div class="panel-card" style="margin-top:1rem;">
+                    <h3 style="font-size:1rem;">Actividad reciente</h3>
+                    <div id="listaActividadPersonal" style="display:flex;flex-direction:column;gap:.6rem;"><p style="color:#64748b;">Cargando estadísticas…</p></div>
                 </div>
             </section>
 
