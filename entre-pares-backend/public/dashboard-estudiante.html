@@ -277,15 +277,28 @@
 
             <!-- 2. SECCIÓN MIS CONSULTAS -->
             <section id="seccion-reservas" class="content-section">
-                <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Solicitudes de Consulta</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Haz seguimiento del estado de tus consultas. Una vez que el tutor las apruebe, se habilitará el chat.</p>
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:0.3rem;">Mis Solicitudes de Consulta</h1>
+                    <p style="color:#64748b;font-size:0.9rem;">Filtrá por materia o estado y consultá las fechas programadas en el calendario.</p>
                 </div>
-                <div class="panel-card">
-                    <div id="listaMisReservas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando tus solicitudes...</p>
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar consultas</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="filtroMateriaReservas">Materia</label><select id="filtroMateriaReservas" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoReservas">Estado</label><select id="filtroEstadoReservas" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendientes</option><option value="Aceptada">Aceptadas / Confirmadas</option><option value="Rechazada">Rechazadas</option><option value="Finalizada">Finalizadas</option></select></div>
+                        <button id="btnLimpiarFiltrosReservas" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
                     </div>
                 </div>
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        <h2 style="font-size:1.15rem;margin:0;">Calendario de tutorías</h2>
+                        <div style="display:flex;align-items:center;gap:.75rem;"><button id="btnMesAnterior" type="button" class="btn" aria-label="Mes anterior" style="background:#f1f5f9;color:#334155;">‹</button><strong id="tituloMesCalendario" style="min-width:150px;text-align:center;"></strong><button id="btnMesSiguiente" type="button" class="btn" aria-label="Mes siguiente" style="background:#f1f5f9;color:#334155;">›</button></div>
+                    </div>
+                    <div id="calendarioReservas" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;"></div>
+                    <p style="font-size:.8rem;color:#64748b;margin:.8rem 0 0;">Los días marcados tienen tutorías programadas. Seleccioná un día para ver sus detalles.</p>
+                    <div id="detalleDiaCalendario" style="margin-top:1rem;"></div>
+                </div>
+                <div class="panel-card"><h2 style="font-size:1.15rem;margin-bottom:1rem;">Mis consultas</h2><div id="listaMisReservas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"><p style="color:#64748b;font-size:.9rem;">Cargando tus solicitudes...</p></div></div>
             </section>
 
             <!-- 3. SECCIÓN MENSAJES (AHORA SÍ CON ESTILO MODERNO) -->
@@ -425,6 +438,11 @@
                     <input type="text" id="materiaReserva" class="form-control" placeholder="Ej: Análisis Matemático I" required>
                 </div>
 
+                <div class="form-group">
+                    <label for="fechaHoraReserva">Fecha y hora preferida (opcional)</label>
+                    <input type="datetime-local" id="fechaHoraReserva" class="form-control">
+                    <small style="display:block;color:#64748b;margin-top:.35rem;">El tutor podrá revisar la fecha propuesta al responder tu solicitud.</small>
+                </div>
                 <div class="form-group">
                     <label>¿Qué tipo de duda tenés?</label>
                     <textarea id="comentariosReserva" class="form-control" rows="4" placeholder="Explicale brevemente al tutor cuál es tu inconveniente..." required></textarea>
