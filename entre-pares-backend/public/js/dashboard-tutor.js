@@ -1102,3 +1102,34 @@ document.addEventListener('DOMContentLoaded',async()=>{
         if(error){alert('No se pudo enviar el reclamo: '+error.message);return;}form.reset();alert('Reclamo enviado.');await cargarReclamosTutor(user.id);
     });
 });
+
+async function cargarEstadisticasPersonalesTutor(){
+    const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;
+    const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+    const actividad=document.getElementById('listaActividadTutor');if(actividad)actividad.textContent='Cargando actividad…';
+    try{
+        const [{data:reservas,error:errReservas},{data:resenas,error:errResenas},{data:perfil,error:errPerfil}]=await Promise.all([
+            supabaseClient.from('reservas').select('id,materia,estado,fecha_hora,creado_at').eq('tutor_id',user.id).order('creado_at',{ascending:false}).limit(100),
+            supabaseClient.from('resenas').select('calificacion,calificado_por').eq('tutor_id',user.id),
+            supabaseClient.from('perfiles').select('puntos_gamificacion').eq('id',user.id).maybeSingle()
+        ]);
+        if(errReservas||errResenas||errPerfil)throw errReservas||errResenas||errPerfil;
+        const finalizadas=(reservas||[]).filter(x=>String(x.estado||'').toLowerCase()==='finalizada');
+        const recibidas=(resenas||[]).filter(x=>String(x.calificado_por||'estudiante').toLowerCase()!=='tutor').map(x=>Number(x.calificacion)).filter(x=>x>=1&&x<=5);
+        const escritas=(resenas||[]).filter(x=>String(x.calificado_por||'').toLowerCase()==='tutor');
+        set('estadisticaTutorFinalizadas',finalizadas.length);
+        set('estadisticaTutorPromedio',recibidas.length?(recibidas.reduce((a,b)=>a+b,0)/recibidas.length).toFixed(1)+' / 5':'Sin notas');
+        set('estadisticaTutorPuntos',Number(perfil?.puntos_gamificacion||0));
+        set('estadisticaTutorResenasEscritas',escritas.length);
+        if(actividad){
+            actividad.replaceChildren();
+            const recientes=(reservas||[]).slice(0,6);
+            if(!recientes.length)actividad.textContent='Todavía no hay actividad registrada.';
+            recientes.forEach(item=>{const row=document.createElement('div');row.style.cssText='padding:.65rem;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;';
+                const label=document.createElement('span');label.textContent=(item.materia||'Tutoría')+' · '+(item.estado||'Sin estado');
+                const date=document.createElement('small');date.style.color='#64748b';date.textContent=item.fecha_hora?new Date(item.fecha_hora).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'}):'Fecha pendiente';
+                row.append(label,date);actividad.appendChild(row);
+            });
+        }
+    }catch(error){console.error('Error al cargar estadísticas del tutor:',error);if(actividad)actividad.textContent='No se pudieron cargar las estadísticas. Verificá los permisos de lectura.';}
+}
