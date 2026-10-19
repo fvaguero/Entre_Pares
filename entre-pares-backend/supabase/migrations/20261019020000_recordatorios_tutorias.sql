@@ -31,8 +31,9 @@ create policy "Cada usuario marca sus recordatorios"
   using (usuario_id = (select auth.uid()))
   with check (usuario_id = (select auth.uid()));
 
-revoke insert, delete on public.recordatorios_notificaciones from anon, authenticated;
-grant select, update on public.recordatorios_notificaciones to authenticated;
+revoke insert, delete, update on public.recordatorios_notificaciones from anon, authenticated;
+grant select on public.recordatorios_notificaciones to authenticated;
+grant update (leida) on public.recordatorios_notificaciones to authenticated;
 
 create or replace function public.generar_recordatorios_tutorias()
 returns integer
