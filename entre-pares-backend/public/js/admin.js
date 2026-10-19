@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Acceso denegado. No tienes permisos de administrador.'); window.location.href='index.html'; return;
     }
     conectarFiltrosPagos();
-    await Promise.all([cargarDatosAdminFinanzas(),cargarDatosAdminUsuarios(),cargarDatosAdminReservas()]);
+    await Promise.all([cargarDatosAdminFinanzas(),cargarDatosAdminUsuarios(),cargarDatosAdminReservas(),cargarHistorialPagosAdmin()]);
     const salir=document.getElementById('btnCerrarSesionAdmin');
     if(salir) salir.addEventListener('click',async()=>{await supabaseClient.auth.signOut();window.location.href='login.html';});
   } catch(e) { console.error('Error al iniciar el panel:',e); alert('No se pudo cargar el panel administrativo.'); }
@@ -101,6 +101,21 @@ async function cargarDatosAdminReservas(){
   if(!data||!data.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;">No hay reservas registradas.</td></tr>';return;}
   data.forEach(r=>{const tr=document.createElement('tr');tr.style.borderBottom='1px solid #e2e8f0';tr.innerHTML='<td style="padding:1rem;font-weight:500;">'+esc(r.materia)+'<div style="font-size:.75rem;color:#64748b;">'+fecha(r.fecha_hora)+'</div></td><td style="padding:1rem;">'+esc(r.estudiante&&r.estudiante.nombre_completo||'Estudiante')+'</td><td style="padding:1rem;">'+esc(r.tutor&&r.tutor.nombre_completo||'Tutor')+'</td><td style="padding:1rem;">'+esc(r.estado||'Pendiente')+'</td><td style="padding:1rem;color:#64748b;font-size:.85rem;">'+esc(r.comentarios||'Sin notas')+'</td>';tbody.appendChild(tr);});
  }catch(e){console.error('Error al cargar reservas:',e);}
+}
+async function cargarHistorialPagosAdmin(){
+ const tbody=document.getElementById('tablaHistorialPagosAdmin');if(!tbody)return;
+ try{
+  const {data,error}=await supabaseClient.from('historial_pagos_admin')
+   .select('id,reserva_id,estado_anterior,estado_nuevo,fecha_cambio,cambiado_por')
+   .order('fecha_cambio',{ascending:false}).limit(100);
+  if(error)throw error;
+  tbody.innerHTML='';
+  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:#64748b;">Todavía no hay cambios registrados. Los cambios futuros quedarán auditados.</td></tr>';return;}
+  const ids=[...new Set(data.map(x=>x.cambiado_por).filter(Boolean))];
+  let nombres={};
+  if(ids.length){const {data:perfiles,error:errPerfiles}=await supabaseClient.from('perfiles').select('id,nombre_completo,email').in('id',ids);if(!errPerfiles)(perfiles||[]).forEach(p=>{nombres[p.id]=p.nombre_completo||p.email||p.id;});}
+  data.forEach(x=>{const tr=document.createElement('tr');tr.style.borderBottom='1px solid #e2e8f0';tr.innerHTML='<td style="padding:1rem;">'+esc(fecha(x.fecha_cambio))+' '+esc(x.fecha_cambio?new Date(x.fecha_cambio).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'')+'</td><td style="padding:1rem;font-family:monospace;">'+esc(x.reserva_id)+'</td><td style="padding:1rem;">'+esc(x.cambiado_por?(nombres[x.cambiado_por]||'Usuario '+x.cambiado_por):'Sistema / no identificado')+'</td><td style="padding:1rem;">'+esc(x.estado_anterior||'Sin estado')+'</td><td style="padding:1rem;font-weight:600;">'+esc(x.estado_nuevo)+'</td>';tbody.appendChild(tr);});
+ }catch(e){console.error('Error al cargar historial de pagos:',e);tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:#92400e;">No se pudo cargar el historial. Aplicá la migración SQL de control financiero y verificá los permisos de lectura para administradores.</td></tr>';}
 }
 window.liquidarPago=async function(id,cvu){
  const reserva=reservasFinanzasCache.find(r=>r.id===id);
