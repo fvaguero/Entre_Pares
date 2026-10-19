@@ -102,6 +102,52 @@ exception when others then
 end;
 $$;
 
+-- Una misma tutoría no puede generar puntos de reseña repetidos aunque se inserten filas duplicadas.
+create or replace function public.trg_puntos_calificacion()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_calificador uuid;
+begin
+  if lower(coalesce(new.calificado_por,'estudiante')) = 'estudiante' then
+    v_calificador := new.estudiante_id;
+  elsif lower(coalesce(new.calificado_por,'')) = 'tutor' then
+    v_calificador := new.tutor_id;
+  else
+    return new;
+  end if;
+
+  -- Si la operación viene de un usuario, solo acredita al propio autor autenticado.
+  if (select auth.uid()) is not null and v_calificador is distinct from (select auth.uid()) then
+    return new;
+  end if;
+  if new.reserva_id is null or v_calificador is null then return new; end if;
+
+  -- Reconoce tanto referencias nuevas (reserva_id) como las referencias antiguas (resenas.id).
+  if exists (
+    select 1 from public.movimientos_puntos m
+    where m.usuario_id = v_calificador and m.tipo = 'calificacion'
+      and (
+        m.referencia_id = new.reserva_id::text
+        or m.referencia_id in (
+          select r.id::text from public.resenas r
+          where r.reserva_id = new.reserva_id and r.id is distinct from new.id
+        )
+      )
+  ) then
+    return new;
+  end if;
+
+  perform public.registrar_movimiento_puntos(
+    v_calificador, 'calificacion', new.reserva_id::text, 5, 'Calificación de tutoría'
+  );
+  return new;
+end;
+$;
+
 -- La función no debe ser invocable directamente por usuarios autenticados.
 revoke all on function public.registrar_movimiento_puntos(uuid,text,text,integer,text) from public, anon, authenticated;
 
