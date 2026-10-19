@@ -4,6 +4,21 @@ begin;
 -- Un usuario no puede insertar canjes directamente manipulando beneficio o costo.
 drop policy if exists "Usuario solicita sus propios canjes" on public.canjes_puntos;
 
+-- Si había solicitudes duplicadas antes de esta migración, conservá la más antigua pendiente
+-- y marcá las posteriores como canceladas antes de imponer la unicidad.
+with duplicados as (
+  select id, row_number() over (
+    partition by usuario_id, lower(beneficio)
+    order by creado_at asc, id asc
+  ) as posicion
+  from public.canjes_puntos
+  where lower(estado) = 'pendiente'
+)
+update public.canjes_puntos c
+   set estado = 'cancelado'
+  from duplicados d
+ where c.id = d.id and d.posicion > 1;
+
 create unique index if not exists canjes_puntos_solicitud_pendiente_unica_idx
   on public.canjes_puntos (usuario_id, lower(beneficio))
   where lower(estado) = 'pendiente';
@@ -18,13 +33,17 @@ begin
      and coalesce(current_setting('app.points_rpc', true), 'off') <> 'on' then
     raise exception 'El saldo de puntos solo puede modificarse mediante operaciones validadas.';
   end if;
+  if (new.rol is distinct from old.rol or new.estado_verificacion is distinct from old.estado_verificacion)
+     and not public.es_administrador_actual() then
+    raise exception 'Solo un administrador puede cambiar el rol o la verificación de un perfil.';
+  end if;
   return new;
 end;
 $$;
 
 drop trigger if exists proteger_saldo_puntos_perfil_trigger on public.perfiles;
 create trigger proteger_saldo_puntos_perfil_trigger
-before update of puntos_gamificacion on public.perfiles
+before update of puntos_gamificacion, rol, estado_verificacion on public.perfiles
 for each row execute function public.proteger_saldo_puntos_perfil();
 
 -- Reemplaza la función central para habilitar el cambio de saldo solo durante su transacción.
