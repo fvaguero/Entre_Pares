@@ -129,3 +129,104 @@ execute function public.puntos_por_calificacion();
 
 -- No se crean canjes automáticos ni se modifica el catálogo de recompensas:
 -- antes hay que definir las recompensas, su costo y el proceso de confirmación.
+
+
+-- Catálogo de recompensas y registro de canjes.
+create table if not exists public.recompensas (
+    id uuid primary key default gen_random_uuid(),
+    nombre text not null,
+    descripcion text,
+    costo_puntos integer not null check (costo_puntos > 0),
+    activa boolean not null default true,
+    creado_at timestamptz not null default now()
+);
+
+create table if not exists public.canjes (
+    id uuid primary key default gen_random_uuid(),
+    perfil_id uuid not null references public.perfiles(id) on delete cascade,
+    recompensa_id uuid not null references public.recompensas(id),
+    costo_puntos integer not null check (costo_puntos > 0),
+    estado text not null default 'Confirmado' check (estado in ('Confirmado', 'Cancelado')),
+    creado_at timestamptz not null default now()
+);
+
+create index if not exists idx_canjes_perfil_fecha
+    on public.canjes (perfil_id, creado_at desc);
+
+alter table public.recompensas enable row level security;
+alter table public.canjes enable row level security;
+
+drop policy if exists "Todos pueden ver recompensas activas" on public.recompensas;
+create policy "Todos pueden ver recompensas activas"
+    on public.recompensas for select
+    to authenticated
+    using (activa = true);
+
+drop policy if exists "Cada usuario puede ver sus canjes" on public.canjes;
+create policy "Cada usuario puede ver sus canjes"
+    on public.canjes for select
+    to authenticated
+    using (perfil_id = auth.uid());
+
+-- La operación se realiza en una transacción y bloquea el perfil para evitar
+-- que dos canjes simultáneos gasten el mismo saldo.
+create or replace function public.canjear_recompensa(p_recompensa_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_perfil_id uuid := auth.uid();
+    v_puntos integer;
+    v_recompensa public.recompensas%rowtype;
+    v_canje_id uuid;
+begin
+    if v_perfil_id is null then
+        raise exception 'Debés iniciar sesión para canjear una recompensa.';
+    end if;
+
+    select puntos_gamificacion
+      into v_puntos
+      from public.perfiles
+     where id = v_perfil_id
+     for update;
+
+    if not found then
+        raise exception 'No se encontró el perfil del usuario.';
+    end if;
+
+    select *
+      into v_recompensa
+      from public.recompensas
+     where id = p_recompensa_id
+       and activa = true;
+
+    if not found then
+        raise exception 'La recompensa no existe o no está disponible.';
+    end if;
+
+    if coalesce(v_puntos, 0) < v_recompensa.costo_puntos then
+        raise exception 'No tenés puntos suficientes para este canje.';
+    end if;
+
+    insert into public.canjes (perfil_id, recompensa_id, costo_puntos)
+    values (v_perfil_id, v_recompensa.id, v_recompensa.costo_puntos)
+    returning id into v_canje_id;
+
+    perform public.registrar_movimiento_puntos(
+        v_perfil_id,
+        v_canje_id,
+        'canje',
+        -v_recompensa.costo_puntos,
+        'Canje de recompensa: ' || v_recompensa.nombre
+    );
+
+    return v_canje_id;
+end;
+$$;
+
+-- El helper solo debe usarse internamente por funciones/trigger confiables.
+revoke all on function public.registrar_movimiento_puntos(uuid, uuid, text, integer, text) from public, anon, authenticated;
+revoke all on function public.canjear_recompensa(uuid) from public, anon;
+grant execute on function public.canjear_recompensa(uuid) to authenticated;
