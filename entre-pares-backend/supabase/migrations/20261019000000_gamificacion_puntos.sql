@@ -95,6 +95,7 @@ set search_path = ''
 as $$
 declare
   v_insertado bigint;
+  v_saldo integer;
 begin
   if p_usuario_id is null or p_referencia_id is null or p_puntos = 0 then
     raise exception 'Movimiento de puntos inválido.';
@@ -109,13 +110,21 @@ begin
     return false;
   end if;
 
-  update public.perfiles
-     set puntos_gamificacion = greatest(0, coalesce(puntos_gamificacion, 0) + p_puntos)
-   where id = p_usuario_id;
+  -- Bloquea el perfil para que dos canjes concurrentes no gasten el mismo saldo.
+  select coalesce(puntos_gamificacion, 0) into v_saldo
+  from public.perfiles where id = p_usuario_id for update;
 
   if not found then
     raise exception 'No existe perfil para usuario %', p_usuario_id;
   end if;
+  if v_saldo + p_puntos < 0 then
+    raise exception 'Saldo de puntos insuficiente.';
+  end if;
+
+  update public.perfiles
+     set puntos_gamificacion = v_saldo + p_puntos
+   where id = p_usuario_id;
+
   return true;
 end;
 $$;
@@ -259,6 +268,12 @@ create policy "Usuario crea su contribucion pendiente"
 on public.contribuciones_comunidad for insert to authenticated
 with check (usuario_id = (select auth.uid()) and estado = 'pendiente' and revisada_por is null);
 
+drop policy if exists "Administrador revisa contribuciones" on public.contribuciones_comunidad;
+create policy "Administrador revisa contribuciones"
+on public.contribuciones_comunidad for update to authenticated
+using (exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'Administrador'))
+with check (exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'Administrador'));
+
 drop policy if exists "Usuario ve sus canjes" on public.canjes_puntos;
 create policy "Usuario ve sus canjes"
 on public.canjes_puntos for select to authenticated
@@ -271,6 +286,12 @@ create policy "Usuario solicita canje"
 on public.canjes_puntos for insert to authenticated
 with check (usuario_id = (select auth.uid()) and estado = 'pendiente' and confirmado_por is null);
 
+-- Las funciones internas de puntos no deben poder ser invocadas desde el cliente.
+revoke all on function public.registrar_movimiento_puntos(uuid, text, text, integer, text) from public, anon, authenticated;
+revoke all on function public.trg_puntos_tutoria_finalizada() from public, anon, authenticated;
+revoke all on function public.trg_puntos_calificacion() from public, anon, authenticated;
+revoke all on function public.trg_puntos_contribucion_aprobada() from public, anon, authenticated;
+revoke all on function public.confirmar_canje(uuid) from public, anon;
 grant execute on function public.confirmar_canje(uuid) to authenticated;
 
 commit;
