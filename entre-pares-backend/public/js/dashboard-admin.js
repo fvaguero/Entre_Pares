@@ -392,7 +392,14 @@ async function cargarRecompensasAdmin(){
     if(error){cont.textContent='No se pudo cargar el catálogo. Aplicá la migración de recompensas y revisá los permisos.';return;}
     crearTablaAdmin(cont,['Recompensa','Descripción','Costo','Estado','Acciones'],(data||[]).map(x=>{
         const a=document.createElement('div');
-        a.append(botonAdmin('Cambiar costo','#1d4ed8',async()=>{const v=prompt('Nuevo costo en puntos:',String(x.costo_puntos));if(v===null)return;const costo=Number(v);if(!Number.isInteger(costo)||costo<1){alert('El costo debe ser mayor a cero.');return;}const {error}=await supabaseClient.from('recompensas_puntos').update({costo_puntos:costo,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}),
+        a.append(botonAdmin('Editar','#475569',async()=>{
+            const nombre=prompt('Nombre de la recompensa:',x.nombre);if(nombre===null)return;
+            const descripcion=prompt('Descripción:',x.descripcion||'');if(descripcion===null)return;
+            if(nombre.trim().length<3){alert('El nombre debe tener al menos 3 caracteres.');return;}
+            const {error}=await supabaseClient.from('recompensas_puntos').update({nombre:nombre.trim(),descripcion:descripcion.trim(),actualizado_at:new Date().toISOString()}).eq('id',x.id);
+            if(error)alert(error.message);else cargarRecompensasAdmin();
+        }),
+        botonAdmin('Cambiar costo','#1d4ed8',async()=>{const v=prompt('Nuevo costo en puntos:',String(x.costo_puntos));if(v===null)return;const costo=Number(v);if(!Number.isInteger(costo)||costo<1){alert('El costo debe ser mayor a cero.');return;}const {error}=await supabaseClient.from('recompensas_puntos').update({costo_puntos:costo,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}),
         botonAdmin(x.activa?'Desactivar':'Activar',x.activa?'#b91c1c':'#15803d',async()=>{const {error}=await supabaseClient.from('recompensas_puntos').update({activa:!x.activa,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}));
         return[x.nombre,x.descripcion,x.costo_puntos,x.activa?'Activa':'Inactiva',a];
     }));
