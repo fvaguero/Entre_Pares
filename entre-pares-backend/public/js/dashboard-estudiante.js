@@ -251,6 +251,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const comentario = document.getElementById('comentarioResena').value;
 
             try {
+                // Evitar que una misma reserva reciba más de una calificación del estudiante.
+                const { data: resenaExistente, error: errorConsultaResena } = await supabaseClient
+                    .from('resenas')
+                    .select('reserva_id')
+                    .eq('reserva_id', reservaId)
+                    .eq('estudiante_id', userId)
+                    .maybeSingle();
+
+                if (errorConsultaResena) throw errorConsultaResena;
+                if (resenaExistente) {
+                    mostrarNotificacionEstudiante("Ya calificaste esta tutoría.", "error");
+                    return;
+                }
+
                 const { error: errorResena } = await supabaseClient
                     .from('resenas')
                     .insert([{
