@@ -49,10 +49,15 @@ function filtradas(){
  return reservasFinanzasCache.filter(r=>{
   const texto=[r.estudiante&&r.estudiante.nombre_completo,r.estudiante&&r.estudiante.email,r.tutor&&r.tutor.nombre_completo,r.tutor&&r.tutor.cvu_alias,r.materia].map(normalizar).join(' ');
   if(q&&!texto.includes(q))return false;const tipo=tipoPago(r.estado_pago);if(estado!=='todos'&&tipo!==estado)return false;
-  const f=iso(r.fecha_hora||r.creado_at);if(desde&&(!f||f<desde))return false;if(hasta&&(!f||f>hasta))return false;return true;
+  const f=iso(r.fecha_liquidacion||r.fecha_pago||r.fecha_hora||r.creado_at);if(desde&&(!f||f<desde))return false;if(hasta&&(!f||f>hasta))return false;return true;
  });
 }
 function renderizarFinanzas(){
+ const totalPagado=reservasFinanzasCache.filter(r=>['pagado','pagada','completada','completado','liquidado','liquidada','transferido','transferida'].includes(normalizar(r.estado_pago))).reduce((s,r)=>s+(Number(r.precio)||0),0);
+ const pendientes=reservasFinanzasCache.filter(r=>tipoPago(r.estado_pago)==='pagado').length;
+ const liquidadas=reservasFinanzasCache.filter(r=>tipoPago(r.estado_pago)==='liquidado').length;
+ const k1=document.getElementById('kpiRecaudado'),k2=document.getElementById('kpiPendientes'),k3=document.getElementById('kpiLiquidadas');
+ if(k1)k1.textContent=ars(totalPagado);if(k2)k2.textContent=String(pendientes);if(k3)k3.textContent=String(liquidadas);
  const tbody=document.getElementById('tablaAdminFinanzas');if(!tbody)return;const rows=filtradas();tbody.innerHTML='';
  const contador=document.getElementById('contadorPagosAdmin');if(contador)contador.textContent=rows.length+' de '+reservasFinanzasCache.length+' registros mostrados.';
  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:2rem;color:#64748b;">No hay pagos que coincidan con los filtros.</td></tr>';return;}
