@@ -229,15 +229,13 @@
 
             <!-- 2. MIS TUTORÍAS ACEPTADAS / AGENDA -->
             <section id="seccion-agenda" class="content-section">
-                <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Agenda de Tutorías Confirmadas</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Tus encuentros académicos programados y enlaces de videollamada.</p>
-                </div>
-                <div class="panel-card">
-                    <div id="listaTutoriasAceptadas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando agenda...</p>
-                    </div>
-                </div>
+                <div class="panel-card" style="margin-bottom:1.5rem;"><h1 style="font-size:1.5rem;margin-bottom:.3rem;">Agenda de Tutorías</h1><p style="color:#64748b;font-size:.9rem;">Filtrá por materia o estado y consultá las fechas programadas.</p></div>
+                <div class="panel-card" style="margin-bottom:1.5rem;"><h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar tutorías</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+                <div class="form-group" style="margin:0;"><label for="filtroMateriaTutor">Materia</label><select id="filtroMateriaTutor" class="form-control"><option value="">Todas las materias</option></select></div>
+                <div class="form-group" style="margin:0;"><label for="filtroEstadoTutor">Estado</label><select id="filtroEstadoTutor" class="form-control"><option value="">Todos los estados</option><option value="Aceptada">Aceptadas / Confirmadas</option><option value="Finalizada">Finalizadas</option></select></div>
+                <button id="limpiarFiltrosTutor" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button></div></div>
+                <div class="panel-card" style="margin-bottom:1.5rem;"><div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;"><h2 style="font-size:1.15rem;margin:0;">Calendario de tutorías</h2><div style="display:flex;align-items:center;gap:.75rem;"><button id="mesTutorAnterior" type="button" class="btn" aria-label="Mes anterior" style="background:#f1f5f9;color:#334155;">‹</button><strong id="mesTutorTitulo" style="min-width:150px;text-align:center;"></strong><button id="mesTutorSiguiente" type="button" class="btn" aria-label="Mes siguiente" style="background:#f1f5f9;color:#334155;">›</button></div></div><div id="calendarioTutor" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;"></div><p style="font-size:.8rem;color:#64748b;margin:.8rem 0 0;">Los días marcados tienen tutorías con fecha y hora. Seleccioná un día para ver detalles.</p><div id="detalleCalendarioTutor" style="margin-top:1rem;"></div></div>
+                <div class="panel-card"><div id="listaTutoriasAceptadas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"><p style="color:#64748b;font-size:.9rem;">Cargando agenda...</p></div></div>
             </section>
 
             <!-- 3. MIS PAGOS Y GANANCIAS -->
