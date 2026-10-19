@@ -142,23 +142,65 @@
 
         <!-- 2. PESTAÑA USUARIOS -->
         <div id="tab-usuarios" class="admin-tab">
-            <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
-                <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                    <h3 style="font-size: 1.1rem; color: #1e293b; margin: 0;">Directorio de Usuarios Registrados</h3>
+            <div style="margin-bottom:1.25rem;">
+                <h2 style="margin:0 0 .35rem;color:#0f172a;font-size:1.4rem;">Gestión de usuarios</h2>
+                <p style="margin:0;color:#64748b;font-size:.92rem;">Consultá los perfiles registrados, sus roles, sedes y puntos. Usá los filtros para encontrar una cuenta rápidamente.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem;">
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Usuarios registrados</p>
+                    <strong id="kpiTotalUsuariosAdmin" style="font-size:1.7rem;color:#0f172a;">—</strong>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Estudiantes</p>
+                    <strong id="kpiEstudiantesAdmin" style="font-size:1.7rem;color:#2563eb;">—</strong>
+                </div>
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Tutores</p>
+                    <strong id="kpiTutoresAdmin" style="font-size:1.7rem;color:#15803d;">—</strong>
+                </div>
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Administradores</p>
+                    <strong id="kpiAdminsAdmin" style="font-size:1.7rem;color:#7c3aed;">—</strong>
+                </div>
+            </div>
+
+            <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden;">
+                <div style="padding:1.1rem 1.25rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+                    <div>
+                        <h3 style="font-size:1.05rem;color:#1e293b;margin:0;">Directorio de usuarios registrados</h3>
+                        <p id="contadorUsuariosAdmin" style="margin:.3rem 0 0;color:#64748b;font-size:.82rem;">Cargando usuarios...</p>
+                    </div>
+                    <button id="limpiarFiltrosUsuariosAdmin" type="button" class="btn" style="padding:.65rem .9rem;background:#e2e8f0;color:#1e293b;">Limpiar filtros</button>
+                </div>
+                <div style="padding:1.1rem 1.25rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;">
+                    <label style="display:flex;flex-direction:column;gap:.35rem;flex:2;min-width:220px;color:#475569;font-size:.8rem;">Buscar usuario
+                        <input id="buscarUsuariosAdmin" type="search" placeholder="Nombre, correo o sede universitaria..." style="padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;font:inherit;background:white;">
+                    </label>
+                    <label style="display:flex;flex-direction:column;gap:.35rem;flex:1;min-width:180px;color:#475569;font-size:.8rem;">Filtrar por rol
+                        <select id="filtroRolUsuariosAdmin" style="padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+                            <option value="todos">Todos los roles</option>
+                            <option value="estudiante">Estudiante</option>
+                            <option value="tutor">Tutor</option>
+                            <option value="ambos">Ambos</option>
+                            <option value="administrador">Administrador</option>
+                        </select>
+                    </label>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;text-align:left;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #e2e8f0; background: #fff; font-size: 0.85rem; color: #475569;">
-                                <th style="padding: 1rem;">Nombre Completo</th>
-                                <th style="padding: 1rem;">Correo Electrónico</th>
-                                <th style="padding: 1rem;">Rol</th>
-                                <th style="padding: 1rem;">Sede Universitaria</th>
-                                <th style="padding: 1rem;">Puntos</th>
+                            <tr style="border-bottom:2px solid #e2e8f0;background:#f8fafc;font-size:.8rem;color:#475569;">
+                                <th style="padding:.9rem 1rem;">Usuario</th>
+                                <th style="padding:.9rem 1rem;">Correo electrónico</th>
+                                <th style="padding:.9rem 1rem;">Rol</th>
+                                <th style="padding:.9rem 1rem;">Sede universitaria</th>
+                                <th style="padding:.9rem 1rem;white-space:nowrap;">Puntos</th>
                             </tr>
                         </thead>
                         <tbody id="tablaAdminUsuarios">
-                            <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">Cargando usuarios...</td></tr>
+                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:#64748b;">Cargando usuarios...</td></tr>
                         </tbody>
                     </table>
                 </div>
