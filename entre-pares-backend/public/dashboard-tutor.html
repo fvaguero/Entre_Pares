@@ -202,6 +202,7 @@
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-agenda', this)">✅ Mis Tutorías Aceptadas</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario-tutor', this)">📅 Calendario</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-pagos', this)">💰 Mis Pagos y Ganancias</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes', this); cargarCatalogoCanjesTutor()">🏆 Canjear Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Materias</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
@@ -379,6 +380,28 @@
                         </div>
                         <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Guardar Cambios</button>
                     </form>
+                </div>
+            </section>
+
+            <!-- CANJE DE PUNTOS DEL TUTOR -->
+            <section id="seccion-canjes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;background:linear-gradient(135deg,#fef08a 0%,#fde047 100%);color:#713f12;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .5rem;">🏆 Canjear Puntos</h1>
+                    <p style="margin:.2rem 0;">Canjeá tus puntos por beneficios y reconocimientos dentro de Entre Pares.</p>
+                    <p id="saldoCanjesTutor" style="font-size:1.6rem;font-weight:700;margin:.5rem 0;">Saldo disponible: -- pts</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .5rem;">Catálogo de recompensas</h2>
+                    <p style="color:#64748b;font-size:.9rem;">Los canjes quedan pendientes hasta que sean revisados y confirmados.</p>
+                    <div id="catalogoCanjesTutor" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin-top:1rem;">
+                        <p style="color:#64748b;">Cargando recompensas...</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <h2 style="font-size:1.1rem;margin:0 0 1rem;">Mis canjes</h2>
+                    <div id="historialCanjesTutor" style="display:flex;flex-direction:column;gap:.75rem;">
+                        <p style="color:#64748b;">Cargando historial...</p>
+                    </div>
                 </div>
             </section>
 
