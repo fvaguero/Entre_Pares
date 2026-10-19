@@ -110,10 +110,14 @@ language plpgsql security definer set search_path = ''
 as $
 begin
   if lower(coalesce(new.estado,'')) = 'finalizada'
-     and lower(coalesce(old.estado,'')) <> 'finalizada'
-     and new.fecha_hora is not null and new.fecha_hora <= now() then
-    if (select auth.uid()) is not null and new.tutor_id is distinct from (select auth.uid()) then
-      return new;
+     and lower(coalesce(old.estado,'')) <> 'finalizada' then
+    if new.fecha_hora is null or new.fecha_hora > now() then
+      raise exception 'No se puede finalizar una tutoría antes de la fecha y hora acordadas.';
+    end if;
+    if (select auth.uid()) is not null
+       and new.tutor_id is distinct from (select auth.uid())
+       and not public.es_administrador_actual() then
+      raise exception 'Solo el tutor asignado o un administrador puede finalizar esta tutoría.';
     end if;
     if new.tutor_id is not null then
       perform public.registrar_movimiento_puntos(new.tutor_id,'tutoria_finalizada',new.id::text,20,'Tutoría finalizada');
