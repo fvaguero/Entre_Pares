@@ -155,6 +155,7 @@ set search_path = ''
 as $
 declare
   v_calificador uuid;
+  v_reserva public.reservas%rowtype;
 begin
   if lower(coalesce(new.calificado_por,'estudiante')) = 'estudiante' then
     v_calificador := new.estudiante_id;
@@ -164,11 +165,18 @@ begin
     return new;
   end if;
 
-  -- Si la operación viene de un usuario, solo acredita al propio autor autenticado.
+  if new.reserva_id is null or v_calificador is null then return new; end if;
+  select * into v_reserva from public.reservas r where r.id::text = new.reserva_id::text;
+  if not found or lower(coalesce(v_reserva.estado,'')) <> 'finalizada'
+     or new.estudiante_id is distinct from v_reserva.estudiante_id
+     or new.tutor_id is distinct from v_reserva.tutor_id then
+    return new;
+  end if;
+
+  -- Si la operación viene de un usuario, solo acredita al autor real de esa reseña.
   if (select auth.uid()) is not null and v_calificador is distinct from (select auth.uid()) then
     return new;
   end if;
-  if new.reserva_id is null or v_calificador is null then return new; end if;
 
   -- Reconoce tanto referencias nuevas (reserva_id) como las referencias antiguas (resenas.id).
   if exists (
