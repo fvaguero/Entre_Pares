@@ -454,6 +454,15 @@
                         <p style="color:#64748b;">Ingresá a esta sección para cargar las recompensas.</p>
                     </div>
                 </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .7rem;">¿Tenés un problema con tus puntos?</h2>
+                    <form id="formReclamoPuntosEstudiante" style="display:grid;gap:.7rem;">
+                        <div class="form-group" style="margin:0;"><label for="reclamoAsuntoEstudiante">Asunto</label><input id="reclamoAsuntoEstudiante" class="form-control" required minlength="3" maxlength="120" placeholder="Ej.: No se acreditaron mis puntos"></div>
+                        <div class="form-group" style="margin:0;"><label for="reclamoDescripcionEstudiante">Detalle del reclamo</label><textarea id="reclamoDescripcionEstudiante" class="form-control" required minlength="10" maxlength="3000" rows="3" placeholder="Contanos qué pasó y, si corresponde, la referencia de la tutoría."></textarea></div>
+                        <button type="submit" class="btn btn-yellow" style="justify-self:start;">Enviar reclamo</button>
+                    </form>
+                    <div id="historialReclamosEstudiante" style="margin-top:.8rem;"></div>
+                </div>
                 <div class="panel-card">
                     <h2 style="font-size:1.1rem;margin:0 0 1rem;">Mis canjes</h2>
                     <div id="historialCanjesEstudiante" style="display:flex;flex-direction:column;gap:.75rem;">
