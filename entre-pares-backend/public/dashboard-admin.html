@@ -153,6 +153,15 @@
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial y Control de Tutorías</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Visualiza todas las reservas y encuentros agendados en el sistema.</p>
                 </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar tutorías y pagos</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="filtroMateriaAdmin">Materia</label><select id="filtroMateriaAdmin" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoReservaAdmin">Estado de tutoría</label><select id="filtroEstadoReservaAdmin" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Aceptada">Aceptada</option><option value="Rechazada">Rechazada</option><option value="Finalizada">Finalizada</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoPagoAdmin">Estado del pago</label><select id="filtroEstadoPagoAdmin" class="form-control"><option value="">Todos los pagos</option><option value="Pendiente">Pendiente</option><option value="Pagado">Pagado</option><option value="Completada">Completada</option><option value="Liquidado">Liquidado</option></select></div>
+                        <button id="limpiarFiltrosAdmin" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
+                    </div>
+                </div>
                 <div class="panel-card">
                     <div id="listaTodasTutorias" style="display: flex; flex-direction: column; gap: 0.8rem; max-height: 500px; overflow-y: auto;">
                         <p style="color: #64748b; font-size: 0.9rem;">Cargando tutorías...</p>
