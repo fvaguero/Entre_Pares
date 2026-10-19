@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Acceso denegado. No tienes permisos de administrador.'); window.location.href='index.html'; return;
     }
     conectarFiltrosPagos();
+    conectarFiltrosTutorias();
     await Promise.all([cargarDatosAdminFinanzas(),cargarDatosAdminUsuarios(),cargarDatosAdminReservas(),cargarHistorialPagosAdmin()]);
     const salir=document.getElementById('btnCerrarSesionAdmin');
     if(salir) salir.addEventListener('click',async()=>{await supabaseClient.auth.signOut();window.location.href='login.html';});
@@ -124,13 +125,83 @@ async function cargarDatosAdminUsuarios(){
   data.forEach(p=>{const tr=document.createElement('tr');tr.style.borderBottom='1px solid #e2e8f0';tr.innerHTML='<td style="padding:1rem;font-weight:500;">'+esc(p.nombre_completo||'Sin nombre')+'</td><td style="padding:1rem;">'+esc(p.email||'Sin correo')+'</td><td style="padding:1rem;">'+esc(p.rol||'Estudiante')+'</td><td style="padding:1rem;">'+esc(p.sede_universitaria||'No especificada')+'</td><td style="padding:1rem;color:#d97706;font-weight:bold;">⭐ '+(Number(p.puntos_gamificacion)||0)+' pts</td>';tbody.appendChild(tr);});
  }catch(e){console.error('Error al cargar usuarios:',e);}
 }
+let reservasTutoriasAdminCache = [];
+
+function estadoTutoriasAdmin(v){
+ const s=normalizar(v);
+ if(['finalizada','finalizado','completada','completado'].includes(s))return 'finalizada';
+ if(['cancelada','cancelado','rechazada','rechazado'].includes(s))return 'cancelada';
+ if(['en curso','encurso','iniciada','iniciado'].includes(s))return 'en curso';
+ if(['aceptada','aceptado','confirmada','confirmado'].includes(s))return 'aceptada';
+ if(['pendiente','solicitada','solicitado',''].includes(s))return 'pendiente';
+ return s;
+}
+function conectarFiltrosTutorias(){
+ ['buscarTutoriasAdmin','filtroEstadoTutoriasAdmin'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el){el.addEventListener('input',renderizarTutoriasAdmin);el.addEventListener('change',renderizarTutoriasAdmin);}
+ });
+ const limpiar=document.getElementById('limpiarFiltrosTutoriasAdmin');
+ if(limpiar)limpiar.addEventListener('click',()=>{
+  const buscar=document.getElementById('buscarTutoriasAdmin');
+  const estado=document.getElementById('filtroEstadoTutoriasAdmin');
+  if(buscar)buscar.value='';
+  if(estado)estado.value='todos';
+  renderizarTutoriasAdmin();
+ });
+}
 async function cargarDatosAdminReservas(){
  const tbody=document.getElementById('tablaAdminTodasReservas');if(!tbody)return;
- try{const consulta='id,materia,estado,comentarios,fecha_hora,creado_at,estudiante:estudiante_id(nombre_completo),tutor:tutor_id(nombre_completo)';
-  const {data,error}=await supabaseClient.from('reservas').select(consulta).order('creado_at',{ascending:false});if(error)throw error;tbody.innerHTML='';
-  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;">No hay reservas registradas.</td></tr>';return;}
-  data.forEach(r=>{const tr=document.createElement('tr');tr.style.borderBottom='1px solid #e2e8f0';tr.innerHTML='<td style="padding:1rem;font-weight:500;">'+esc(r.materia)+'<div style="font-size:.75rem;color:#64748b;">'+fecha(r.fecha_hora)+'</div></td><td style="padding:1rem;">'+esc(r.estudiante&&r.estudiante.nombre_completo||'Estudiante')+'</td><td style="padding:1rem;">'+esc(r.tutor&&r.tutor.nombre_completo||'Tutor')+'</td><td style="padding:1rem;">'+esc(r.estado||'Pendiente')+'</td><td style="padding:1rem;color:#64748b;font-size:.85rem;">'+esc(r.comentarios||'Sin notas')+'</td>';tbody.appendChild(tr);});
- }catch(e){console.error('Error al cargar reservas:',e);}
+ try{
+  const consulta='id,materia,estado,comentarios,fecha_hora,creado_at,estudiante:estudiante_id(nombre_completo,email),tutor:tutor_id(nombre_completo,email)';
+  const {data,error}=await supabaseClient.from('reservas').select(consulta).order('creado_at',{ascending:false});
+  if(error)throw error;
+  reservasTutoriasAdminCache=data||[];
+  renderizarTutoriasAdmin();
+ }catch(e){
+  console.error('Error al cargar tutorías:',e);
+  tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:#b91c1c;">No se pudieron cargar las tutorías. Revisá la conexión y los permisos.</td></tr>';
+ }
+}
+function renderizarTutoriasAdmin(){
+ const tbody=document.getElementById('tablaAdminTodasReservas');if(!tbody)return;
+ const q=normalizar((document.getElementById('buscarTutoriasAdmin')||{}).value);
+ const filtro=(document.getElementById('filtroEstadoTutoriasAdmin')||{}).value||'todos';
+ const total=reservasTutoriasAdminCache.length;
+ const finalizadas=reservasTutoriasAdminCache.filter(r=>estadoTutoriasAdmin(r.estado)==='finalizada').length;
+ const activas=reservasTutoriasAdminCache.filter(r=>!['finalizada','cancelada'].includes(estadoTutoriasAdmin(r.estado))).length;
+ const kTotal=document.getElementById('kpiTotalTutoriasAdmin');
+ const kActivas=document.getElementById('kpiPendientesTutoriasAdmin');
+ const kFinal=document.getElementById('kpiFinalizadasTutoriasAdmin');
+ if(kTotal)kTotal.textContent=String(total);
+ if(kActivas)kActivas.textContent=String(activas);
+ if(kFinal)kFinal.textContent=String(finalizadas);
+ const filas=reservasTutoriasAdminCache.filter(r=>{
+  const estado=estadoTutoriasAdmin(r.estado);
+  const texto=[r.materia,r.estudiante&&r.estudiante.nombre_completo,r.estudiante&&r.estudiante.email,r.tutor&&r.tutor.nombre_completo,r.tutor&&r.tutor.email,r.comentarios].map(normalizar).join(' ');
+  return (!q||texto.includes(q))&&(filtro==='todos'||estado===filtro);
+ });
+ const contador=document.getElementById('contadorTutoriasAdmin');
+ if(contador)contador.textContent=filas.length+' de '+total+' tutorías mostradas';
+ tbody.innerHTML='';
+ if(!filas.length){
+  tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2.5rem;color:#64748b;"><div style="font-size:1.5rem;margin-bottom:.4rem;">⌕</div><strong>No se encontraron tutorías</strong><div style="font-size:.85rem;margin-top:.25rem;">Probá cambiar la búsqueda o limpiar los filtros.</div></td></tr>';
+  return;
+ }
+ filas.forEach(r=>{
+  const estado=estadoTutoriasAdmin(r.estado);
+  const estilo=estado==='finalizada'?['#dcfce7','#166534']:estado==='cancelada'?['#fee2e2','#991b1b']:estado==='en curso'?['#dbeafe','#1d4ed8']:estado==='aceptada'?['#ede9fe','#6d28d9']:['#fef3c7','#92400e'];
+  const etiqueta=estado==='finalizada'?'Finalizada':estado==='cancelada'?'Cancelada':estado==='en curso'?'En curso':estado==='aceptada'?'Aceptada':estado==='pendiente'?'Pendiente':(r.estado||'Sin estado');
+  const tr=document.createElement('tr');
+  tr.style.borderBottom='1px solid #f1f5f9';
+  tr.innerHTML=
+   '<td style="padding:1rem;min-width:155px;"><strong style="color:#0f172a;">'+esc(r.materia||'Sin materia')+'</strong><div style="font-size:.78rem;color:#64748b;margin-top:.3rem;">'+fecha(r.fecha_hora)+'</div></td>'+
+   '<td style="padding:1rem;min-width:170px;"><span style="font-weight:600;color:#334155;">'+esc(r.estudiante&&r.estudiante.nombre_completo||'Estudiante')+'</span><div style="font-size:.75rem;color:#64748b;margin-top:.25rem;">'+esc(r.estudiante&&r.estudiante.email||'')+'</div></td>'+
+   '<td style="padding:1rem;min-width:170px;"><span style="font-weight:600;color:#334155;">'+esc(r.tutor&&r.tutor.nombre_completo||'Tutor')+'</span><div style="font-size:.75rem;color:#64748b;margin-top:.25rem;">'+esc(r.tutor&&r.tutor.email||'')+'</div></td>'+
+   '<td style="padding:1rem;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:.35rem;background:'+estilo[0]+';color:'+estilo[1]+';padding:.35rem .65rem;border-radius:999px;font-size:.76rem;font-weight:700;">'+esc(etiqueta)+'</span></td>'+
+   '<td style="padding:1rem;min-width:200px;max-width:330px;color:#64748b;font-size:.84rem;line-height:1.5;overflow-wrap:anywhere;">'+esc(r.comentarios||'Sin comentarios')+'</td>';
+  tbody.appendChild(tr);
+ });
 }
 async function cargarHistorialPagosAdmin(){
  const tbody=document.getElementById('tablaHistorialPagosAdmin');if(!tbody)return;
