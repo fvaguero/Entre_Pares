@@ -993,12 +993,7 @@ async function solicitarCanjeTutor(recompensa) {
             await cargarCatalogoCanjesTutor();
             return;
         }
-        const { error } = await supabaseClient.from('canjes_puntos').insert({
-            usuario_id: usuarioActual.id,
-            beneficio: recompensa.nombre,
-            puntos: recompensa.puntos,
-            estado: 'pendiente'
-        });
+        const { error } = await supabaseClient.rpc('solicitar_canje_recompensa', { p_recompensa_id: recompensa.id });
         if (error) throw error;
         mostrarNotificacion('Solicitud de canje enviada. Quedó pendiente de revisión.', 'exito');
         await cargarCatalogoCanjesTutor();
