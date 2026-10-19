@@ -2,6 +2,7 @@ const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let reservasAdminCache = [];
+const ESTADOS_PAGO_PAGADOS = ['pagado', 'completada', 'completado', 'liquidado', 'liquidada'];
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
@@ -151,17 +152,236 @@ function normalizarEstadoAdmin(valor) {
     if (['rechazada','rechazado'].includes(estado)) return 'Rechazada';
     return 'Pendiente';
 }
+function fechaLocalArgentina(fecha = new Date()) {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(fecha);
+}
+function estadoPagoNormalizado(reserva) {
+    return String(reserva.estado_pago || 'Pendiente').trim().toLowerCase();
+}
+function esPagoPendiente(reserva) {
+    return ['pendiente', 'pendiente de pago', 'a pagar'].includes(estadoPagoNormalizado(reserva));
+}
+function esPagoPagado(reserva) {
+    return ESTADOS_PAGO_PAGADOS.includes(estadoPagoNormalizado(reserva));
+}
+function esTutoríaDeHoy(reserva) {
+    if (!reserva.fecha_hora) return false;
+    const fecha = new Date(reserva.fecha_hora);
+    return !Number.isNaN(fecha.getTime()) && fechaLocalArgentina(fecha) === fechaLocalArgentina();
+}
+function actualizarResumenPagosAdmin() {
+    const hoy = reservasAdminCache.filter(r => esTutoríaDeHoy(r) && esPagoPendiente(r));
+    const pendientes = reservasAdminCache.filter(esPagoPendiente);
+    const pagados = reservasAdminCache.filter(esPagoPagado);
+    const totalHoy = hoy.reduce((sum, r) => sum + Number(r.precio || 0), 0);
+    const totalPendiente = pendientes.reduce((sum, r) => sum + Number(r.precio || 0), 0);
+    const totalPagado = pagados.reduce((sum, r) => sum + Number(r.precio || 0), 0);
+    const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    setText('statPagosHoyAdmin', hoy.length + ' · 
+    contenedor.innerHTML = '';
+    if (!reservas.length) {
+        contenedor.innerHTML = '<p style="color:#64748b;font-size:.85rem;text-align:center;">No hay tutorías que coincidan con los filtros.</p>';
+        return;
+    }
+    reservas.forEach(res => {
+        const fecha = res.fecha_hora && !Number.isNaN(new Date(res.fecha_hora).getTime())
+            ? new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle:'medium', timeStyle:'short' })
+            : 'Fecha a coordinar';
+        const estadoPago = res.estado_pago || 'Pendiente';
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid #e2e8f0;padding:.9rem 1rem;border-radius:8px;background:white;font-size:.85rem;';
+        const title = document.createElement('strong');
+        title.style.cssText = 'color:#0f172a;font-size:.95rem;';
+        title.textContent = res.materia || 'Tutoría';
+        const details = document.createElement('div');
+        details.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.35rem .8rem;margin-top:.45rem;color:#475569;';
+        const fields = [
+            ['Estudiante (paga)', res.estudiante?.nombre_completo || 'No disponible'],
+            ['Tutor (recibe)', res.tutor?.nombre_completo || 'No disponible'],
+            ['Fecha', fecha],
+            ['Estado de tutoría', normalizarEstadoAdmin(res.estado)],
+            ['Importe', '$' + Number(res.precio || 0).toLocaleString('es-AR') + ' ARS'],
+            ['Estado del pago', estadoPago]
+        ];
+        fields.forEach(([label,value]) => {
+            const p = document.createElement('p');
+            p.style.margin = '0';
+            const b = document.createElement('strong');
+            b.textContent = label + ': ';
+            p.append(b, document.createTextNode(value));
+            details.appendChild(p);
+        });
+        card.append(title, details);
+        contenedor.appendChild(card);
+    });
+}
+['filtroMateriaAdmin','filtroEstadoReservaAdmin','filtroEstadoPagoAdmin','filtroVistaPagoAdmin'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', renderizarTodasLasTutoriasAdmin);
+});
+document.getElementById('limpiarFiltrosAdmin')?.addEventListener('click', () => {
+    ['filtroMateriaAdmin','filtroEstadoReservaAdmin','filtroEstadoPagoAdmin','filtroVistaPagoAdmin'].forEach(id => {
+        const el=document.getElementById(id); if(el) el.value='';
+    });
+    renderizarTodasLasTutoriasAdmin();
+});
+
+async function cargarMetricas() {
+    try {
+        const { count: totalUsuarios } = await supabaseClient.from('perfiles').select('*', { count: 'exact', head: true });
+        const { count: tutoresAprobados } = await supabaseClient.from('perfiles').select('*', { count: 'exact', head: true }).eq('estado_verificacion', 'Aprobado');
+        const { count: totalReservas } = await supabaseClient.from('reservas').select('*', { count: 'exact', head: true });
+
+        document.getElementById('statUsuarios').textContent = totalUsuarios || 0;
+        document.getElementById('statTutores').textContent = tutoresAprobados || 0;
+        document.getElementById('statReservas').textContent = totalReservas || 0;
+    } catch (err) {
+        console.error("Error al cargar métricas:", err);
+    }
+} } + totalHoy.toLocaleString('es-AR'));
+    setText('statPagosPendientesAdmin', pendientes.length + ' · 
+    contenedor.innerHTML = '';
+    if (!reservas.length) {
+        contenedor.innerHTML = '<p style="color:#64748b;font-size:.85rem;text-align:center;">No hay tutorías que coincidan con los filtros.</p>';
+        return;
+    }
+    reservas.forEach(res => {
+        const fecha = res.fecha_hora && !Number.isNaN(new Date(res.fecha_hora).getTime())
+            ? new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle:'medium', timeStyle:'short' })
+            : 'Fecha a coordinar';
+        const estadoPago = res.estado_pago || 'Pendiente';
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid #e2e8f0;padding:.9rem 1rem;border-radius:8px;background:white;font-size:.85rem;';
+        const title = document.createElement('strong');
+        title.style.cssText = 'color:#0f172a;font-size:.95rem;';
+        title.textContent = res.materia || 'Tutoría';
+        const details = document.createElement('div');
+        details.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.35rem .8rem;margin-top:.45rem;color:#475569;';
+        const fields = [
+            ['Estudiante (paga)', res.estudiante?.nombre_completo || 'No disponible'],
+            ['Tutor (recibe)', res.tutor?.nombre_completo || 'No disponible'],
+            ['Fecha', fecha],
+            ['Estado de tutoría', normalizarEstadoAdmin(res.estado)],
+            ['Importe', '$' + Number(res.precio || 0).toLocaleString('es-AR') + ' ARS'],
+            ['Estado del pago', estadoPago]
+        ];
+        fields.forEach(([label,value]) => {
+            const p = document.createElement('p');
+            p.style.margin = '0';
+            const b = document.createElement('strong');
+            b.textContent = label + ': ';
+            p.append(b, document.createTextNode(value));
+            details.appendChild(p);
+        });
+        card.append(title, details);
+        contenedor.appendChild(card);
+    });
+}
+['filtroMateriaAdmin','filtroEstadoReservaAdmin','filtroEstadoPagoAdmin'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', renderizarTodasLasTutoriasAdmin);
+});
+document.getElementById('limpiarFiltrosAdmin')?.addEventListener('click', () => {
+    ['filtroMateriaAdmin','filtroEstadoReservaAdmin','filtroEstadoPagoAdmin'].forEach(id => {
+        const el=document.getElementById(id); if(el) el.value='';
+    });
+    renderizarTodasLasTutoriasAdmin();
+});
+
+async function cargarMetricas() {
+    try {
+        const { count: totalUsuarios } = await supabaseClient.from('perfiles').select('*', { count: 'exact', head: true });
+        const { count: tutoresAprobados } = await supabaseClient.from('perfiles').select('*', { count: 'exact', head: true }).eq('estado_verificacion', 'Aprobado');
+        const { count: totalReservas } = await supabaseClient.from('reservas').select('*', { count: 'exact', head: true });
+
+        document.getElementById('statUsuarios').textContent = totalUsuarios || 0;
+        document.getElementById('statTutores').textContent = tutoresAprobados || 0;
+        document.getElementById('statReservas').textContent = totalReservas || 0;
+    } catch (err) {
+        console.error("Error al cargar métricas:", err);
+    }
+} } + totalPendiente.toLocaleString('es-AR'));
+    setText('statPagosPagadosAdmin', pagados.length + ' · 
+    contenedor.innerHTML = '';
+    if (!reservas.length) {
+        contenedor.innerHTML = '<p style="color:#64748b;font-size:.85rem;text-align:center;">No hay tutorías que coincidan con los filtros.</p>';
+        return;
+    }
+    reservas.forEach(res => {
+        const fecha = res.fecha_hora && !Number.isNaN(new Date(res.fecha_hora).getTime())
+            ? new Date(res.fecha_hora).toLocaleString('es-AR', { dateStyle:'medium', timeStyle:'short' })
+            : 'Fecha a coordinar';
+        const estadoPago = res.estado_pago || 'Pendiente';
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid #e2e8f0;padding:.9rem 1rem;border-radius:8px;background:white;font-size:.85rem;';
+        const title = document.createElement('strong');
+        title.style.cssText = 'color:#0f172a;font-size:.95rem;';
+        title.textContent = res.materia || 'Tutoría';
+        const details = document.createElement('div');
+        details.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.35rem .8rem;margin-top:.45rem;color:#475569;';
+        const fields = [
+            ['Estudiante (paga)', res.estudiante?.nombre_completo || 'No disponible'],
+            ['Tutor (recibe)', res.tutor?.nombre_completo || 'No disponible'],
+            ['Fecha', fecha],
+            ['Estado de tutoría', normalizarEstadoAdmin(res.estado)],
+            ['Importe', '$' + Number(res.precio || 0).toLocaleString('es-AR') + ' ARS'],
+            ['Estado del pago', estadoPago]
+        ];
+        fields.forEach(([label,value]) => {
+            const p = document.createElement('p');
+            p.style.margin = '0';
+            const b = document.createElement('strong');
+            b.textContent = label + ': ';
+            p.append(b, document.createTextNode(value));
+            details.appendChild(p);
+        });
+        card.append(title, details);
+        contenedor.appendChild(card);
+    });
+}
+['filtroMateriaAdmin','filtroEstadoReservaAdmin','filtroEstadoPagoAdmin'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', renderizarTodasLasTutoriasAdmin);
+});
+document.getElementById('limpiarFiltrosAdmin')?.addEventListener('click', () => {
+    ['filtroMateriaAdmin','filtroEstadoReservaAdmin','filtroEstadoPagoAdmin'].forEach(id => {
+        const el=document.getElementById(id); if(el) el.value='';
+    });
+    renderizarTodasLasTutoriasAdmin();
+});
+
+async function cargarMetricas() {
+    try {
+        const { count: totalUsuarios } = await supabaseClient.from('perfiles').select('*', { count: 'exact', head: true });
+        const { count: tutoresAprobados } = await supabaseClient.from('perfiles').select('*', { count: 'exact', head: true }).eq('estado_verificacion', 'Aprobado');
+        const { count: totalReservas } = await supabaseClient.from('reservas').select('*', { count: 'exact', head: true });
+
+        document.getElementById('statUsuarios').textContent = totalUsuarios || 0;
+        document.getElementById('statTutores').textContent = tutoresAprobados || 0;
+        document.getElementById('statReservas').textContent = totalReservas || 0;
+    } catch (err) {
+        console.error("Error al cargar métricas:", err);
+    }
+} } + totalPagado.toLocaleString('es-AR'));
+}
 function renderizarTodasLasTutoriasAdmin() {
     const contenedor = document.getElementById('listaTodasTutorias');
     if (!contenedor) return;
     const materia = (document.getElementById('filtroMateriaAdmin')?.value || '').trim().toLowerCase();
     const estadoReserva = document.getElementById('filtroEstadoReservaAdmin')?.value || '';
     const estadoPago = document.getElementById('filtroEstadoPagoAdmin')?.value || '';
-    const reservas = reservasAdminCache.filter(r =>
-        (!materia || String(r.materia || '').trim().toLowerCase() === materia) &&
-        (!estadoReserva || normalizarEstadoAdmin(r.estado) === estadoReserva) &&
-        (!estadoPago || (r.estado_pago || 'Pendiente') === estadoPago)
-    );
+    const vistaPago = document.getElementById('filtroVistaPagoAdmin')?.value || '';
+    actualizarResumenPagosAdmin();
+    const reservas = reservasAdminCache.filter(r => {
+        const coincideMateria = !materia || String(r.materia || '').trim().toLowerCase() === materia;
+        const coincideReserva = !estadoReserva || normalizarEstadoAdmin(r.estado) === estadoReserva;
+        const coincideEstadoPago = !estadoPago || String(r.estado_pago || 'Pendiente').trim() === estadoPago;
+        let coincideVistaPago = true;
+        if (vistaPago === 'pagar_hoy') coincideVistaPago = esTutoríaDeHoy(r) && esPagoPendiente(r);
+        if (vistaPago === 'pendientes') coincideVistaPago = esPagoPendiente(r);
+        if (vistaPago === 'pagados') coincideVistaPago = esPagoPagado(r);
+        return coincideMateria && coincideReserva && coincideEstadoPago && coincideVistaPago;
+    });
     contenedor.innerHTML = '';
     if (!reservas.length) {
         contenedor.innerHTML = '<p style="color:#64748b;font-size:.85rem;text-align:center;">No hay tutorías que coincidan con los filtros.</p>';
