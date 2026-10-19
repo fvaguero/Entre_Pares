@@ -269,8 +269,13 @@ function renderizarTodasLasTutoriasAdmin() {
     });
 }
 
-['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin', 'filtroVistaPagoAdmin'].forEach(id => {
+['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', renderizarTodasLasTutoriasAdmin);
+});
+document.getElementById('filtroVistaPagoAdmin')?.addEventListener('change', () => {
+    const estadoPago = document.getElementById('filtroEstadoPagoAdmin');
+    if (estadoPago) estadoPago.value = '';
+    renderizarTodasLasTutoriasAdmin();
 });
 document.getElementById('limpiarFiltrosAdmin')?.addEventListener('click', () => {
     ['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin', 'filtroVistaPagoAdmin'].forEach(id => {
