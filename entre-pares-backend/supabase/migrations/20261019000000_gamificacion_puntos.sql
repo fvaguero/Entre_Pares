@@ -171,7 +171,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_calificador uuid;
 begin
@@ -191,7 +191,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists resenas_puntos_calificacion on public.resenas;
 create trigger resenas_puntos_calificacion
