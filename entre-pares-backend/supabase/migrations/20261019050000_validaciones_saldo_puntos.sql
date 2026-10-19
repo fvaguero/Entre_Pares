@@ -102,6 +102,46 @@ exception when others then
 end;
 $$;
 
+-- Solo una tutoría ya realizada puede acreditar puntos. El tutor participante la marca finalizada;
+-- un usuario no puede adelantar la fecha para cobrar puntos antes del horario pactado.
+create or replace function public.trg_puntos_tutoria_finalizada()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $
+begin
+  if lower(coalesce(new.estado,'')) = 'finalizada'
+     and lower(coalesce(old.estado,'')) <> 'finalizada'
+     and new.fecha_hora is not null and new.fecha_hora <= now() then
+    if (select auth.uid()) is not null and new.tutor_id is distinct from (select auth.uid()) then
+      return new;
+    end if;
+    if new.tutor_id is not null then
+      perform public.registrar_movimiento_puntos(new.tutor_id,'tutoria_finalizada',new.id::text,20,'Tutoría finalizada');
+    end if;
+    if new.estudiante_id is not null and new.estudiante_id is distinct from new.tutor_id then
+      perform public.registrar_movimiento_puntos(new.estudiante_id,'tutoria_finalizada',new.id::text,20,'Tutoría finalizada');
+    end if;
+  end if;
+  return new;
+end;
+$;
+
+-- Una contribución solo da puntos cuando un administrador la aprueba.
+create or replace function public.trg_puntos_contribucion_aprobada()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $
+begin
+  if new.estado = 'aprobada' and old.estado is distinct from 'aprobada'
+     and ((select auth.uid()) is null or public.es_administrador_actual()) then
+    perform public.registrar_movimiento_puntos(
+      new.usuario_id,'contribucion_aprobada',new.id::text,10,'Contribución comunitaria aprobada'
+    );
+  end if;
+  return new;
+end;
+$;
+
 -- Una misma tutoría no puede generar puntos de reseña repetidos aunque se inserten filas duplicadas.
 create or replace function public.trg_puntos_calificacion()
 returns trigger
