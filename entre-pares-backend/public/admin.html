@@ -167,23 +167,62 @@
 
         <!-- 3. PESTAÑA RESERVAS -->
         <div id="tab-reservas" class="admin-tab">
-            <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
-                <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                    <h3 style="font-size: 1.1rem; color: #1e293b; margin: 0;">Historial General de Tutorías</h3>
+            <div style="margin-bottom:1.25rem;">
+                <h2 style="margin:0 0 .35rem;color:#0f172a;font-size:1.4rem;">Gestión de tutorías</h2>
+                <p style="margin:0;color:#64748b;font-size:.92rem;">Consultá las clases registradas y encontrá rápidamente una tutoría por materia, estudiante, tutor o estado.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.25rem;">
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Total de tutorías</p>
+                    <strong id="kpiTotalTutoriasAdmin" style="font-size:1.7rem;color:#0f172a;">—</strong>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Pendientes / en curso</p>
+                    <strong id="kpiPendientesTutoriasAdmin" style="font-size:1.7rem;color:#b45309;">—</strong>
+                </div>
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem 1.25rem;">
+                    <p style="margin:0 0 .35rem;color:#64748b;font-size:.82rem;">Finalizadas</p>
+                    <strong id="kpiFinalizadasTutoriasAdmin" style="font-size:1.7rem;color:#15803d;">—</strong>
+                </div>
+            </div>
+
+            <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden;">
+                <div style="padding:1.1rem 1.25rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+                    <div>
+                        <h3 style="font-size:1.05rem;color:#1e293b;margin:0;">Listado de tutorías</h3>
+                        <p id="contadorTutoriasAdmin" style="margin:.3rem 0 0;color:#64748b;font-size:.82rem;">Cargando registros...</p>
+                    </div>
+                    <button id="limpiarFiltrosTutoriasAdmin" type="button" class="btn" style="padding:.65rem .9rem;background:#e2e8f0;color:#1e293b;">Limpiar filtros</button>
+                </div>
+                <div style="padding:1.1rem 1.25rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;">
+                    <label style="display:flex;flex-direction:column;gap:.35rem;flex:2;min-width:220px;color:#475569;font-size:.8rem;">Buscar tutoría
+                        <input id="buscarTutoriasAdmin" type="search" placeholder="Materia, estudiante o tutor..." style="padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;font:inherit;background:white;">
+                    </label>
+                    <label style="display:flex;flex-direction:column;gap:.35rem;flex:1;min-width:190px;color:#475569;font-size:.8rem;">Estado de la clase
+                        <select id="filtroEstadoTutoriasAdmin" style="padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+                            <option value="todos">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="aceptada">Aceptada</option>
+                            <option value="en curso">En curso</option>
+                            <option value="finalizada">Finalizada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </label>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;text-align:left;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #e2e8f0; background: #fff; font-size: 0.85rem; color: #475569;">
-                                <th style="padding: 1rem;">Materia</th>
-                                <th style="padding: 1rem;">Estudiante</th>
-                                <th style="padding: 1rem;">Tutor</th>
-                                <th style="padding: 1rem;">Estado Clase</th>
-                                <th style="padding: 1rem;">Comentarios / Dudas</th>
+                            <tr style="border-bottom:2px solid #e2e8f0;background:#f8fafc;font-size:.8rem;color:#475569;">
+                                <th style="padding:.9rem 1rem;">Materia / Fecha</th>
+                                <th style="padding:.9rem 1rem;">Estudiante</th>
+                                <th style="padding:.9rem 1rem;">Tutor</th>
+                                <th style="padding:.9rem 1rem;">Estado</th>
+                                <th style="padding:.9rem 1rem;">Comentarios / dudas</th>
                             </tr>
                         </thead>
                         <tbody id="tablaAdminTodasReservas">
-                            <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">Cargando reservas...</td></tr>
+                            <tr><td colspan="5" style="text-align:center;padding:2rem;color:#64748b;">Cargando tutorías...</td></tr>
                         </tbody>
                     </table>
                 </div>
