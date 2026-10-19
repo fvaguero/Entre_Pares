@@ -1,3 +1,11 @@
+function obtenerNivelGamificacionTutor(puntos) {
+    const total = Math.max(0, Number(puntos) || 0);
+    if (total <= 100) return { nombre: 'Principiante', insignia: '🌱' };
+    if (total <= 300) return { nombre: 'Colaborador', insignia: '⭐' };
+    if (total <= 600) return { nombre: 'Académico Pro', insignia: '🔥' };
+    return { nombre: 'Leyenda Entre Pares', insignia: '👑' };
+}
+
 const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -25,6 +33,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (spanNombre) {
                 spanNombre.textContent = perfil.nombre_completo || 'Tutor';
             }
+            const puntosTutor = Number(perfil.puntos_gamificacion ?? 0);
+            const spanPuntosTutor = document.getElementById('puntosGamificacionTutor');
+            const spanNivelTutor = document.getElementById('nivelGamificacionTutor');
+            const nivelTutor = obtenerNivelGamificacionTutor(puntosTutor);
+            if (spanPuntosTutor) spanPuntosTutor.textContent = puntosTutor + ' pts';
+            if (spanNivelTutor) spanNivelTutor.textContent = nivelTutor.insignia + ' ' + nivelTutor.nombre;
 
             const inputNombre = document.getElementById('perfilNombre');
             const inputEmail = document.getElementById('perfilEmail');
