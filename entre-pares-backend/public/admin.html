@@ -84,11 +84,17 @@
                                 <option value="todos">Todas las liquidaciones</option><option value="pendiente">Pendiente de transferir</option><option value="liquidado">Transferido al tutor</option>
                             </select>
                         </label>
-                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Desde
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Pago recibido desde
                             <input id="fechaDesdePagoAdmin" type="date" style="padding:.65rem; border:1px solid #cbd5e1; border-radius:8px;">
                         </label>
-                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Hasta
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Pago recibido hasta
                             <input id="fechaHastaPagoAdmin" type="date" style="padding:.65rem; border:1px solid #cbd5e1; border-radius:8px;">
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Liquidación desde
+                            <input id="fechaDesdeLiquidacionAdmin" type="date" style="padding:.65rem; border:1px solid #cbd5e1; border-radius:8px;">
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Liquidación hasta
+                            <input id="fechaHastaLiquidacionAdmin" type="date" style="padding:.65rem; border:1px solid #cbd5e1; border-radius:8px;">
                         </label>
                         <button id="limpiarFiltrosPagoAdmin" type="button" class="btn" style="padding:.7rem 1rem; background:#e2e8f0; color:#1e293b;">Limpiar</button>
                         <button id="exportarPagosCSVAdmin" type="button" class="btn" style="padding:.7rem 1rem; background:#0f766e; color:white;">Exportar CSV</button>
