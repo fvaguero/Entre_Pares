@@ -318,6 +318,11 @@ async function cargarMetricas() {
         setText('statPuntosAdmin',errorMovimientos?'—':(movimientos||[]).reduce((sum,x)=>sum+(Number(x.puntos||0)>0?Number(x.puntos):0),0));
         setText('statCanjesPendientesAdmin',errorCanjes?'—':(canjesPendientes||0));
         setText('statReclamosPendientesAdmin',errorReclamos?'—':(reclamosPendientes||0));
+        const {data:metricasPuntos,error:errorMetricasPuntos}=await supabaseClient.rpc('admin_metricas_gamificacion');
+        if(!errorMetricasPuntos&&metricasPuntos){
+            setText('statPuntosAdmin',Number(metricasPuntos.puntos_otorgados||0));
+            setText('statPromedioResenasAdmin',metricasPuntos.promedio_resenas==null?'Sin datos':Number(metricasPuntos.promedio_resenas).toFixed(2));
+        }
     } catch(err) {
         console.error('Error al cargar métricas:',err);
     }
