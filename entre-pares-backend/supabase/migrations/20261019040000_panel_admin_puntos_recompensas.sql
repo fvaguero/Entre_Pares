@@ -156,6 +156,27 @@ begin
 end;
 $$;
 
+create or replace function public.admin_metricas_gamificacion()
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $
+declare v_resultado jsonb;
+begin
+  if (select auth.uid()) is null or not public.es_administrador_actual() then
+    raise exception 'Solo un administrador puede consultar estas métricas.';
+  end if;
+  select jsonb_build_object(
+    'puntos_otorgados', coalesce((select sum(puntos) from public.movimientos_puntos where puntos > 0),0),
+    'promedio_resenas', (select round(avg(calificacion)::numeric,2) from public.resenas where calificacion between 1 and 5),
+    'total_movimientos', (select count(*) from public.movimientos_puntos)
+  ) into v_resultado;
+  return v_resultado;
+end;
+$;
+
+revoke all on function public.admin_metricas_gamificacion() from public, anon;
+grant execute on function public.admin_metricas_gamificacion() to authenticated;
+
 revoke all on function public.admin_ajustar_puntos(uuid,integer,text,text) from public, anon;
 revoke all on function public.admin_resolver_canje(uuid,text) from public, anon;
 revoke all on function public.admin_resolver_reclamo(uuid,text,text) from public, anon;
