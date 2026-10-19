@@ -39,8 +39,14 @@ begin
   ) or not exists (
     select 1 from information_schema.columns
     where table_schema='public' and table_name='resenas' and column_name='estudiante_id'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='resenas' and column_name='tutor_id'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='resenas' and column_name='calificado_por'
   ) then
-    raise exception 'resenas no tiene las columnas esperadas (reserva_id, estudiante_id).';
+    raise exception 'resenas debe tener reserva_id, estudiante_id, tutor_id y calificado_por.';
   end if;
 end $$;
 
@@ -54,6 +60,10 @@ create table if not exists public.movimientos_puntos (
   creado_at timestamptz not null default now(),
   constraint movimientos_puntos_accion_unica unique (usuario_id, tipo, referencia_id)
 );
+
+-- La tabla puede existir de antes sin esta restricción; el índice garantiza idempotencia también en ese caso.
+create unique index if not exists movimientos_puntos_accion_unica_idx
+  on public.movimientos_puntos (usuario_id, tipo, referencia_id);
 
 create index if not exists movimientos_puntos_usuario_fecha_idx
   on public.movimientos_puntos (usuario_id, creado_at desc);
@@ -139,8 +149,10 @@ as $$
 begin
   if lower(coalesce(new.estado,'')) = 'finalizada'
      and lower(coalesce(old.estado,'')) <> 'finalizada' then
-    perform public.registrar_movimiento_puntos(new.tutor_id, 'tutoria_finalizada', new.id::text, 20, 'Tutoría finalizada');
-    if new.estudiante_id is distinct from new.tutor_id then
+    if new.tutor_id is not null then
+      perform public.registrar_movimiento_puntos(new.tutor_id, 'tutoria_finalizada', new.id::text, 20, 'Tutoría finalizada');
+    end if;
+    if new.estudiante_id is not null and new.estudiante_id is distinct from new.tutor_id then
       perform public.registrar_movimiento_puntos(new.estudiante_id, 'tutoria_finalizada', new.id::text, 20, 'Tutoría finalizada');
     end if;
   end if;
@@ -159,16 +171,27 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $
+declare
+  v_calificador uuid;
 begin
-  if lower(coalesce(new.calificado_por,'estudiante')) <> 'tutor' then
+  -- calificado_por guarda el rol de quien hizo la reseña en el esquema actual.
+  if lower(coalesce(new.calificado_por, 'estudiante')) = 'estudiante' then
+    v_calificador := new.estudiante_id;
+  elsif lower(coalesce(new.calificado_por, '')) = 'tutor' then
+    v_calificador := new.tutor_id;
+  else
+    return new;
+  end if;
+
+  if v_calificador is not null then
     perform public.registrar_movimiento_puntos(
-      new.estudiante_id, 'calificacion', new.reserva_id::text, 5, 'Calificación de una clase'
+      v_calificador, 'calificacion', new.id::text, 5, 'Calificación de una clase'
     );
   end if;
   return new;
 end;
-$$;
+$;
 
 drop trigger if exists resenas_puntos_calificacion on public.resenas;
 create trigger resenas_puntos_calificacion
