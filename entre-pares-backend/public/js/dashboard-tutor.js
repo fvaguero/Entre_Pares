@@ -1133,3 +1133,11 @@ async function cargarEstadisticasPersonalesTutor(){
         }
     }catch(error){console.error('Error al cargar estadísticas del tutor:',error);if(actividad)actividad.textContent='No se pudieron cargar las estadísticas. Verificá los permisos de lectura.';}
 }
+
+document.addEventListener('DOMContentLoaded',()=>{
+    const buscar=document.getElementById('buscarContactoChatTutor');
+    if(buscar)buscar.addEventListener('input',()=>{
+        const termino=buscar.value.trim().toLowerCase();
+        document.querySelectorAll('#listaContactos > *').forEach(el=>{el.style.display=el.textContent.toLowerCase().includes(termino)?'':'none';});
+    });
+});
