@@ -114,6 +114,21 @@
             </div>
         </div>
 
+        <div style="margin-top:1.5rem;background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+            <div style="padding:1.2rem 1.5rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                <h3 style="font-size:1.1rem;color:#1e293b;margin:0;">Historial de cambios de pagos</h3>
+                <p style="margin:.4rem 0 0;color:#64748b;font-size:.85rem;">Auditoría de quién cambió el estado, cuándo y cuál era el estado anterior.</p>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;text-align:left;">
+                    <thead><tr style="border-bottom:2px solid #e2e8f0;color:#475569;font-size:.85rem;">
+                        <th style="padding:1rem;">Fecha y hora</th><th style="padding:1rem;">Reserva</th><th style="padding:1rem;">Modificado por</th><th style="padding:1rem;">Estado anterior</th><th style="padding:1rem;">Estado nuevo</th>
+                    </tr></thead>
+                    <tbody id="tablaHistorialPagosAdmin"><tr><td colspan="5" style="text-align:center;padding:1.5rem;color:#64748b;">Cargando historial...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- 2. PESTAÑA USUARIOS -->
         <div id="tab-usuarios" class="admin-tab">
             <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
