@@ -13,6 +13,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let usuarioActual = null;
 let destinatarioActivoId = null;
 let reservasTutorCache = [];
+let pagosTutorCache = [];
 let mesCalendarioTutor = new Date();
 let diaSeleccionadoTutor = null;
 
@@ -736,66 +737,79 @@ async function confirmarCoordinacionYEnviarMail(supabaseClient, reservaId, estud
 async function cargarPanelPagosTutor() {
     const tbody = document.getElementById('tabla-pagos-tutor');
     if (!tbody || !usuarioActual) return;
-
     try {
         const { data: reservas, error } = await supabaseClient
             .from('reservas')
-            .select(`
-                id,
-                materia,
-                precio,
-                estado_pago,
-                creado_at,
-                estudiante:estudiante_id (nombre_completo)
-            `)
+            .select('id, materia, precio, estado_pago, creado_at, estudiante:estudiante_id (nombre_completo)')
             .eq('tutor_id', usuarioActual.id)
-            .order('id', { ascending: false });
-
+            .order('creado_at', { ascending: false });
         if (error) throw error;
-
-        tbody.innerHTML = '';
-
-        if (!reservas || reservas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: #64748b;">No tienes registros de pagos todavía.</td></tr>`;
-            return;
+        pagosTutorCache = reservas || [];
+        const materiaSelect = document.getElementById('filtroMateriaPagosTutor');
+        if (materiaSelect) {
+            const anterior = materiaSelect.value;
+            const materias = [...new Set(pagosTutorCache.map(r => String(r.materia || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+            materiaSelect.innerHTML = '<option value="">Todas las materias</option>';
+            materias.forEach(m => { const op=document.createElement('option'); op.value=m; op.textContent=m; materiaSelect.appendChild(op); });
+            if (materias.includes(anterior)) materiaSelect.value = anterior;
         }
-
-        reservas.forEach(reserva => {
-            let estado = reserva.estado_pago || 'Pendiente';
-            let badgeBg = '#f1f5f9';
-            let badgeColor = '#475569';
-
-            if (estado === 'Pagado') {
-                badgeBg = '#fef08a';
-                badgeColor = '#713f12';
-            } else if (estado === 'Completada') {
-                badgeBg = '#e0f2fe';
-                badgeColor = '#0369a1';
-            } else if (estado === 'Liquidado') {
-                badgeBg = '#dcfce7';
-                badgeColor = '#166534';
-            }
-
-            const fechaFormateada = reserva.creado_at ? new Date(reserva.creado_at).toLocaleDateString() : 'Fecha no disp.';
-
-            const tr = document.createElement('tr');
-            tr.style.borderBottom = '1px solid #e2e8f0';
-            tr.innerHTML = `
-                <td style="padding: 0.8rem; color: #1e293b; font-weight: 500;">${reserva.estudiante?.nombre_completo || 'Estudiante'}</td>
-                <td style="padding: 0.8rem; color: #475569;">${reserva.materia || 'Tutoría'}</td>
-                <td style="padding: 0.8rem; color: #1e293b; font-weight: 600;">$${reserva.precio || 0} ARS</td>
-                <td style="padding: 0.8rem;">
-                    <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
-                        ${estado}
-                    </span>
-                </td>
-                <td style="padding: 0.8rem; color: #64748b; font-size: 0.85rem;">${fechaFormateada}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
+        renderizarPagosTutor();
     } catch (err) {
-        console.error("Error al cargar los pagos del tutor:", err.message);
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: #dc2626;">Error al cargar los datos de pagos.</td></tr>`;
+        console.error('Error al cargar los pagos del tutor:', err.message);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:#dc2626;">Error al cargar los datos de pagos.</td></tr>';
     }
 }
+function renderizarPagosTutor() {
+    const tbody = document.getElementById('tabla-pagos-tutor');
+    if (!tbody) return;
+    const materia = (document.getElementById('filtroMateriaPagosTutor')?.value || '').trim().toLowerCase();
+    const estadoFiltro = document.getElementById('filtroEstadoPagoTutor')?.value || '';
+    const reservas = pagosTutorCache.filter(r =>
+        (!materia || String(r.materia || '').trim().toLowerCase() === materia) &&
+        (!estadoFiltro || (r.estado_pago || 'Pendiente') === estadoFiltro)
+    );
+    tbody.innerHTML = '';
+    if (!reservas.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:#64748b;">No hay pagos que coincidan con los filtros.</td></tr>';
+        return;
+    }
+    reservas.forEach(reserva => {
+        const estado = reserva.estado_pago || 'Pendiente';
+        const estilos = {
+            Pagado: ['#fef08a','#713f12'],
+            Completada: ['#e0f2fe','#0369a1'],
+            Liquidado: ['#dcfce7','#166534']
+        };
+        const [badgeBg,badgeColor] = estilos[estado] || ['#f1f5f9','#475569'];
+        const fecha = reserva.creado_at ? new Date(reserva.creado_at).toLocaleDateString('es-AR') : 'Fecha no disponible';
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #e2e8f0';
+        const celdas = [
+            reserva.estudiante?.nombre_completo || 'Estudiante',
+            reserva.materia || 'Tutoría',
+            '$' + Number(reserva.precio || 0).toLocaleString('es-AR') + ' ARS',
+            estado,
+            fecha
+        ];
+        celdas.forEach((valor, indice) => {
+            const td = document.createElement('td');
+            td.style.cssText = 'padding:.8rem;color:' + (indice===2 ? '#1e293b' : '#475569') + ';' + (indice===2 ? 'font-weight:600;' : '');
+            if (indice===3) {
+                const badge = document.createElement('span');
+                badge.style.cssText = 'background:'+badgeBg+';color:'+badgeColor+';padding:4px 8px;border-radius:6px;font-size:.75rem;font-weight:600;';
+                badge.textContent = valor; td.appendChild(badge);
+            } else td.textContent = valor;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+}
+document.getElementById('filtroMateriaPagosTutor')?.addEventListener('change', renderizarPagosTutor);
+document.getElementById('filtroEstadoPagoTutor')?.addEventListener('change', renderizarPagosTutor);
+document.getElementById('limpiarFiltrosPagosTutor')?.addEventListener('click', () => {
+    const materia=document.getElementById('filtroMateriaPagosTutor');
+    const estado=document.getElementById('filtroEstadoPagoTutor');
+    if(materia) materia.value='';
+    if(estado) estado.value='';
+    renderizarPagosTutor();
+});
