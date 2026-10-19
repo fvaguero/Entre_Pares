@@ -76,7 +76,12 @@
                         </label>
                         <label style="display:flex; flex-direction:column; gap:.35rem; min-width:160px; font-size:.8rem; color:#475569;">Estado del pago
                             <select id="filtroEstadoPagoAdmin" style="padding:.7rem; border:1px solid #cbd5e1; border-radius:8px; background:white;">
-                                <option value="todos">Todos los estados</option><option value="pendiente">Pendientes</option><option value="pagado">Pagados, sin liquidar</option><option value="liquidado">Liquidados</option>
+                                <option value="todos">Todos los pagos</option><option value="pendiente">Pago pendiente</option><option value="pagado">Pago recibido</option>
+                            </select>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:160px; font-size:.8rem; color:#475569;">Estado de liquidación
+                            <select id="filtroLiquidacionAdmin" style="padding:.7rem; border:1px solid #cbd5e1; border-radius:8px; background:white;">
+                                <option value="todos">Todas las liquidaciones</option><option value="pendiente">Pendiente de transferir</option><option value="liquidado">Transferido al tutor</option>
                             </select>
                         </label>
                         <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Desde
@@ -102,12 +107,12 @@
                                 <th style="padding: 1rem;">Fecha pago</th>
                                 <th style="padding: 1rem;">Fecha liquidación</th>
                                 <th style="padding: 1rem;">Monto</th>
-                                <th style="padding: 1rem;">Estado del Pago</th>
+                                <th style="padding: 1rem;">Pago del estudiante</th><th style="padding: 1rem;">Liquidación al tutor</th>
                                 <th style="padding: 1rem; text-align: center;">Acción Admin</th>
                             </tr>
                         </thead>
                         <tbody id="tablaAdminFinanzas">
-                            <tr><td colspan="9" style="text-align: center; padding: 2rem; color: #64748b;">Cargando finanzas...</td></tr>
+                            <tr><td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">Cargando finanzas...</td></tr>
                         </tbody>
                     </table>
                 </div>
