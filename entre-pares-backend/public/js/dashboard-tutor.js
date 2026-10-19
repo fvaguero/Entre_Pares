@@ -349,12 +349,7 @@ async function cancelarReservaTutor(reservaId) {
     });
     if (!confirmacion.isConfirmed) return;
     try {
-        const { error } = await supabaseClient
-            .from('reservas')
-            .update({ estado: 'Cancelada' })
-            .eq('id', reservaId)
-            .eq('tutor_id', usuarioActual.id)
-            .in('estado', ['Aceptada', 'Aprobada', 'Confirmada']);
+        const { error } = await supabaseClient.rpc('cancelar_reserva_participante', { p_reserva_id: String(reservaId) });
         if (error) throw error;
         mostrarNotificacion('La tutoría fue cancelada.', 'exito');
         await cargarSolicitudesYTutorias();
@@ -381,12 +376,7 @@ async function reprogramarReservaTutor(reservaId, fechaActual) {
     });
     if (!nuevaFecha) return;
     try {
-        const { error } = await supabaseClient
-            .from('reservas')
-            .update({ fecha_hora: new Date(nuevaFecha).toISOString() })
-            .eq('id', reservaId)
-            .eq('tutor_id', usuarioActual.id)
-            .in('estado', ['Aceptada', 'Aprobada', 'Confirmada']);
+        const { error } = await supabaseClient.rpc('reprogramar_reserva_participante', { p_reserva_id: String(reservaId), p_nueva_fecha: new Date(nuevaFecha).toISOString() });
         if (error) throw error;
         mostrarNotificacion('Horario actualizado. Coordiná el cambio con el estudiante por mensajes.', 'exito');
         await cargarSolicitudesYTutorias();
