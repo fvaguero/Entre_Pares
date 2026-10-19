@@ -367,9 +367,13 @@ async function cargarPanelPuntosAdmin(){
             supabaseClient.from('movimientos_puntos').select('id,usuario_id,tipo,referencia_id,puntos,descripcion,creado_at').order('creado_at',{ascending:false}).limit(100)
         ]);
         if(errCanjes)throw errCanjes;if(errMov)throw errMov;
+        const ids=[...new Set([...(canjes||[]),...(movimientos||[])].map(x=>x.usuario_id).filter(Boolean))];
+        let perfilesMap=new Map();
+        if(ids.length){const {data:perfiles}=await supabaseClient.from('perfiles').select('id,nombre_completo,email').in('id',ids);(perfiles||[]).forEach(p=>perfilesMap.set(String(p.id),(p.nombre_completo||'Usuario')+' · '+(p.email||p.id)));}
+        const etiquetaUsuario=id=>perfilesMap.get(String(id))||String(id||'Sin usuario');
         const pendientes=(canjes||[]).filter(x=>String(x.estado).toLowerCase()==='pendiente');
-        crearTablaAdmin(canjesCont,['Usuario','Recompensa','Costo','Fecha','Acciones'],pendientes.map(x=>{const a=document.createElement('div');a.append(botonAdmin('Confirmar','#15803d',()=>resolverCanjeAdmin(x.id,'confirmar')),botonAdmin('Rechazar','#b91c1c',()=>resolverCanjeAdmin(x.id,'rechazar')));return[x.usuario_id,x.beneficio,x.puntos,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
-        crearTablaAdmin(movCont,['Fecha','Usuario','Tipo','Puntos','Descripción / referencia'],(movimientos||[]).map(x=>[new Date(x.creado_at).toLocaleString('es-AR'),x.usuario_id,x.tipo,(x.puntos>0?'+':'')+x.puntos,x.descripcion+' · '+x.referencia_id]));
+        crearTablaAdmin(canjesCont,['Usuario','Recompensa','Costo','Fecha','Acciones'],pendientes.map(x=>{const a=document.createElement('div');a.append(botonAdmin('Confirmar','#15803d',()=>resolverCanjeAdmin(x.id,'confirmar')),botonAdmin('Rechazar','#b91c1c',()=>resolverCanjeAdmin(x.id,'rechazar')));return[etiquetaUsuario(x.usuario_id),x.beneficio,x.puntos,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
+        crearTablaAdmin(movCont,['Fecha','Usuario','Tipo','Puntos','Descripción / referencia'],(movimientos||[]).map(x=>[new Date(x.creado_at).toLocaleString('es-AR'),etiquetaUsuario(x.usuario_id),x.tipo,(x.puntos>0?'+':'')+x.puntos,x.descripcion+' · '+x.referencia_id]));
     }catch(error){if(canjesCont)canjesCont.textContent='No se pudieron cargar los canjes. Aplicá la migración del panel administrativo y revisá las políticas RLS.';if(movCont)movCont.textContent='No se pudieron cargar los movimientos: '+error.message;console.error(error);}
 }
 async function resolverCanjeAdmin(id,accion){
@@ -392,7 +396,9 @@ async function cargarReclamosAdmin(){
     const cont=document.getElementById('listaReclamosAdmin');if(!cont)return;
     const {data,error}=await supabaseClient.from('reclamos_puntos').select('id,usuario_id,asunto,descripcion,estado,respuesta_admin,creado_at').order('creado_at',{ascending:false}).limit(100);
     if(error){cont.textContent='No se pudieron cargar los reclamos. Aplicá la migración del panel administrativo.';return;}
-    crearTablaAdmin(cont,['Usuario','Asunto / descripción','Estado','Fecha','Acciones'],(data||[]).map(x=>{const a=document.createElement('div');a.append(botonAdmin('En revisión','#b45309',()=>resolverReclamoAdmin(x.id,'en_revision')),botonAdmin('Resolver','#15803d',()=>resolverReclamoAdmin(x.id,'resuelto')),botonAdmin('Rechazar','#b91c1c',()=>resolverReclamoAdmin(x.id,'rechazado')));return[x.usuario_id,x.asunto+' — '+x.descripcion,x.estado,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
+    const ids=[...new Set((data||[]).map(x=>x.usuario_id).filter(Boolean))];let perfilesMap=new Map();
+    if(ids.length){const {data:perfiles}=await supabaseClient.from('perfiles').select('id,nombre_completo,email').in('id',ids);(perfiles||[]).forEach(p=>perfilesMap.set(String(p.id),(p.nombre_completo||'Usuario')+' · '+(p.email||p.id)));}
+    crearTablaAdmin(cont,['Usuario','Asunto / descripción','Estado','Fecha','Acciones'],(data||[]).map(x=>{const a=document.createElement('div');a.append(botonAdmin('En revisión','#b45309',()=>resolverReclamoAdmin(x.id,'en_revision')),botonAdmin('Resolver','#15803d',()=>resolverReclamoAdmin(x.id,'resuelto')),botonAdmin('Rechazar','#b91c1c',()=>resolverReclamoAdmin(x.id,'rechazado')));return[perfilesMap.get(String(x.usuario_id))||x.usuario_id,x.asunto+' — '+x.descripcion,x.estado,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
 }
 async function resolverReclamoAdmin(id,estado){
     const respuesta=prompt('Respuesta para el usuario (opcional):','');if(respuesta===null)return;
