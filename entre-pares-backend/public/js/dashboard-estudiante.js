@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Cargar datos del estudiante y activar Realtime
+    inicializarFiltrosYCalendarioReservas();
     cargarMisReservas(supabaseClient, userId);
     inicializarChat(supabaseClient, userId);
     cargarContactos(supabaseClient, userId);
@@ -198,8 +199,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         formReserva.addEventListener('submit', async (e) => {
             e.preventDefault();
             const tutorId = document.getElementById('tutorIdModal').value;
-            const materia = document.getElementById('materiaReserva').value;
-            const comentarios = document.getElementById('comentariosReserva').value;
+            const materia = document.getElementById('materiaReserva').value.trim();
+            const comentarios = document.getElementById('comentariosReserva').value.trim();
+            const fechaInput = document.getElementById('fechaHoraReserva');
+            const fechaHora = fechaInput && fechaInput.value ? new Date(fechaInput.value).toISOString() : null;
             const mensajeEstado = document.getElementById('mensajeReserva');
 
             try {
@@ -212,6 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         estudiante_id: userId,
                         tutor_id: tutorId,
                         materia: materia,
+                        fecha_hora: fechaHora,
                         comentarios: comentarios,
                         estado: 'Pendiente',
                         estado_pago: 'Pendiente'
@@ -427,63 +431,114 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
     }
 }
 
-async function cargarMisReservas(supabaseClient, estudianteId) {
-    const contenedor = document.getElementById('listaMisReservas');
-    try {
-        const { data: reservas, error } = await supabaseClient
-            .from('reservas')
-            .select(`*, tutor:tutor_id (nombre_completo, email, precio_hora)`)
-            .eq('estudiante_id', estudianteId)
-            .order('id', { ascending: false });
+let reservasEstudianteCache = [];
+let fechaMesCalendario = new Date();
+let fechaSeleccionadaCalendario = null;
 
-        if (error || !reservas || reservas.length === 0) {
-            contenedor.innerHTML = `<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No tienes solicitudes de consulta aún.</p>`;
-            return;
-        }
-
-        contenedor.innerHTML = '';
-        reservas.forEach(res => {
-            let badgeColor = '#eab308';
-            if (res.estado === 'Aceptada' || res.estado === 'aprobada') badgeColor = '#16a34a';
-            if (res.estado === 'Rechazada' || res.estado === 'rechazada') badgeColor = '#dc2626';
-            if (res.estado === 'Finalizada') badgeColor = '#2563eb';
-
-            let botonAccion = '';
-            if (res.estado === 'Aceptada' || res.estado === 'aprobada') {
-                if (res.estado_pago === 'Pendiente' || !res.estado_pago) {
-                    const precio = res.precio || res.tutor?.precio_hora || 3000;
-                    botonAccion = `<button id="btn-pagar-${res.id}" onclick="pagarTutoria('${res.id}', '${res.materia}', ${precio})" class="btn btn-yellow" style="width: 100%; display: block; text-align: center; margin-top: 0.8rem; padding: 0.5rem; font-size: 0.85rem; border-radius: 4px; border: none; font-weight: 600; cursor: pointer;">💳 Pagar Tutoría ($${precio})</button>`;
-                } else {
-                    botonAccion = `
-                        <a href="https://meet.jit.si/EntrePares-${res.id}" target="_blank" class="btn" style="display: block; text-align: center; margin-top: 0.8rem; background: #2563eb; color: white; padding: 0.5rem; font-size: 0.8rem; text-decoration: none; border-radius: 4px; font-weight:600;">🎥 Unirse a Videollamada</a>
-                    `;
-                }
-            } else if (res.estado === 'Finalizada') {
-                botonAccion = `
-                    <button onclick="abrirModalResena('${res.id}', '${res.tutor_id}', '${res.tutor?.nombre_completo}')" class="btn btn-yellow" style="width: 100%; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
-                        ⭐ Calificar Tutoría
-                    </button>
-                `;
+function estadoReservaNormalizado(estado) {
+    const e = String(estado || '').trim().toLowerCase();
+    if (['aceptada','aprobada','confirmada','confirmado'].includes(e)) return 'Aceptada';
+    if (['rechazada','rechazado'].includes(e)) return 'Rechazada';
+    if (['finalizada','finalizado'].includes(e)) return 'Finalizada';
+    return 'Pendiente';
+}
+function fechaClaveLocal(fecha) {
+    return fecha.getFullYear()+'-'+String(fecha.getMonth()+1).padStart(2,'0')+'-'+String(fecha.getDate()).padStart(2,'0');
+}
+function mostrarFechaReserva(valor) {
+    if (!valor) return 'Fecha y hora a coordinar';
+    const f = new Date(valor);
+    return Number.isNaN(f.getTime()) ? 'Fecha y hora a coordinar' : f.toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'});
+}
+function reservasFiltradas() {
+    const materia=(document.getElementById('filtroMateriaReservas')?.value||'').toLowerCase();
+    const estado=document.getElementById('filtroEstadoReservas')?.value||'';
+    return reservasEstudianteCache.filter(r=>
+        (!materia || String(r.materia||'').trim().toLowerCase()===materia) &&
+        (!estado || estadoReservaNormalizado(r.estado)===estado)
+    );
+}
+function actualizarFiltroMaterias() {
+    const select=document.getElementById('filtroMateriaReservas');
+    if(!select)return;
+    const anterior=select.value;
+    const materias=[...new Set(reservasEstudianteCache.map(r=>String(r.materia||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+    select.innerHTML='<option value="">Todas las materias</option>';
+    materias.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;select.appendChild(o);});
+    if(materias.includes(anterior))select.value=anterior;
+}
+function inicializarFiltrosYCalendarioReservas() {
+    ['filtroMateriaReservas','filtroEstadoReservas'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{renderizarReservasEstudiante();renderizarCalendarioReservas();}));
+    document.getElementById('btnLimpiarFiltrosReservas')?.addEventListener('click',()=>{
+        document.getElementById('filtroMateriaReservas').value='';
+        document.getElementById('filtroEstadoReservas').value='';
+        fechaSeleccionadaCalendario=null;
+        renderizarReservasEstudiante();renderizarCalendarioReservas();
+    });
+    document.getElementById('btnMesAnterior')?.addEventListener('click',()=>{fechaMesCalendario=new Date(fechaMesCalendario.getFullYear(),fechaMesCalendario.getMonth()-1,1);renderizarCalendarioReservas();});
+    document.getElementById('btnMesSiguiente')?.addEventListener('click',()=>{fechaMesCalendario=new Date(fechaMesCalendario.getFullYear(),fechaMesCalendario.getMonth()+1,1);renderizarCalendarioReservas();});
+    const input=document.getElementById('fechaHoraReserva');
+    if(input){const ahora=new Date();ahora.setMinutes(ahora.getMinutes()-ahora.getTimezoneOffset());input.min=ahora.toISOString().slice(0,16);}
+}
+function renderizarReservasEstudiante() {
+    const cont=document.getElementById('listaMisReservas');if(!cont)return;
+    const reservas=reservasFiltradas().sort((a,b)=>new Date(b.fecha_hora||b.creado_at||0)-new Date(a.fecha_hora||a.creado_at||0));
+    cont.innerHTML='';
+    if(!reservas.length){cont.innerHTML='<p style="color:#64748b;font-size:.9rem;text-align:center;grid-column:1/-1;">No hay consultas que coincidan con los filtros seleccionados.</p>';return;}
+    reservas.forEach(res=>{
+        const estado=estadoReservaNormalizado(res.estado);
+        const color=estado==='Aceptada'?'#16a34a':estado==='Rechazada'?'#dc2626':estado==='Finalizada'?'#2563eb':'#eab308';
+        const card=document.createElement('div');card.className='panel-card';card.style.cssText='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;font-size:.85rem;';
+        const cab=document.createElement('div');cab.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.4rem;';
+        const titulo=document.createElement('strong');titulo.style.cssText='color:#0f172a;font-size:1rem;';titulo.textContent=res.materia||'Consulta';
+        const badge=document.createElement('span');badge.style.cssText='background:'+color+';color:white;padding:2px 8px;border-radius:4px;font-size:.72rem;';badge.textContent=estado==='Aceptada'?'Confirmada':estado;cab.append(titulo,badge);
+        const tutor=document.createElement('p');tutor.style.cssText='color:#475569;margin:.3rem 0;';tutor.textContent='Tutor: '+(res.tutor?.nombre_completo||'Asignado');
+        const fecha=document.createElement('p');fecha.style.cssText='color:#475569;margin:.3rem 0;';fecha.textContent='📅 '+mostrarFechaReserva(res.fecha_hora);
+        const duda=document.createElement('p');duda.style.cssText='color:#475569;margin:.3rem 0;';duda.textContent='Duda: '+(res.comentarios||'Sin descripción');
+        card.append(cab,tutor,fecha,duda);
+        if(estado==='Aceptada'){
+            if(res.estado_pago==='Pendiente'||!res.estado_pago){
+                const btn=document.createElement('button');btn.id='btn-pagar-'+res.id;btn.className='btn btn-yellow';btn.style.cssText='width:100%;margin-top:.8rem;padding:.5rem;font-size:.85rem;';btn.textContent='💳 Pagar Tutoría ($'+(res.precio||res.tutor?.precio_hora||3000)+')';btn.onclick=()=>pagarTutoria(res.id,res.materia,Number(res.precio||res.tutor?.precio_hora||3000));card.appendChild(btn);
+            } else {
+                const a=document.createElement('a');a.href='https://meet.jit.si/EntrePares-'+res.id;a.target='_blank';a.rel='noopener noreferrer';a.className='btn';a.style.cssText='display:block;text-align:center;margin-top:.8rem;background:#2563eb;color:white;padding:.5rem;text-decoration:none;border-radius:4px;';a.textContent='🎥 Unirse a Videollamada';card.appendChild(a);
             }
-
-            const card = document.createElement('div');
-            card.className = "panel-card";
-            card.style.cssText = "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-size: 0.85rem;";
-            card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                    <strong style="color: #0f172a; font-size: 1rem;">${res.materia}</strong>
-                    <span style="background: ${badgeColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; text-transform: uppercase;">${res.estado}</span>
-                </div>
-                <p style="color: #475569; margin: 0.3rem 0;">Tutor: <strong>${res.tutor?.nombre_completo || 'Asignado'}</strong></p>
-                <p style="color: #475569; margin: 0.3rem 0;"><strong>Duda:</strong> ${res.comentarios || 'Sin descripción'}</p>
-                ${botonAccion}
-            `;
-            contenedor.appendChild(card);
-        });
-    } catch (err) {
-        console.error("Error al cargar reservas:", err);
-        contenedor.innerHTML = `<p style="color: #dc2626; font-size: 0.85rem; text-align: center;">Error al cargar solicitudes.</p>`;
+        } else if(estado==='Finalizada'){
+            const btn=document.createElement('button');btn.className='btn btn-yellow';btn.style.cssText='width:100%;margin-top:.5rem;padding:.5rem;';btn.textContent='⭐ Calificar Tutoría';btn.onclick=()=>abrirModalResena(res.id,res.tutor_id,res.tutor?.nombre_completo||'Tutor');card.appendChild(btn);
+        }
+        cont.appendChild(card);
+    });
+}
+function renderizarCalendarioReservas() {
+    const cal=document.getElementById('calendarioReservas'),titulo=document.getElementById('tituloMesCalendario'),detalle=document.getElementById('detalleDiaCalendario');
+    if(!cal||!titulo||!detalle)return;
+    titulo.textContent=fechaMesCalendario.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
+    titulo.textContent=titulo.textContent.charAt(0).toUpperCase()+titulo.textContent.slice(1);
+    cal.innerHTML='';
+    ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(d=>{const el=document.createElement('div');el.textContent=d;el.style.cssText='text-align:center;font-size:.75rem;font-weight:700;color:#64748b;padding:.45rem 0;';cal.appendChild(el);});
+    const primero=new Date(fechaMesCalendario.getFullYear(),fechaMesCalendario.getMonth(),1),offset=(primero.getDay()+6)%7,dias=new Date(fechaMesCalendario.getFullYear(),fechaMesCalendario.getMonth()+1,0).getDate();
+    for(let i=0;i<offset;i++)cal.appendChild(document.createElement('div'));
+    const conFecha=reservasFiltradas().filter(r=>r.fecha_hora&&!Number.isNaN(new Date(r.fecha_hora).getTime()));
+    const marcados=new Set(conFecha.map(r=>fechaClaveLocal(new Date(r.fecha_hora))));
+    for(let d=1;d<=dias;d++){
+        const f=new Date(fechaMesCalendario.getFullYear(),fechaMesCalendario.getMonth(),d),clave=fechaClaveLocal(f),hay=marcados.has(clave),sel=clave===fechaSeleccionadaCalendario;
+        const btn=document.createElement('button');btn.type='button';btn.textContent=d;btn.style.cssText='min-height:42px;border:1px solid '+(sel?'#2563eb':hay?'#86efac':'#e2e8f0')+';border-radius:8px;background:'+(sel?'#dbeafe':hay?'#f0fdf4':'white')+';font-weight:'+(hay?'700':'400')+';cursor:pointer;';
+        btn.addEventListener('click',()=>{fechaSeleccionadaCalendario=clave;renderizarCalendarioReservas();});cal.appendChild(btn);
     }
+    detalle.innerHTML='';
+    if(!fechaSeleccionadaCalendario){detalle.innerHTML='<p style="color:#64748b;font-size:.85rem;">Seleccioná un día para ver las tutorías programadas.</p>';return;}
+    const delDia=conFecha.filter(r=>fechaClaveLocal(new Date(r.fecha_hora))===fechaSeleccionadaCalendario).sort((a,b)=>new Date(a.fecha_hora)-new Date(b.fecha_hora));
+    const h=document.createElement('h3');h.style.cssText='font-size:.95rem;margin:0 0 .7rem;';h.textContent='Tutorías del '+new Date(fechaSeleccionadaCalendario+'T12:00:00').toLocaleDateString('es-AR',{dateStyle:'full'});detalle.appendChild(h);
+    if(!delDia.length){const p=document.createElement('p');p.style.cssText='color:#64748b;font-size:.85rem;';p.textContent='No hay tutorías para este día con los filtros actuales.';detalle.appendChild(p);return;}
+    delDia.forEach(r=>{const p=document.createElement('div');p.style.cssText='padding:.75rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:.5rem;background:#f8fafc;';const hora=new Date(r.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});const estado=estadoReservaNormalizado(r.estado);p.textContent=hora+' · '+r.materia+' · '+(estado==='Aceptada'?'Confirmada':estado)+' · Tutor: '+(r.tutor?.nombre_completo||'Asignado');detalle.appendChild(p);});
+}
+async function cargarMisReservas(supabaseClient, estudianteId) {
+    const cont=document.getElementById('listaMisReservas');
+    try{
+        const {data:reservas,error}=await supabaseClient.from('reservas').select('*, tutor:tutor_id (nombre_completo, email, precio_hora)').eq('estudiante_id',estudianteId).order('creado_at',{ascending:false});
+        if(error)throw error;
+        reservasEstudianteCache=reservas||[];
+        actualizarFiltroMaterias();renderizarReservasEstudiante();renderizarCalendarioReservas();
+    }catch(err){console.error('Error al cargar reservas:',err);if(cont)cont.innerHTML='<p style="color:#dc2626;font-size:.85rem;text-align:center;">Error al cargar solicitudes. Intentá nuevamente.</p>';}
 }
 
 window.abrirModalReserva = function(tutorId, tutorNombre) {
