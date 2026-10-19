@@ -369,7 +369,7 @@ async function cargarPanelPuntosAdmin(){
         if(errCanjes)throw errCanjes;if(errMov)throw errMov;
         const ids=[...new Set([...(canjes||[]),...(movimientos||[])].map(x=>x.usuario_id).filter(Boolean))];
         let perfilesMap=new Map();
-        if(ids.length){const {data:perfiles}=await supabaseClient.from('perfiles').select('id,nombre_completo,email').in('id',ids);(perfiles||[]).forEach(p=>perfilesMap.set(String(p.id),(p.nombre_completo||'Usuario')+' · '+(p.email||p.id)));}
+        if(ids.length){const {data:perfiles}=await supabaseClient.from('perfiles').select('id,nombre_completo,email').in('id',ids);(perfiles||[]).forEach(p=>perfilesMap.set(String(p.id),(p.nombre_completo||'Usuario')+' · '+(p.email||'sin correo')+' ['+p.id+']'));}
         const etiquetaUsuario=id=>perfilesMap.get(String(id))||String(id||'Sin usuario');
         const pendientes=(canjes||[]).filter(x=>String(x.estado).toLowerCase()==='pendiente');
         crearTablaAdmin(canjesCont,['Usuario','Recompensa','Costo','Fecha','Acciones'],pendientes.map(x=>{const a=document.createElement('div');a.append(botonAdmin('Confirmar','#15803d',()=>resolverCanjeAdmin(x.id,'confirmar')),botonAdmin('Rechazar','#b91c1c',()=>resolverCanjeAdmin(x.id,'rechazar')));return[etiquetaUsuario(x.usuario_id),x.beneficio,x.puntos,new Date(x.creado_at).toLocaleString('es-AR'),a];}));
