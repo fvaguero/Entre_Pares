@@ -365,8 +365,8 @@ async function cargarEstadisticasPersonales() {
     try {
         const [{ data: reservas, error: errReservas }, { data: recibidas, error: errRecibidas }, { data: escritas, error: errEscritas }, { data: perfil, error: errPerfil }] = await Promise.all([
             supabaseClient.from('reservas').select('id,materia,estado,fecha_hora,creado_at').eq('estudiante_id', user.id).order('creado_at', { ascending: false }).limit(100),
-            supabaseClient.from('resenas').select('calificacion,creado_at,comentario').eq('estudiante_id', user.id).eq('calificado_por', 'tutor').order('creado_at', { ascending: false }).limit(100),
-            supabaseClient.from('resenas').select('id,calificacion,creado_at').eq('estudiante_id', user.id).neq('calificado_por', 'tutor').order('creado_at', { ascending: false }).limit(100),
+            supabaseClient.from('resenas').select('calificacion').eq('estudiante_id', user.id).eq('calificado_por', 'tutor').limit(100),
+            supabaseClient.from('resenas').select('id,calificacion').eq('estudiante_id', user.id).neq('calificado_por', 'tutor').limit(100),
             supabaseClient.from('perfiles').select('puntos_gamificacion').eq('id', user.id).maybeSingle()
         ]);
         if (errReservas || errRecibidas || errEscritas || errPerfil) throw errReservas || errRecibidas || errEscritas || errPerfil;
