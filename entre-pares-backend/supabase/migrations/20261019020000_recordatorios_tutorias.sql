@@ -45,6 +45,12 @@ declare
   v_insertados integer := 0;
   v_ahora timestamptz := now();
 begin
+  -- Al cancelar/rechazar una tutoría se eliminan sus avisos futuros o ya generados.
+  delete from public.recordatorios_notificaciones n
+  using public.reservas r
+  where n.reserva_id = r.id::text
+    and lower(coalesce(r.estado,'')) not in ('aceptada','aprobada','confirmada');
+
   -- Una tutoría solo genera avisos si está confirmada y aún no comenzó.
   -- Los estados se comparan sin distinguir mayúsculas por compatibilidad con datos existentes.
   insert into public.recordatorios_notificaciones
@@ -70,7 +76,18 @@ begin
     and r.fecha_hora > v_ahora
     and v_ahora >= r.fecha_hora - avisos.anticipacion
     and v_ahora < r.fecha_hora - avisos.anticipacion + interval '10 minutes'
-  on conflict (usuario_id, reserva_id, tipo) do nothing;
+  on conflict (usuario_id, reserva_id, tipo) do update
+    set fecha_tutoria = excluded.fecha_tutoria,
+        titulo = excluded.titulo,
+        mensaje = excluded.mensaje,
+        leida = case
+          when public.recordatorios_notificaciones.fecha_tutoria is distinct from excluded.fecha_tutoria then false
+          else public.recordatorios_notificaciones.leida
+        end,
+        creado_at = case
+          when public.recordatorios_notificaciones.fecha_tutoria is distinct from excluded.fecha_tutoria then now()
+          else public.recordatorios_notificaciones.creado_at
+        end;
 
   get diagnostics v_insertados = row_count;
   return v_insertados;
