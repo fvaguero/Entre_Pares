@@ -648,12 +648,7 @@ async function cancelarReservaEstudiante(reservaId) {
     });
     if (!confirmacion.isConfirmed) return;
     try {
-        const { error } = await supabaseClient
-            .from('reservas')
-            .update({ estado: 'Cancelada' })
-            .eq('id', reservaId)
-            .eq('estudiante_id', userId)
-            .in('estado', ['Pendiente', 'Aceptada', 'Aprobada', 'Confirmada']);
+        const { error } = await supabaseClient.rpc('cancelar_reserva_participante', { p_reserva_id: String(reservaId) });
         if (error) throw error;
         mostrarNotificacionEstudiante('La solicitud de cancelación se guardó.', 'exito');
         await cargarMisReservas(supabaseClient, userId);
@@ -680,12 +675,7 @@ async function reprogramarReservaEstudiante(reservaId, fechaActual) {
     });
     if (!nuevaFecha) return;
     try {
-        const { error } = await supabaseClient
-            .from('reservas')
-            .update({ fecha_hora: new Date(nuevaFecha).toISOString() })
-            .eq('id', reservaId)
-            .eq('estudiante_id', userId)
-            .in('estado', ['Pendiente', 'Aceptada', 'Aprobada', 'Confirmada']);
+        const { error } = await supabaseClient.rpc('reprogramar_reserva_participante', { p_reserva_id: String(reservaId), p_nueva_fecha: new Date(nuevaFecha).toISOString() });
         if (error) throw error;
         mostrarNotificacionEstudiante('Horario actualizado. Coordiná el cambio con el tutor por mensajes.', 'exito');
         await cargarMisReservas(supabaseClient, userId);
