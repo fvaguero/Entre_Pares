@@ -480,9 +480,9 @@ function inicializarFiltrosYCalendarioReservas() {
     const input=document.getElementById('fechaHoraReserva');
     if(input){const ahora=new Date();ahora.setMinutes(ahora.getMinutes()-ahora.getTimezoneOffset());input.min=ahora.toISOString().slice(0,16);}
 }
-function renderizarReservasEstudiante() {
-    const cont=document.getElementById('listaMisReservas');if(!cont)return;
-    const reservas=reservasFiltradas().sort((a,b)=>new Date(b.fecha_hora||b.creado_at||0)-new Date(a.fecha_hora||a.creado_at||0));
+function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaReservas=null) {
+    const cont=document.getElementById(contenedorId);if(!cont)return;
+    const reservas=(listaReservas || reservasFiltradas()).slice().sort((a,b)=>new Date(b.fecha_hora||b.creado_at||0)-new Date(a.fecha_hora||a.creado_at||0));
     cont.innerHTML='';
     if(!reservas.length){cont.innerHTML='<p style="color:#64748b;font-size:.9rem;text-align:center;grid-column:1/-1;">No hay consultas que coincidan con los filtros seleccionados.</p>';return;}
     reservas.forEach(res=>{
@@ -525,11 +525,11 @@ function renderizarCalendarioReservas() {
         btn.addEventListener('click',()=>{fechaSeleccionadaCalendario=clave;renderizarCalendarioReservas();});cal.appendChild(btn);
     }
     detalle.innerHTML='';
-    if(!fechaSeleccionadaCalendario){detalle.innerHTML='<p style="color:#64748b;font-size:.85rem;">Seleccioná un día para ver las tutorías programadas.</p>';return;}
+    if(!fechaSeleccionadaCalendario){detalle.innerHTML='<p style="color:#64748b;font-size:.85rem;">Seleccioná un día para ver las tarjetas de las consultas.</p>';return;}
     const delDia=conFecha.filter(r=>fechaClaveLocal(new Date(r.fecha_hora))===fechaSeleccionadaCalendario).sort((a,b)=>new Date(a.fecha_hora)-new Date(b.fecha_hora));
-    const h=document.createElement('h3');h.style.cssText='font-size:.95rem;margin:0 0 .7rem;';h.textContent='Tutorías del '+new Date(fechaSeleccionadaCalendario+'T12:00:00').toLocaleDateString('es-AR',{dateStyle:'full'});detalle.appendChild(h);
-    if(!delDia.length){const p=document.createElement('p');p.style.cssText='color:#64748b;font-size:.85rem;';p.textContent='No hay tutorías para este día con los filtros actuales.';detalle.appendChild(p);return;}
-    delDia.forEach(r=>{const p=document.createElement('div');p.style.cssText='padding:.75rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:.5rem;background:#f8fafc;';const hora=new Date(r.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});const estado=estadoReservaNormalizado(r.estado);p.textContent=hora+' · '+r.materia+' · '+(estado==='Aceptada'?'Confirmada':estado)+' · Tutor: '+(r.tutor?.nombre_completo||'Asignado');detalle.appendChild(p);});
+    const h=document.createElement('h3');h.style.cssText='font-size:.95rem;margin:0 0 .7rem;';h.textContent='Consultas del '+new Date(fechaSeleccionadaCalendario+'T12:00:00').toLocaleDateString('es-AR',{dateStyle:'full'});detalle.appendChild(h);
+    const tarjetas=document.createElement('div');tarjetas.id='consultasDelDiaCalendario';tarjetas.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;';detalle.appendChild(tarjetas);
+    renderizarReservasEstudiante('consultasDelDiaCalendario',delDia);
 }
 async function cargarMisReservas(supabaseClient, estudianteId) {
     const cont=document.getElementById('listaMisReservas');
