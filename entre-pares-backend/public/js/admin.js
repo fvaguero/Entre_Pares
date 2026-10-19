@@ -30,9 +30,9 @@ function fecha(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.g
 function iso(v){if(!v)return '';const d=new Date(v);return Number.isNaN(d.getTime())?'':d.toISOString().slice(0,10);}
 function tipoPago(v){const s=normalizar(v);if(LIQUIDADOS.includes(s))return 'liquidado';if(PAGADOS.includes(s))return 'pagado';if(PENDIENTES.includes(s)||!s)return 'pendiente';return 'otro';}
 function conectarFiltrosPagos(){
- ['buscarPagoAdmin','filtroEstadoPagoAdmin','filtroLiquidacionAdmin','fechaDesdePagoAdmin','fechaHastaPagoAdmin'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',renderizarFinanzas);e.addEventListener('change',renderizarFinanzas);}});
+ ['buscarPagoAdmin','filtroEstadoPagoAdmin','filtroLiquidacionAdmin','fechaDesdePagoAdmin','fechaHastaPagoAdmin','fechaDesdeLiquidacionAdmin','fechaHastaLiquidacionAdmin'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',renderizarFinanzas);e.addEventListener('change',renderizarFinanzas);}});
  const limpiar=document.getElementById('limpiarFiltrosPagoAdmin');
- if(limpiar)limpiar.addEventListener('click',()=>{['buscarPagoAdmin','fechaDesdePagoAdmin','fechaHastaPagoAdmin'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const s=document.getElementById('filtroEstadoPagoAdmin');if(s)s.value='todos';const l=document.getElementById('filtroLiquidacionAdmin');if(l)l.value='todos';renderizarFinanzas();});
+ if(limpiar)limpiar.addEventListener('click',()=>{['buscarPagoAdmin','fechaDesdePagoAdmin','fechaHastaPagoAdmin','fechaDesdeLiquidacionAdmin','fechaHastaLiquidacionAdmin'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const s=document.getElementById('filtroEstadoPagoAdmin');if(s)s.value='todos';const l=document.getElementById('filtroLiquidacionAdmin');if(l)l.value='todos';renderizarFinanzas();});
  const csv=document.getElementById('exportarPagosCSVAdmin');if(csv)csv.addEventListener('click',exportarCSV);
 }
 async function cargarDatosAdminFinanzas(){
@@ -48,11 +48,15 @@ async function cargarDatosAdminFinanzas(){
 function filtradas(){
  const q=normalizar((document.getElementById('buscarPagoAdmin')||{}).value),estado=(document.getElementById('filtroEstadoPagoAdmin')||{}).value||'todos';
  const liquidacion=(document.getElementById('filtroLiquidacionAdmin')||{}).value||'todos';
- const desde=(document.getElementById('fechaDesdePagoAdmin')||{}).value||'',hasta=(document.getElementById('fechaHastaPagoAdmin')||{}).value||'';
+ const desdePago=(document.getElementById('fechaDesdePagoAdmin')||{}).value||'',hastaPago=(document.getElementById('fechaHastaPagoAdmin')||{}).value||'';
+ const desdeLiq=(document.getElementById('fechaDesdeLiquidacionAdmin')||{}).value||'',hastaLiq=(document.getElementById('fechaHastaLiquidacionAdmin')||{}).value||'';
  return reservasFinanzasCache.filter(r=>{
   const texto=[r.estudiante&&r.estudiante.nombre_completo,r.estudiante&&r.estudiante.email,r.tutor&&r.tutor.nombre_completo,r.tutor&&r.tutor.cvu_alias,r.materia].map(normalizar).join(' ');
   if(q&&!texto.includes(q))return false;const tipo=tipoPagoSolo(r);if(estado!=='todos'&&tipo!==estado)return false;const tipoLiq=tipoLiquidacion(r);if(liquidacion!=='todos'&&tipoLiq!==liquidacion)return false;
-  const f=iso(r.fecha_liquidacion||r.fecha_pago||r.fecha_hora||r.creado_at);if(desde&&(!f||f<desde))return false;if(hasta&&(!f||f>hasta))return false;return true;
+  const fp=iso(r.fecha_pago),fl=iso(r.fecha_liquidacion);
+  if(desdePago&&(!fp||fp<desdePago))return false;if(hastaPago&&(!fp||fp>hastaPago))return false;
+  if(desdeLiq&&(!fl||fl<desdeLiq))return false;if(hastaLiq&&(!fl||fl>hastaLiq))return false;
+  return true;
  });
 }
 function renderizarFinanzas(){
