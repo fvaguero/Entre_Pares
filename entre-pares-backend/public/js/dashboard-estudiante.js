@@ -105,6 +105,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarMisReservas(supabaseClient, userId);
     inicializarChat(supabaseClient, userId);
     cargarContactos(supabaseClient, userId);
+    const buscarContactoChat = document.getElementById('buscarContactoChat');
+    if (buscarContactoChat) buscarContactoChat.addEventListener('input', () => {
+        const termino = buscarContactoChat.value.trim().toLowerCase();
+        document.querySelectorAll('#listaContactos > *').forEach(el => { el.style.display = el.textContent.toLowerCase().includes(termino) ? '' : 'none'; });
+    });
     inicializarNotificacionesReservas(supabaseClient, userId);
     inicializarPanelRecordatorios(userId);
 
@@ -114,7 +119,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnAplicarFiltros.addEventListener('click', () => {
             const materiaFiltro = document.getElementById('filtroMateria').value.trim();
             const ciudadFiltro = document.getElementById('filtroCiudad').value.trim();
-            cargarTutoresEnMapa(supabaseClient, mapa, materiaFiltro, ciudadFiltro);
+            const valoracionMinima = document.getElementById('filtroValoracion')?.value || '';
+            const precioMaximo = document.getElementById('filtroPrecioMaximo')?.value || '';
+            const disponibilidad = document.getElementById('filtroDisponibilidad')?.value || '';
+            cargarTutoresEnMapa(supabaseClient, mapa, materiaFiltro, ciudadFiltro, valoracionMinima, precioMaximo, disponibilidad);
         });
     }
 
@@ -348,6 +356,47 @@ function mostrarNotificacionEstudiante(mensaje, tipo) {
 }
 
 
+async function cargarEstadisticasPersonales() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    const actividad = document.getElementById('listaActividadPersonal');
+    if (actividad) actividad.textContent = 'Cargando actividad…';
+    try {
+        const [{ data: reservas, error: errReservas }, { data: recibidas, error: errRecibidas }, { data: escritas, error: errEscritas }, { data: perfil, error: errPerfil }] = await Promise.all([
+            supabaseClient.from('reservas').select('id,materia,estado,fecha_hora,creado_at').eq('estudiante_id', user.id).order('creado_at', { ascending: false }).limit(100),
+            supabaseClient.from('resenas').select('calificacion,creado_at,comentario').eq('estudiante_id', user.id).eq('calificado_por', 'tutor').order('creado_at', { ascending: false }).limit(100),
+            supabaseClient.from('resenas').select('id,calificacion,creado_at').eq('estudiante_id', user.id).neq('calificado_por', 'tutor').order('creado_at', { ascending: false }).limit(100),
+            supabaseClient.from('perfiles').select('puntos_gamificacion').eq('id', user.id).maybeSingle()
+        ]);
+        if (errReservas || errRecibidas || errEscritas || errPerfil) throw errReservas || errRecibidas || errEscritas || errPerfil;
+        const completadas = (reservas || []).filter(x => String(x.estado || '').toLowerCase() === 'finalizada');
+        const notas = (recibidas || []).map(x => Number(x.calificacion)).filter(x => x >= 1 && x <= 5);
+        set('estadisticaTutoriasCompletadas', completadas.length);
+        set('estadisticaPromedioResenas', notas.length ? (notas.reduce((a,b)=>a+b,0)/notas.length).toFixed(1) + ' / 5' : 'Sin notas');
+        set('estadisticaPuntos', Number(perfil?.puntos_gamificacion || 0));
+        set('estadisticaResenasEscritas', (escritas || []).length);
+        if (actividad) {
+            const recientes = [...(reservas || []).slice(0,6)].sort((a,b)=>new Date(b.creado_at || b.fecha_hora || 0)-new Date(a.creado_at || a.fecha_hora || 0));
+            actividad.replaceChildren();
+            if (!recientes.length) actividad.textContent = 'Todavía no hay actividad registrada.';
+            recientes.forEach(item => {
+                const row = document.createElement('div');
+                row.style.cssText = 'padding:.65rem;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;';
+                const label = document.createElement('span');
+                label.textContent = (item.materia || 'Tutoría') + ' · ' + (item.estado || 'Sin estado');
+                const date = document.createElement('small');
+                date.style.color = '#64748b';
+                date.textContent = item.fecha_hora ? new Date(item.fecha_hora).toLocaleString('es-AR', { dateStyle:'medium', timeStyle:'short' }) : 'Fecha pendiente';
+                row.append(label,date); actividad.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('No se pudieron cargar las estadísticas personales:', error);
+        if (actividad) actividad.textContent = 'No se pudieron cargar las estadísticas. Verificá los permisos de lectura de reservas y reseñas.';
+    }
+}
+
 /* Recordatorios persistentes de tutorías: se generan desde Supabase, no desde el navegador. */
 async function inicializarPanelRecordatorios(usuarioId) {
     const boton = document.getElementById('btnCampanita');
@@ -436,7 +485,7 @@ function limpiarMarcadoresDelMapa(mapa) {
     marcadoresActuales = [];
 }
 
-async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', filtroCiudad = '') {
+async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', filtroCiudad = '', valoracionMinima = '', precioMaximo = '', disponibilidad = '') {
     const listaTutoresContenedor = document.getElementById('listaTutoresFiltrados');
     if (listaTutoresContenedor) {
         listaTutoresContenedor.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">Buscando tutores...</p>';
@@ -462,6 +511,24 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
 
         limpiarMarcadoresDelMapa(mapa);
 
+        let tutoresOcupados = new Set();
+        if (disponibilidad) {
+            const fechaConsulta = new Date(disponibilidad);
+            if (Number.isNaN(fechaConsulta.getTime()) || fechaConsulta <= new Date()) {
+                if (listaTutoresContenedor) listaTutoresContenedor.innerHTML = '<p style="color:#b91c1c;text-align:center;">Elegí una fecha y hora futura para comprobar disponibilidad.</p>';
+                return;
+            }
+            const desde = new Date(fechaConsulta.getTime() - 60 * 60 * 1000).toISOString();
+            const hasta = new Date(fechaConsulta.getTime() + 60 * 60 * 1000).toISOString();
+            const { data: reservasOcupadas, error: errorOcupadas } = await supabaseClient
+                .from('reservas').select('tutor_id, fecha_hora, estado')
+                .gte('fecha_hora', desde).lte('fecha_hora', hasta);
+            if (errorOcupadas) throw errorOcupadas;
+            (reservasOcupadas || []).forEach(reserva => {
+                if (['aceptada','aprobada','confirmada'].includes(String(reserva.estado || '').toLowerCase()) && reserva.tutor_id) tutoresOcupados.add(String(reserva.tutor_id));
+            });
+        }
+
         if (!tutores || tutores.length === 0) {
             if (listaTutoresContenedor) listaTutoresContenedor.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; text-align: center;">No se encontraron tutores disponibles.</p>';
             return;
@@ -472,11 +539,10 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
         let tutoresMostrados = 0;
 
         tutores.forEach((tutor, index) => {
-            if (filtroMateria && tutor.materias_impartidas) {
-                if (!tutor.materias_impartidas.toLowerCase().includes(filtroMateria.toLowerCase())) {
-                    return;
-                }
-            }
+            if (filtroMateria && !String(tutor.materias_impartidas || '').toLowerCase().includes(filtroMateria.toLowerCase())) return;
+            if (valoracionMinima && Number(tutor.calificacion_promedio || 0) < Number(valoracionMinima)) return;
+            if (precioMaximo !== '' && Number(tutor.precio_hora || 3000) > Number(precioMaximo)) return;
+            if (disponibilidad && tutoresOcupados.has(String(tutor.id))) return;
 
             tutoresMostrados++;
 
