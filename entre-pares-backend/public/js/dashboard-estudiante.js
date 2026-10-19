@@ -536,6 +536,7 @@ function estadoReservaNormalizado(estado) {
     if (['aceptada','aprobada','confirmada','confirmado'].includes(e)) return 'Aceptada';
     if (['rechazada','rechazado'].includes(e)) return 'Rechazada';
     if (['finalizada','finalizado'].includes(e)) return 'Finalizada';
+    if (['cancelada','cancelado'].includes(e)) return 'Cancelada';
     return 'Pendiente';
 }
 function fechaClaveLocal(fecha) {
@@ -584,7 +585,7 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
     reservas.forEach(res=>{
         const estado=estadoReservaNormalizado(res.estado);
         const yaCalificada = resenasEstudiantePorReserva.has(String(res.id));
-        const color=estado==='Aceptada'?'#16a34a':estado==='Rechazada'?'#dc2626':estado==='Finalizada'?'#2563eb':'#eab308';
+        const color=estado==='Aceptada'?'#16a34a':estado==='Rechazada'?'#dc2626':estado==='Cancelada'?'#64748b':estado==='Finalizada'?'#2563eb':'#eab308';
         const card=document.createElement('div');card.className='panel-card';card.style.cssText='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;font-size:.85rem;';
         const cab=document.createElement('div');cab.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.4rem;';
         const titulo=document.createElement('strong');titulo.style.cssText='color:#0f172a;font-size:1rem;';titulo.textContent=res.materia||'Consulta';
