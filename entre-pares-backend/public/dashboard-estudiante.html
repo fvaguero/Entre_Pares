@@ -374,11 +374,15 @@
                             <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Actualizar Datos</button>
                         </form>
                     </div>
-                    <div class="panel-card" style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); color: #713f12; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                        <span style="font-size: 2.5rem; margin-bottom: 0.5rem;">⭐</span>
-                        <h3 style="font-size: 1.2rem; margin-bottom: 0.2rem;">Puntos de Gamificación</h3>
+                    <div class="panel-card" style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); color: #713f12; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.55rem;">
+                        <span style="font-size: 2.5rem; margin-bottom: 0.2rem;">🏆</span>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.2rem;">Mi progreso en Entre Pares</h3>
+                        <p id="nivelGamificacion" style="font-size: 1.1rem; font-weight: 700; margin: 0;">🌱 Principiante</p>
                         <p id="puntosGamificacion" style="font-size: 2rem; font-weight: 700; margin: 0;">0 pts</p>
-                        <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">¡Suma puntos asistiendo y participando en tutorías!</p>
+                        <div style="width:100%;height:10px;background:rgba(113,63,18,.18);border-radius:999px;overflow:hidden;" role="progressbar" aria-label="Progreso al siguiente nivel">
+                            <div id="progresoGamificacion" style="height:100%;width:0%;background:#713f12;border-radius:999px;transition:width .25s ease;"></div>
+                        </div>
+                        <p id="textoProgresoGamificacion" style="font-size: 0.8rem; margin: 0; opacity: 0.9;">Sumá puntos para avanzar de nivel.</p>
                     </div>
                 </div>
             </section>
