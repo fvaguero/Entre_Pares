@@ -376,6 +376,18 @@ async function cargarEstadisticasPersonales() {
         set('estadisticaPromedioResenas', notas.length ? (notas.reduce((a,b)=>a+b,0)/notas.length).toFixed(1) + ' / 5' : 'Sin notas');
         set('estadisticaPuntos', Number(perfil?.puntos_gamificacion || 0));
         set('estadisticaResenasEscritas', (escritas || []).length);
+        const grafico=document.getElementById('graficoProgresoMensual');
+        if(grafico){
+            grafico.replaceChildren();
+            const meses=Array.from({length:6},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-(5-i));return {key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.toLocaleDateString('es-AR',{month:'short'})};});
+            const conteos=meses.map(m=>({ ...m, total:completadas.filter(x=>{const d=new Date(x.fecha_hora||x.creado_at);return !Number.isNaN(d.getTime())&&d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===m.key;}).length }));
+            const max=Math.max(1,...conteos.map(x=>x.total));
+            conteos.forEach(item=>{const col=document.createElement('div');col.style.cssText='min-width:52px;flex:1;display:flex;flex-direction:column;align-items:center;gap:.35rem;';
+                const count=document.createElement('strong');count.textContent=String(item.total);count.style.cssText='font-size:.8rem;color:#334155;';
+                const bar=document.createElement('div');bar.style.cssText='width:70%;min-height:4px;height:'+Math.max(4,item.total/max*90)+'px;background:#2563eb;border-radius:6px 6px 0 0;';
+                const label=document.createElement('small');label.textContent=item.label;label.style.color='#64748b';col.append(count,bar,label);grafico.appendChild(col);
+            });
+        }
         if (actividad) {
             const recientes = [...(reservas || []).slice(0,6)].sort((a,b)=>new Date(b.creado_at || b.fecha_hora || 0)-new Date(a.creado_at || a.fecha_hora || 0));
             actividad.replaceChildren();
