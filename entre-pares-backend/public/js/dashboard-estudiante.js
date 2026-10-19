@@ -567,6 +567,21 @@ async function cargarMisReservas(supabaseClient, estudianteId) {
         const {data:reservas,error}=await supabaseClient.from('reservas').select('*, tutor:tutor_id (nombre_completo, email, precio_hora)').eq('estudiante_id',estudianteId).order('creado_at',{ascending:false});
         if(error)throw error;
         reservasEstudianteCache=reservas||[];
+        resenasEstudiantePorReserva = new Set();
+        const idsReservas = reservasEstudianteCache.map(r => r.id).filter(Boolean);
+        if (idsReservas.length) {
+            const { data: resenas, error: errorResenas } = await supabaseClient
+                .from('resenas')
+                .select('reserva_id, calificado_por')
+                .eq('estudiante_id', estudianteId)
+                .in('reserva_id', idsReservas);
+            if (errorResenas) throw errorResenas;
+            (resenas || []).forEach(resena => {
+                if (String(resena.calificado_por || 'estudiante').toLowerCase() !== 'tutor') {
+                    resenasEstudiantePorReserva.add(String(resena.reserva_id));
+                }
+            });
+        }
         actualizarFiltroMaterias();renderizarReservasEstudiante();renderizarCalendarioReservas();
     }catch(err){console.error('Error al cargar reservas:',err);if(cont)cont.innerHTML='<p style="color:#dc2626;font-size:.85rem;text-align:center;">Error al cargar solicitudes. Intentá nuevamente.</p>';}
 }
