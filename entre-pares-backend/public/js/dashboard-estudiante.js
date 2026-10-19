@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (inputEmail) inputEmail.value = perfil.email || '';
             if (inputCarrera) inputCarrera.value = perfil.carrera || '';
             if (inputSede) inputSede.value = perfil.sede_universitaria || '';
-            const puntosActuales = Number(perfil.puntos_gamificacion ?? perfil.puntos ?? 0);
+            const puntosActuales = Number(perfil.puntos_gamificacion ?? 0);
             if (spanPuntos) spanPuntos.textContent = puntosActuales + ' pts';
             mostrarNivelGamificacion(puntosActuales);
 
@@ -945,9 +945,9 @@ window.cargarCatalogoCanjesEstudiante = async function() {
         if (errorSesion || !session) throw errorSesion || new Error('La sesión no está activa.');
         const usuarioId = session.user.id;
         const { data: perfil, error: errorPerfil } = await supabaseClient
-            .from('perfiles').select('puntos_gamificacion, puntos').eq('id', usuarioId).single();
+            .from('perfiles').select('puntos_gamificacion').eq('id', usuarioId).single();
         if (errorPerfil) throw errorPerfil;
-        const saldo = Number(perfil?.puntos_gamificacion ?? perfil?.puntos ?? 0);
+        const saldo = Number(perfil?.puntos_gamificacion ?? 0);
         const saldoEl = document.getElementById('saldoCanjesEstudiante');
         if (saldoEl) saldoEl.textContent = 'Saldo disponible: ' + saldo + ' pts';
         catalogo.innerHTML = '';
@@ -1001,9 +1001,9 @@ async function solicitarCanjeEstudiante(recompensa) {
         if (errorSesion || !session) throw errorSesion || new Error('La sesión no está activa.');
         const usuarioId = session.user.id;
         const { data: perfil, error: errorPerfil } = await supabaseClient
-            .from('perfiles').select('puntos_gamificacion, puntos').eq('id', usuarioId).single();
+            .from('perfiles').select('puntos_gamificacion').eq('id', usuarioId).single();
         if (errorPerfil) throw errorPerfil;
-        if (Number(perfil?.puntos_gamificacion ?? perfil?.puntos ?? 0) < recompensa.puntos) {
+        if (Number(perfil?.puntos_gamificacion ?? 0) < recompensa.puntos) {
             mostrarNotificacion('No tenés puntos suficientes para este canje.', 'error');
             await cargarCatalogoCanjesEstudiante();
             return;
