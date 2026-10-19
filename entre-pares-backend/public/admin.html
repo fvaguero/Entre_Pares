@@ -68,6 +68,29 @@
                 <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
                     <h3 style="font-size: 1.1rem; color: #1e293b; margin: 0;">Retención de Fondos y Transferencias a Tutores</h3>
                 </div>
+
+                <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                    <div style="display:flex; flex-wrap:wrap; gap:.75rem; align-items:end;">
+                        <label style="display:flex; flex-direction:column; gap:.35rem; flex:2; min-width:220px; font-size:.8rem; color:#475569;">Buscar estudiante, correo, tutor o materia
+                            <input id="buscarPagoAdmin" type="search" placeholder="Ej.: Ana, correo o Matemática" style="padding:.7rem; border:1px solid #cbd5e1; border-radius:8px; font:inherit;">
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:160px; font-size:.8rem; color:#475569;">Estado del pago
+                            <select id="filtroEstadoPagoAdmin" style="padding:.7rem; border:1px solid #cbd5e1; border-radius:8px; background:white;">
+                                <option value="todos">Todos los estados</option><option value="pendiente">Pendientes</option><option value="pagado">Pagados, sin liquidar</option><option value="liquidado">Liquidados</option>
+                            </select>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Desde
+                            <input id="fechaDesdePagoAdmin" type="date" style="padding:.65rem; border:1px solid #cbd5e1; border-radius:8px;">
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:.35rem; min-width:140px; font-size:.8rem; color:#475569;">Hasta
+                            <input id="fechaHastaPagoAdmin" type="date" style="padding:.65rem; border:1px solid #cbd5e1; border-radius:8px;">
+                        </label>
+                        <button id="limpiarFiltrosPagoAdmin" type="button" class="btn" style="padding:.7rem 1rem; background:#e2e8f0; color:#1e293b;">Limpiar</button>
+                        <button id="exportarPagosCSVAdmin" type="button" class="btn" style="padding:.7rem 1rem; background:#0f766e; color:white;">Exportar CSV</button>
+                    </div>
+                    <p id="contadorPagosAdmin" style="margin:.8rem 0 0; color:#64748b; font-size:.85rem;">Cargando registros...</p>
+                </div>
+                <div id="alertasPagosAdmin" style="padding:1rem 1.5rem; display:grid; gap:.6rem; background:#fffbeb; border-bottom:1px solid #fde68a;"></div>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
@@ -75,13 +98,16 @@
                                 <th style="padding: 1rem;">Estudiante</th>
                                 <th style="padding: 1rem;">Tutor (CVU/Alias)</th>
                                 <th style="padding: 1rem;">Materia</th>
+                                <th style="padding: 1rem;">Fecha tutoría</th>
+                                <th style="padding: 1rem;">Fecha pago</th>
+                                <th style="padding: 1rem;">Fecha liquidación</th>
                                 <th style="padding: 1rem;">Monto</th>
                                 <th style="padding: 1rem;">Estado del Pago</th>
                                 <th style="padding: 1rem; text-align: center;">Acción Admin</th>
                             </tr>
                         </thead>
                         <tbody id="tablaAdminFinanzas">
-                            <tr><td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">Cargando finanzas...</td></tr>
+                            <tr><td colspan="9" style="text-align: center; padding: 2rem; color: #64748b;">Cargando finanzas...</td></tr>
                         </tbody>
                     </table>
                 </div>
