@@ -201,6 +201,7 @@
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-solicitudes', this)">📥 Solicitudes Pendientes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-agenda', this)">✅ Mis Tutorías Aceptadas</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario-tutor', this)">📅 Calendario</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-estadisticas-tutor', this); cargarEstadisticasPersonalesTutor()">📊 Mi progreso</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-pagos', this)">💰 Mis Pagos y Ganancias</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes', this); cargarCatalogoCanjesTutor()">🏆 Canjear Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
@@ -384,6 +385,20 @@
             </section>
 
             <!-- CANJE DE PUNTOS DEL TUTOR -->
+            <section id="seccion-estadisticas-tutor" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">📊 Mis estadísticas como tutor</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Seguimiento de tus tutorías, calificaciones y puntos acumulados.</p>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Tutorías finalizadas</p><strong id="estadisticaTutorFinalizadas" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Promedio recibido</p><strong id="estadisticaTutorPromedio" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Puntos acumulados</p><strong id="estadisticaTutorPuntos" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Estudiantes calificados</p><strong id="estadisticaTutorResenasEscritas" style="font-size:2rem;">—</strong></div>
+                </div>
+                <div class="panel-card" style="margin-top:1rem;"><h3 style="font-size:1rem;">Actividad reciente</h3><div id="listaActividadTutor" style="display:flex;flex-direction:column;gap:.6rem;">Cargando…</div></div>
+            </section>
+
             <section id="seccion-canjes" class="content-section">
                 <div class="panel-card" style="margin-bottom:1rem;background:linear-gradient(135deg,#fef08a 0%,#fde047 100%);color:#713f12;">
                     <h1 style="font-size:1.5rem;margin:0 0 .5rem;">🏆 Canjear Puntos</h1>
