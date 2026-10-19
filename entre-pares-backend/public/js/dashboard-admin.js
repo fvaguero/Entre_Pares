@@ -315,7 +315,7 @@ async function cargarMetricas() {
         setText('statFinalizadasAdmin',errorFinalizadas?'—':(finalizadas||0));
         const notas=(resenas||[]).map(x=>Number(x.calificacion)).filter(x=>x>=1&&x<=5);
         setText('statPromedioResenasAdmin',errorResenas?'—':(notas.length?(notas.reduce((a,b)=>a+b,0)/notas.length).toFixed(2):'Sin datos'));
-        setText('statPuntosAdmin',errorMovimientos?'—':(movimientos||[]).reduce((sum,x)=>sum+Number(x.puntos||0),0));
+        setText('statPuntosAdmin',errorMovimientos?'—':(movimientos||[]).reduce((sum,x)=>sum+(Number(x.puntos||0)>0?Number(x.puntos):0),0));
         setText('statCanjesPendientesAdmin',errorCanjes?'—':(canjesPendientes||0));
         setText('statReclamosPendientesAdmin',errorReclamos?'—':(reclamosPendientes||0));
     } catch(err) {
