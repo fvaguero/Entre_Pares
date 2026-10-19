@@ -1,6 +1,18 @@
 -- Endurece el saldo de puntos y valida los canjes del lado de la base de datos.
 begin;
 
+-- Unifica estados heredados (algunas bases anteriores usaban inicial mayúscula).
+alter table public.canjes_puntos drop constraint if exists canjes_puntos_estado_check;
+update public.canjes_puntos
+   set estado = case lower(estado)
+     when 'pendiente' then 'pendiente'
+     when 'confirmado' then 'confirmado'
+     when 'cancelado' then 'cancelado'
+     else lower(estado)
+   end;
+alter table public.canjes_puntos
+  add constraint canjes_puntos_estado_check check (estado in ('pendiente','confirmado','cancelado'));
+
 -- Un usuario no puede insertar canjes directamente manipulando beneficio o costo.
 drop policy if exists "Usuario solicita sus propios canjes" on public.canjes_puntos;
 
