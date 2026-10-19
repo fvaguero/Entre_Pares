@@ -1166,19 +1166,26 @@ window.cargarCatalogoCanjesEstudiante = async function() {
         const saldo = Number(perfil?.puntos_gamificacion ?? 0);
         const saldoEl = document.getElementById('saldoCanjesEstudiante');
         if (saldoEl) saldoEl.textContent = 'Saldo disponible: ' + saldo + ' pts';
-        catalogo.innerHTML = '';
-        recompensasCanjeEstudiante.forEach(recompensa => {
+        const { data: recompensas, error: errorRecompensas } = await supabaseClient
+            .from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos').eq('activa', true).order('costo_puntos', { ascending: true });
+        if (errorRecompensas) throw errorRecompensas;
+        catalogo.replaceChildren();
+        if (!recompensas?.length) {
+            const vacio=document.createElement('p'); vacio.style.color='#64748b'; vacio.textContent='Todavía no hay recompensas activas. Volvé a consultar más adelante.'; catalogo.appendChild(vacio);
+        }
+        (recompensas || []).forEach(recompensa => {
             const tarjeta = document.createElement('article');
             tarjeta.style.cssText = 'border:1px solid #e2e8f0;border-radius:12px;padding:1rem;background:#fff;display:flex;flex-direction:column;gap:.65rem;';
-            const icono = document.createElement('div'); icono.textContent = recompensa.icono; icono.style.fontSize = '2rem';
+            const icono = document.createElement('div'); icono.textContent = '🎁'; icono.style.fontSize = '2rem';
             const titulo = document.createElement('h3'); titulo.textContent = recompensa.nombre; titulo.style.cssText = 'margin:0;font-size:1rem;color:#1e293b;';
-            const descripcion = document.createElement('p'); descripcion.textContent = recompensa.descripcion; descripcion.style.cssText = 'margin:0;color:#64748b;font-size:.85rem;flex:1;';
-            const costo = document.createElement('strong'); costo.textContent = recompensa.puntos + ' puntos'; costo.style.color = '#854d0e';
+            const descripcion = document.createElement('p'); descripcion.textContent = recompensa.descripcion || 'Recompensa disponible para canjear.'; descripcion.style.cssText = 'margin:0;color:#64748b;font-size:.85rem;flex:1;';
+            const costoPuntos = Number(recompensa.costo_puntos);
+            const costo = document.createElement('strong'); costo.textContent = costoPuntos + ' puntos'; costo.style.color = '#854d0e';
             const boton = document.createElement('button'); boton.type = 'button'; boton.className = 'btn';
-            boton.textContent = saldo >= recompensa.puntos ? 'Solicitar canje' : 'Puntos insuficientes';
-            boton.disabled = saldo < recompensa.puntos;
+            boton.textContent = saldo >= costoPuntos ? 'Solicitar canje' : 'Puntos insuficientes';
+            boton.disabled = saldo < costoPuntos;
             boton.style.cssText = 'background:'+(boton.disabled?'#e2e8f0':'#713f12')+';color:'+(boton.disabled?'#64748b':'#fff')+';padding:.7rem;border-radius:8px;cursor:'+(boton.disabled?'not-allowed':'pointer')+';';
-            boton.addEventListener('click', () => solicitarCanjeEstudiante(recompensa));
+            boton.addEventListener('click', () => solicitarCanjeEstudiante({id:recompensa.id,nombre:recompensa.nombre,puntos:costoPuntos,descripcion:recompensa.descripcion}));
             tarjeta.append(icono,titulo,descripcion,costo,boton); catalogo.appendChild(tarjeta);
         });
         const { data: canjes, error: errorCanjes } = await supabaseClient
@@ -1236,3 +1243,30 @@ async function solicitarCanjeEstudiante(recompensa) {
     }
 }
 
+
+async function cargarReclamosEstudiante(usuarioId) {
+    const cont=document.getElementById('historialReclamosEstudiante'); if(!cont)return;
+    const {data,error}=await supabaseClient.from('reclamos_puntos').select('asunto,estado,respuesta_admin,creado_at').eq('usuario_id',usuarioId).order('creado_at',{ascending:false}).limit(20);
+    cont.replaceChildren();
+    if(error){cont.textContent='No se pudo cargar el historial de reclamos. Aplicá la migración de administración.';return;}
+    if(!data?.length){cont.textContent='Todavía no enviaste reclamos.';return;}
+    data.forEach(item=>{const row=document.createElement('div');row.style.cssText='border-top:1px solid #e2e8f0;padding:.65rem 0;';
+        const title=document.createElement('strong');title.textContent=item.asunto+' · '+item.estado;
+        const response=document.createElement('p');response.style.cssText='margin:.25rem 0;color:#64748b;font-size:.85rem;';response.textContent=item.respuesta_admin?'Respuesta: '+item.respuesta_admin:'Sin respuesta del administrador todavía.';
+        row.append(title,response);cont.appendChild(row);
+    });
+}
+document.addEventListener('DOMContentLoaded', async () => {
+    const form=document.getElementById('formReclamoPuntosEstudiante'); if(!form)return;
+    const {data:{session}}=await supabaseClient.auth.getSession(); if(!session)return;
+    await cargarReclamosEstudiante(session.user.id);
+    form.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const asunto=document.getElementById('reclamoAsuntoEstudiante').value.trim();
+        const descripcion=document.getElementById('reclamoDescripcionEstudiante').value.trim();
+        if(asunto.length<3||descripcion.length<10){alert('Completá el asunto y el detalle del reclamo.');return;}
+        const {error}=await supabaseClient.from('reclamos_puntos').insert({usuario_id:session.user.id,asunto,descripcion,estado:'pendiente'});
+        if(error){alert('No se pudo enviar el reclamo: '+error.message);return;}
+        form.reset();alert('Reclamo enviado. Podés consultar su estado en esta sección.');await cargarReclamosEstudiante(session.user.id);
+    });
+});
