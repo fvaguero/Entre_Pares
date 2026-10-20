@@ -107,7 +107,7 @@ $$;
 create or replace function public.trg_puntos_tutoria_finalizada()
 returns trigger
 language plpgsql security definer set search_path = ''
-as $
+as $$
 begin
   if lower(coalesce(new.estado,'')) = 'finalizada'
      and lower(coalesce(old.estado,'')) <> 'finalizada' then
@@ -128,13 +128,13 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 -- Una contribución solo da puntos cuando un administrador la aprueba.
 create or replace function public.trg_puntos_contribucion_aprobada()
 returns trigger
 language plpgsql security definer set search_path = ''
-as $
+as $$
 begin
   if new.estado = 'aprobada' and old.estado is distinct from 'aprobada'
      and ((select auth.uid()) is null or public.es_administrador_actual()) then
@@ -144,7 +144,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 -- Una misma tutoría no puede generar puntos de reseña repetidos aunque se inserten filas duplicadas.
 create or replace function public.trg_puntos_calificacion()
@@ -152,7 +152,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_calificador uuid;
   v_reserva public.reservas%rowtype;
@@ -198,7 +198,7 @@ begin
   );
   return new;
 end;
-$;
+$$;
 
 -- La función no debe ser invocable directamente por usuarios autenticados.
 revoke all on function public.registrar_movimiento_puntos(uuid,text,text,integer,text) from public, anon, authenticated;
