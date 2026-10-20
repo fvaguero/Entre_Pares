@@ -1201,7 +1201,7 @@ window.cargarCatalogoCanjesEstudiante = async function() {
         const saldoEl = document.getElementById('saldoCanjesEstudiante');
         if (saldoEl) saldoEl.textContent = 'Saldo disponible: ' + saldo + ' pts';
         const { data: recompensas, error: errorRecompensas } = await supabaseClient
-            .from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos').eq('activa', true).order('costo_puntos', { ascending: true });
+            .from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos,rol_destinatario').eq('activa', true).eq('rol_destinatario', 'estudiante').order('costo_puntos', { ascending: true });
         if (errorRecompensas) throw errorRecompensas;
         catalogo.replaceChildren();
         if (!recompensas?.length) {
