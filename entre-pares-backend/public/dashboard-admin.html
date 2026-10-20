@@ -190,6 +190,9 @@
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;align-items:end;">
                         <div class="form-group" style="margin:0;"><label for="filtroMateriaAdmin">Materia</label><select id="filtroMateriaAdmin" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroFechaDesdeAdmin">Desde</label><input id="filtroFechaDesdeAdmin" type="date" class="form-control"></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroFechaHastaAdmin">Hasta</label><input id="filtroFechaHastaAdmin" type="date" class="form-control"></div>
+                        <button id="exportarTutoriasAdmin" type="button" class="btn" style="background:#dcfce7;color:#166534;padding:.7rem 1rem;">Exportar CSV</button>
                         <div class="form-group" style="margin:0;"><label for="filtroEstadoReservaAdmin">Estado de tutoría</label><select id="filtroEstadoReservaAdmin" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Aceptada">Aceptada</option><option value="Rechazada">Rechazada</option><option value="Finalizada">Finalizada</option></select></div>
                         <div class="form-group" style="margin:0;"><label for="filtroEstadoPagoAdmin">Estado del pago</label><select id="filtroEstadoPagoAdmin" class="form-control"><option value="">Todos los pagos</option><option value="Pendiente">Pendiente</option><option value="Pagado">Pagado</option><option value="Completada">Completada</option><option value="Liquidado">Liquidado</option></select></div>
                         <button id="limpiarFiltrosAdmin" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
@@ -246,6 +249,7 @@
                         <div class="form-group" style="margin:0;"><label for="filtroRolUsuariosDashboardAdmin">Rol</label><select id="filtroRolUsuariosDashboardAdmin" class="form-control"><option value="">Todos los roles</option><option value="Estudiante">Estudiante</option><option value="Tutor">Tutor</option><option value="Ambos">Ambos</option><option value="Administrador">Administrador</option></select></div>
                         <div class="form-group" style="margin:0;"><label for="filtroEstadoUsuariosDashboardAdmin">Verificación</label><select id="filtroEstadoUsuariosDashboardAdmin" class="form-control"><option value="">Todos los estados</option><option value="Aprobado">Aprobado</option><option value="Pendiente">Pendiente</option><option value="Rechazado">Rechazado</option></select></div>
                         <button id="limpiarUsuariosDashboardAdmin" class="btn" type="button" style="background:#f1f5f9;color:#334155;">Limpiar filtros</button>
+                        <button id="exportarUsuariosDashboardAdmin" class="btn" type="button" style="background:#dcfce7;color:#166534;">Exportar CSV</button>
                     </div>
                     <p id="contadorUsuariosDashboardAdmin" style="color:#64748b;font-size:.85rem;">Cargando usuarios…</p>
                     <div id="tablaUsuariosDashboardAdmin" style="overflow-x:auto;">Cargando directorio…</div>
