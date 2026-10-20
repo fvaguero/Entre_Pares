@@ -57,6 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarTodasLasTutorias();
     cargarMetricas();
     inicializarHerramientasPuntosAdmin();
+    cargarUsuariosAdmin();
+    cargarActividadAdmin();
 });
 
 async function cargarTutoresPendientes() {
@@ -153,6 +155,7 @@ async function cargarTodasLasTutorias() {
             if (materias.includes(anterior)) materiaSelect.value = anterior;
         }
         renderizarTodasLasTutoriasAdmin();
+        dibujarGraficoTutoriasAdmin();
     } catch (err) {
         console.error('Error al cargar tutorías:', err);
         contenedor.textContent = 'Error al cargar el historial de tutorías y pagos.';
@@ -417,4 +420,189 @@ async function resolverReclamoAdmin(id,estado){
     const respuesta=prompt('Respuesta para el usuario (opcional):','');if(respuesta===null)return;
     const {error}=await supabaseClient.rpc('admin_resolver_reclamo',{p_reclamo_id:id,p_estado:estado,p_respuesta:respuesta});
     if(error){alert('No se pudo actualizar el reclamo: '+error.message);return;}await cargarReclamosAdmin();await cargarMetricas();
+}
+
+
+// ==========================================
+// HERRAMIENTAS DE ADMINISTRACIÓN Y AUDITORÍA
+// ==========================================
+let usuariosDashboardAdmin = [];
+
+async function cargarUsuariosAdmin() {
+    const contenedor = document.getElementById('tablaUsuariosDashboardAdmin');
+    if (!contenedor) return;
+    contenedor.textContent = 'Cargando directorio…';
+    try {
+        const { data, error } = await supabaseClient
+            .from('perfiles')
+            .select('id,nombre_completo,email,rol,sede_universitaria,estado_verificacion')
+            .order('nombre_completo', { ascending: true })
+            .limit(500);
+        if (error) throw error;
+        usuariosDashboardAdmin = data || [];
+        renderizarUsuariosDashboardAdmin();
+    } catch (error) {
+        console.error('Error al cargar usuarios del panel:', error);
+        contenedor.textContent = 'No se pudo cargar el directorio. Verificá los permisos de lectura de la tabla perfiles.';
+        const contador = document.getElementById('contadorUsuariosDashboardAdmin');
+        if (contador) contador.textContent = 'No se pudieron cargar los usuarios.';
+    }
+}
+
+function renderizarUsuariosDashboardAdmin() {
+    const contenedor = document.getElementById('tablaUsuariosDashboardAdmin');
+    if (!contenedor) return;
+    const busqueda = (document.getElementById('buscarUsuariosDashboardAdmin')?.value || '').trim().toLocaleLowerCase('es');
+    const rol = document.getElementById('filtroRolUsuariosDashboardAdmin')?.value || '';
+    const estado = document.getElementById('filtroEstadoUsuariosDashboardAdmin')?.value || '';
+    const lista = usuariosDashboardAdmin.filter(usuario => {
+        const texto = [usuario.nombre_completo, usuario.email, usuario.sede_universitaria, usuario.rol, usuario.estado_verificacion].filter(Boolean).join(' ').toLocaleLowerCase('es');
+        return (!busqueda || texto.includes(busqueda))
+            && (!rol || String(usuario.rol || '') === rol)
+            && (!estado || String(usuario.estado_verificacion || '') === estado);
+    });
+    const contador = document.getElementById('contadorUsuariosDashboardAdmin');
+    if (contador) contador.textContent = 'Mostrando ' + lista.length + ' de ' + usuariosDashboardAdmin.length + ' perfiles (máximo 500 cargados).';
+    contenedor.replaceChildren();
+    if (!lista.length) {
+        contenedor.textContent = 'No hay usuarios que coincidan con los filtros.';
+        return;
+    }
+    const tabla = document.createElement('table');
+    tabla.style.cssText = 'width:100%;min-width:650px;border-collapse:collapse;font-size:.85rem;';
+    const thead = document.createElement('thead');
+    const trHead = document.createElement('tr');
+    ['Nombre','Correo','Rol','Sede universitaria','Verificación'].forEach(texto => {
+        const th = document.createElement('th');
+        th.textContent = texto;
+        th.style.cssText = 'text-align:left;padding:.75rem;border-bottom:2px solid #e2e8f0;color:#475569;background:#f8fafc;';
+        trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    tabla.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    lista.forEach(usuario => {
+        const tr = document.createElement('tr');
+        [usuario.nombre_completo || 'Sin nombre', usuario.email || 'Sin correo', usuario.rol || 'Sin rol', usuario.sede_universitaria || 'No indicada', usuario.estado_verificacion || 'No aplica'].forEach(valor => {
+            const td = document.createElement('td');
+            td.textContent = valor;
+            td.style.cssText = 'padding:.75rem;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:top;';
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    tabla.appendChild(tbody);
+    contenedor.appendChild(tabla);
+}
+
+['buscarUsuariosDashboardAdmin','filtroRolUsuariosDashboardAdmin','filtroEstadoUsuariosDashboardAdmin'].forEach(id => {
+    document.getElementById(id)?.addEventListener(id.startsWith('buscar') ? 'input' : 'change', renderizarUsuariosDashboardAdmin);
+});
+document.getElementById('limpiarUsuariosDashboardAdmin')?.addEventListener('click', () => {
+    ['buscarUsuariosDashboardAdmin','filtroRolUsuariosDashboardAdmin','filtroEstadoUsuariosDashboardAdmin'].forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo) campo.value = '';
+    });
+    renderizarUsuariosDashboardAdmin();
+});
+
+function dibujarGraficoTutoriasAdmin() {
+    const canvas = document.getElementById('graficoTutoriasAdmin');
+    const resumen = document.getElementById('resumenGraficoTutoriasAdmin');
+    if (!canvas || !resumen) return;
+    const conteos = { Pendientes: 0, Aceptadas: 0, Finalizadas: 0, Rechazadas: 0 };
+    reservasAdminCache.forEach(reserva => {
+        const estado = normalizarEstadoAdmin(reserva.estado);
+        if (estado === 'Pendiente') conteos.Pendientes++;
+        else if (estado === 'Aceptada') conteos.Aceptadas++;
+        else if (estado === 'Finalizada') conteos.Finalizadas++;
+        else if (estado === 'Rechazada') conteos.Rechazadas++;
+    });
+    const dpr = window.devicePixelRatio || 1;
+    const ancho = Math.max(300, canvas.parentElement.clientWidth || 600);
+    const alto = 230;
+    canvas.width = ancho * dpr;
+    canvas.height = alto * dpr;
+    canvas.style.width = '100%';
+    canvas.style.height = alto + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, ancho, alto);
+    const valores = Object.entries(conteos);
+    const maximo = Math.max(1, ...valores.map(([,valor]) => valor));
+    const margen = {top: 20, right: 16, bottom: 42, left: 28};
+    const areaAlto = alto - margen.top - margen.bottom;
+    const anchoBarra = Math.min(76, (ancho - margen.left - margen.right) / valores.length * .52);
+    const espacio = (ancho - margen.left - margen.right) / valores.length;
+    ctx.font = '12px Inter, sans-serif';
+    valores.forEach(([etiqueta, valor], indice) => {
+        const x = margen.left + espacio * indice + (espacio - anchoBarra) / 2;
+        const h = valor / maximo * areaAlto;
+        ctx.fillStyle = ['#d97706','#2563eb','#16a34a','#dc2626'][indice];
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x, margen.top + areaAlto - h, anchoBarra, h, 6);
+        else ctx.rect(x, margen.top + areaAlto - h, anchoBarra, h);
+        ctx.fill();
+        ctx.fillStyle = '#334155';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(valor), x + anchoBarra / 2, Math.max(13, margen.top + areaAlto - h - 7));
+        ctx.fillText(etiqueta, x + anchoBarra / 2, alto - 15);
+    });
+    resumen.textContent = 'Total de tutorías cargadas: ' + reservasAdminCache.length + '. El gráfico se actualiza al volver a cargar las tutorías.';
+}
+window.addEventListener('resize', () => {
+    if (document.getElementById('seccion-metricas')?.classList.contains('active')) dibujarGraficoTutoriasAdmin();
+});
+
+async function cargarActividadAdmin() {
+    const contenedor = document.getElementById('listaActividadAdmin');
+    if (!contenedor) return;
+    contenedor.textContent = 'Cargando actividad…';
+    try {
+        const [{data:reservas,error:errorReservas},{data:movimientos,error:errorMovimientos}] = await Promise.all([
+            supabaseClient.from('reservas').select('id,materia,estado,fecha_hora,estudiante_id,tutor_id').order('fecha_hora',{ascending:false}).limit(30),
+            supabaseClient.from('movimientos_puntos').select('id,tipo,puntos,descripcion,creado_at,usuario_id').order('creado_at',{ascending:false}).limit(30)
+        ]);
+        if (errorReservas) throw errorReservas;
+        const eventos = (reservas || []).map(r => ({
+            fecha: r.fecha_hora || null,
+            titulo: 'Tutoría: ' + (r.materia || 'Materia sin especificar'),
+            detalle: 'Estado actual: ' + normalizarEstadoAdmin(r.estado),
+            tipo: 'tutoria'
+        })).concat(errorMovimientos ? [] : (movimientos || []).map(m => ({
+            fecha: m.creado_at || null,
+            titulo: 'Movimiento de puntos: ' + (m.tipo || 'Movimiento'),
+            detalle: (Number(m.puntos) > 0 ? '+' : '') + Number(m.puntos || 0) + ' puntos · ' + (m.descripcion || 'Sin descripción'),
+            tipo: 'puntos'
+        }))).sort((a,b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)).slice(0,30);
+        const contador = document.getElementById('contadorActividadAdmin');
+        if (contador) contador.textContent = eventos.length + ' eventos recientes · datos de tutorías y gamificación';
+        contenedor.replaceChildren();
+        if (!eventos.length) {
+            contenedor.textContent = 'Todavía no hay actividad para mostrar.';
+            return;
+        }
+        eventos.forEach(evento => {
+            const item = document.createElement('article');
+            item.style.cssText = 'padding:.9rem 1rem;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;gap:.8rem;align-items:flex-start;';
+            const icono = document.createElement('span');
+            icono.textContent = evento.tipo === 'puntos' ? '🪙' : '📚';
+            icono.setAttribute('aria-hidden','true');
+            const cuerpo = document.createElement('div');
+            const titulo = document.createElement('strong');
+            titulo.textContent = evento.titulo;
+            const detalle = document.createElement('p');
+            detalle.textContent = evento.detalle;
+            detalle.style.cssText = 'margin:.25rem 0;color:#64748b;font-size:.85rem;';
+            const fecha = document.createElement('small');
+            fecha.textContent = evento.fecha && !Number.isNaN(new Date(evento.fecha).getTime()) ? new Date(evento.fecha).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'}) : 'Fecha no disponible';
+            fecha.style.color = '#94a3b8';
+            cuerpo.append(titulo,detalle,fecha);
+            item.append(icono,cuerpo);
+            contenedor.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error al cargar actividad administrativa:', error);
+        contenedor.textContent = 'No se pudo cargar la actividad. Revisá las políticas de lectura de las tablas.';
+    }
 }
