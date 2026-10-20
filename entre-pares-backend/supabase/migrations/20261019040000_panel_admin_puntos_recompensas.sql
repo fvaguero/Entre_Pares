@@ -159,7 +159,7 @@ $$;
 create or replace function public.admin_metricas_gamificacion()
 returns jsonb
 language plpgsql security definer set search_path = ''
-as $
+as $$
 declare v_resultado jsonb;
 begin
   if (select auth.uid()) is null or not public.es_administrador_actual() then
@@ -172,7 +172,7 @@ begin
   ) into v_resultado;
   return v_resultado;
 end;
-$;
+$$;
 
 revoke all on function public.admin_metricas_gamificacion() from public, anon;
 grant execute on function public.admin_metricas_gamificacion() to authenticated;
