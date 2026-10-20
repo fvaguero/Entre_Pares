@@ -130,6 +130,8 @@
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-tutores', this)">🛡️ Validar Tutores</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-tutorias', this)">📊 Control de Tutorías</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-metricas', this)">📈 Métricas Generales</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-usuarios-admin', this); cargarUsuariosAdmin()">👥 Gestión de usuarios</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-actividad-admin', this); cargarActividadAdmin()">🕒 Registro de actividad</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-puntos-admin', this); cargarPanelPuntosAdmin()">🪙 Movimientos y canjes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-recompensas-admin', this); cargarRecompensasAdmin()">🎁 Administrar recompensas</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reclamos-admin', this); cargarReclamosAdmin()">🧾 Reclamos</button>
@@ -206,7 +208,7 @@
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Métricas de la Plataforma</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Estadísticas generales de uso de Entre Pares.</p>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-bottom:1.5rem;">
                     <div class="panel-card" style="text-align: center; background: #f8fafc;">
                         <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">Total Usuarios</h3>
                         <p id="statUsuarios" style="font-size: 2rem; font-weight: 700; color: #0f172a; margin: 0;">-</p>
@@ -224,6 +226,43 @@
                     <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Puntos otorgados (historial)</h3><p id="statPuntosAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
                     <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Canjes pendientes</h3><p id="statCanjesPendientesAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
                     <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Reclamos pendientes</h3><p id="statReclamosPendientesAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
+                </div>
+                <div class="panel-card" style="margin-top:1.5rem;">
+                    <h2 style="font-size:1.1rem;margin-bottom:.35rem;">Actividad de la plataforma</h2>
+                    <p style="color:#64748b;font-size:.85rem;margin-bottom:1rem;">Comparación de estados de tutorías según los registros actuales.</p>
+                    <div style="max-width:760px;"><canvas id="graficoTutoriasAdmin" height="120" aria-label="Gráfico de tutorías por estado"></canvas></div>
+                    <div id="resumenGraficoTutoriasAdmin" style="color:#64748b;font-size:.85rem;margin-top:.75rem;">Cargando datos del gráfico…</div>
+                </div>
+            </section>
+
+            <section id="seccion-usuarios-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .35rem;">Gestión de usuarios</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Buscá perfiles por nombre, correo, rol o sede. Esta vista permite consultar la información registrada sin exponer credenciales.</p>
+                </div>
+                <div class="panel-card">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem;margin-bottom:1rem;">
+                        <div class="form-group" style="margin:0;"><label for="buscarUsuariosDashboardAdmin">Buscar usuario</label><input id="buscarUsuariosDashboardAdmin" class="form-control" type="search" placeholder="Nombre, correo o sede…"></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroRolUsuariosDashboardAdmin">Rol</label><select id="filtroRolUsuariosDashboardAdmin" class="form-control"><option value="">Todos los roles</option><option value="Estudiante">Estudiante</option><option value="Tutor">Tutor</option><option value="Ambos">Ambos</option><option value="Administrador">Administrador</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoUsuariosDashboardAdmin">Verificación</label><select id="filtroEstadoUsuariosDashboardAdmin" class="form-control"><option value="">Todos los estados</option><option value="Aprobado">Aprobado</option><option value="Pendiente">Pendiente</option><option value="Rechazado">Rechazado</option></select></div>
+                        <button id="limpiarUsuariosDashboardAdmin" class="btn" type="button" style="background:#f1f5f9;color:#334155;">Limpiar filtros</button>
+                    </div>
+                    <p id="contadorUsuariosDashboardAdmin" style="color:#64748b;font-size:.85rem;">Cargando usuarios…</p>
+                    <div id="tablaUsuariosDashboardAdmin" style="overflow-x:auto;">Cargando directorio…</div>
+                </div>
+            </section>
+
+            <section id="seccion-actividad-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .35rem;">Registro de actividad</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Resumen de los eventos recientes disponibles en tutorías y movimientos de puntos.</p>
+                </div>
+                <div class="panel-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        <p id="contadorActividadAdmin" style="color:#64748b;font-size:.85rem;margin:0;">Cargando actividad…</p>
+                        <button class="btn" type="button" onclick="cargarActividadAdmin()" style="background:#f1f5f9;color:#334155;">Actualizar</button>
+                    </div>
+                    <div id="listaActividadAdmin" style="display:grid;gap:.65rem;">Cargando actividad…</div>
                 </div>
             </section>
 
