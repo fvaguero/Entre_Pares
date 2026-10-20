@@ -214,7 +214,7 @@
                     </button>
                     
                     <div id="userDropdownMenu" style="display: none; position: absolute; right: 0; margin-top: 5px; width: 180px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 50; overflow: hidden;">
-                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[3]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
+                        <a href="#" onclick="cambiarPestaña('seccion-perfil', document.querySelectorAll('.sidebar-btn')[5]); return false;" style="display: block; padding: 0.7rem 1rem; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Ver mi Perfil</a>
                     </div>
                 </div>
                 
@@ -228,9 +228,12 @@
         <aside class="sidebar">
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Estudiante</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-buscar', this)">🔍 Buscar Tutores</button>
-            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📅 Mis Consultas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📋 Mis Consultas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario', this)">📅 Calendario</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-estadisticas', this); cargarEstadisticasPersonales()">📊 Mi progreso</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Puntos</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes-estudiante', this); cargarCatalogoCanjesEstudiante()">🏆 Canjear Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
         </aside>
 
@@ -250,6 +253,18 @@
                             <div class="form-group">
                                 <label>Materia</label>
                                 <input type="text" id="filtroMateria" class="form-control" placeholder="Ej: Álgebra">
+                            </div>
+                            <div class="form-group">
+                                <label>Valoración mínima</label>
+                                <select id="filtroValoracion" class="form-control"><option value="">Cualquier valoración</option><option value="4">4 estrellas o más</option><option value="4.5">4,5 estrellas o más</option><option value="5">Solo 5 estrellas</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Precio máximo por hora (ARS)</label>
+                                <input type="number" id="filtroPrecioMaximo" class="form-control" min="0" placeholder="Sin límite">
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha y hora para consultar disponibilidad</label>
+                                <input type="datetime-local" id="filtroDisponibilidad" class="form-control">
                             </div>
                             <div class="form-group">
                                 <label>Sede o Ciudad</label>
@@ -277,18 +292,38 @@
 
             <!-- 2. SECCIÓN MIS CONSULTAS -->
             <section id="seccion-reservas" class="content-section">
-                <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Solicitudes de Consulta</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Haz seguimiento del estado de tus consultas. Una vez que el tutor las apruebe, se habilitará el chat.</p>
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:0.3rem;">Mis Solicitudes de Consulta</h1>
+                    <p style="color:#64748b;font-size:0.9rem;">Filtrá por materia o estado y consultá las fechas programadas en el calendario.</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar consultas</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="filtroMateriaReservas">Materia</label><select id="filtroMateriaReservas" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoReservas">Estado</label><select id="filtroEstadoReservas" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendientes</option><option value="Aceptada">Aceptadas / Confirmadas</option><option value="Rechazada">Rechazadas</option><option value="Finalizada">Finalizadas</option><option value="Cancelada">Canceladas</option></select></div>
+                        <button id="btnLimpiarFiltrosReservas" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
+                    </div>
+                </div>
+                <div class="panel-card"><h2 style="font-size:1.15rem;margin-bottom:1rem;">Mis consultas</h2><div id="listaMisReservas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"><p style="color:#64748b;font-size:.9rem;">Cargando tus solicitudes...</p></div></div>
+            </section>
+
+            <!-- 3. CALENDARIO DE TUTORÍAS -->
+            <section id="seccion-calendario" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Calendario de tutorías</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Elegí un día para ver las tarjetas de las consultas programadas. Los días marcados tienen consultas.</p>
                 </div>
                 <div class="panel-card">
-                    <div id="listaMisReservas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando tus solicitudes...</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        <h2 style="font-size:1.15rem;margin:0;">Mis fechas</h2>
+                        <div style="display:flex;align-items:center;gap:.75rem;"><button id="btnMesAnterior" type="button" class="btn" aria-label="Mes anterior" style="background:#f1f5f9;color:#334155;">‹</button><strong id="tituloMesCalendario" style="min-width:150px;text-align:center;"></strong><button id="btnMesSiguiente" type="button" class="btn" aria-label="Mes siguiente" style="background:#f1f5f9;color:#334155;">›</button></div>
                     </div>
+                    <div id="calendarioReservas" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;"></div>
+                    <div id="detalleDiaCalendario" style="margin-top:1rem;"></div>
                 </div>
             </section>
 
-            <!-- 3. SECCIÓN MENSAJES (AHORA SÍ CON ESTILO MODERNO) -->
+            <!-- 4. SECCIÓN MENSAJES (AHORA SÍ CON ESTILO MODERNO) -->
             <section id="seccion-mensajes" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Centro de Mensajes</h1>
@@ -298,6 +333,7 @@
                 <div style="display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; height: 500px;">
                     <div class="panel-card" style="display: flex; flex-direction: column; padding: 1rem; overflow-y: auto;">
                         <h3 style="font-size: 0.95rem; margin-bottom: 0.8rem; color: #1e293b;">Chats Habilitados</h3>
+                        <input id="buscarContactoChat" type="search" class="form-control" placeholder="Buscar conversación…" aria-label="Buscar conversación" style="margin-bottom:.7rem;">
                         <div id="listaContactos" style="display: flex; flex-direction: column; gap: 0.5rem;">
                             <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 2rem;">No hay chats activos aún.</p>
                         </div>
@@ -341,6 +377,27 @@
                 </div>
             </section>
 
+            <section id="seccion-estadisticas" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">📊 Mis estadísticas y progreso</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Un resumen de tus tutorías, calificaciones y actividad en Entre Pares.</p>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Tutorías completadas</p><strong id="estadisticaTutoriasCompletadas" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Promedio de mis calificaciones recibidas</p><strong id="estadisticaPromedioResenas" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Puntos acumulados</p><strong id="estadisticaPuntos" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Reseñas escritas</p><strong id="estadisticaResenasEscritas" style="font-size:2rem;">—</strong></div>
+                </div>
+                <div class="panel-card" style="margin-top:1rem;">
+                    <h3 style="font-size:1rem;">Tutorías completadas por mes</h3>
+                    <div id="graficoProgresoMensual" style="display:flex;align-items:end;gap:.7rem;min-height:150px;overflow-x:auto;padding:.5rem 0;"></div>
+                </div>
+                <div class="panel-card" style="margin-top:1rem;">
+                    <h3 style="font-size:1rem;">Actividad reciente</h3>
+                    <div id="listaActividadPersonal" style="display:flex;flex-direction:column;gap:.6rem;"><p style="color:#64748b;">Cargando estadísticas…</p></div>
+                </div>
+            </section>
+
             <!-- 4. SECCIÓN PERFIL Y GAMIFICACIÓN -->
             <section id="seccion-perfil" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
@@ -374,11 +431,46 @@
                             <button type="submit" class="btn btn-yellow" style="margin-top: 0.5rem;">Actualizar Datos</button>
                         </form>
                     </div>
-                    <div class="panel-card" style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); color: #713f12; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                        <span style="font-size: 2.5rem; margin-bottom: 0.5rem;">⭐</span>
-                        <h3 style="font-size: 1.2rem; margin-bottom: 0.2rem;">Puntos de Gamificación</h3>
+                    <div class="panel-card" style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); color: #713f12; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.55rem;">
+                        <span style="font-size: 2.5rem; margin-bottom: 0.2rem;">🏆</span>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.2rem;">Mi progreso en Entre Pares</h3>
+                        <p id="nivelGamificacion" style="font-size: 1.1rem; font-weight: 700; margin: 0;">🌱 Principiante</p>
                         <p id="puntosGamificacion" style="font-size: 2rem; font-weight: 700; margin: 0;">0 pts</p>
-                        <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">¡Suma puntos asistiendo y participando en tutorías!</p>
+                        <div style="width:100%;height:10px;background:rgba(113,63,18,.18);border-radius:999px;overflow:hidden;" role="progressbar" aria-label="Progreso al siguiente nivel">
+                            <div id="progresoGamificacion" style="height:100%;width:0%;background:#713f12;border-radius:999px;transition:width .25s ease;"></div>
+                        </div>
+                        <p id="textoProgresoGamificacion" style="font-size: 0.8rem; margin: 0; opacity: 0.9;">Sumá puntos para avanzar de nivel.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CANJE DE PUNTOS DEL ESTUDIANTE -->
+            <section id="seccion-canjes-estudiante" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;background:linear-gradient(135deg,#fef08a 0%,#fde047 100%);color:#713f12;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .5rem;">🏆 Canjear Puntos</h1>
+                    <p style="margin:.2rem 0;">Usá tus puntos para obtener reconocimientos y beneficios en Entre Pares.</p>
+                    <p id="saldoCanjesEstudiante" style="font-size:1.6rem;font-weight:700;margin:.5rem 0;">Saldo disponible: -- pts</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .5rem;">Catálogo de recompensas</h2>
+                    <p style="color:#64748b;font-size:.9rem;">Los canjes quedan pendientes hasta que sean revisados y confirmados.</p>
+                    <div id="catalogoCanjesEstudiante" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin-top:1rem;">
+                        <p style="color:#64748b;">Ingresá a esta sección para cargar las recompensas.</p>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .7rem;">¿Tenés un problema con tus puntos?</h2>
+                    <form id="formReclamoPuntosEstudiante" style="display:grid;gap:.7rem;">
+                        <div class="form-group" style="margin:0;"><label for="reclamoAsuntoEstudiante">Asunto</label><input id="reclamoAsuntoEstudiante" class="form-control" required minlength="3" maxlength="120" placeholder="Ej.: No se acreditaron mis puntos"></div>
+                        <div class="form-group" style="margin:0;"><label for="reclamoDescripcionEstudiante">Detalle del reclamo</label><textarea id="reclamoDescripcionEstudiante" class="form-control" required minlength="10" maxlength="3000" rows="3" placeholder="Contanos qué pasó y, si corresponde, la referencia de la tutoría."></textarea></div>
+                        <button type="submit" class="btn btn-yellow" style="justify-self:start;">Enviar reclamo</button>
+                    </form>
+                    <div id="historialReclamosEstudiante" style="margin-top:.8rem;"></div>
+                </div>
+                <div class="panel-card">
+                    <h2 style="font-size:1.1rem;margin:0 0 1rem;">Mis canjes</h2>
+                    <div id="historialCanjesEstudiante" style="display:flex;flex-direction:column;gap:.75rem;">
+                        <p style="color:#64748b;">Ingresá a esta sección para consultar tu historial.</p>
                     </div>
                 </div>
             </section>
@@ -421,6 +513,11 @@
                     <input type="text" id="materiaReserva" class="form-control" placeholder="Ej: Análisis Matemático I" required>
                 </div>
 
+                <div class="form-group">
+                    <label for="fechaHoraReserva">Fecha y hora preferida (opcional)</label>
+                    <input type="datetime-local" id="fechaHoraReserva" class="form-control">
+                    <small style="display:block;color:#64748b;margin-top:.35rem;">El tutor podrá revisar la fecha propuesta al responder tu solicitud.</small>
+                </div>
                 <div class="form-group">
                     <label>¿Qué tipo de duda tenés?</label>
                     <textarea id="comentariosReserva" class="form-control" rows="4" placeholder="Explicale brevemente al tutor cuál es tu inconveniente..." required></textarea>
