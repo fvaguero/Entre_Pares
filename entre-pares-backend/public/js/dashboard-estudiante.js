@@ -693,13 +693,15 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
         const fecha=document.createElement('p');fecha.style.cssText='color:#475569;margin:.3rem 0;';fecha.textContent='📅 '+mostrarFechaReserva(res.fecha_hora);
         const duda=document.createElement('p');duda.style.cssText='color:#475569;margin:.3rem 0;';duda.textContent='Duda: '+(res.comentarios||'Sin descripción');
         card.append(cab,tutor,fecha,duda);
-        if (['Aceptada','Pendiente'].includes(estado) && res.fecha_hora && new Date(res.fecha_hora) > new Date()) {
+        // Mostrar acciones para toda reserva activa, aunque la fecha esté vacía o haya pasado.
+        // La fecha se valida nuevamente al abrir el formulario de reprogramación.
+        if (['Aceptada','Pendiente'].includes(estado)) {
             const acciones = document.createElement('div');
             acciones.style.cssText = 'display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap;';
             const btnReprogramar = document.createElement('button');
             btnReprogramar.type = 'button';
             btnReprogramar.className = 'btn';
-            btnReprogramar.textContent = '📅 Reprogramar';
+            btnReprogramar.textContent = '📅 Solicitar reprogramación';
             btnReprogramar.style.cssText = 'flex:1;background:#e0f2fe;color:#075985;padding:.5rem;';
             btnReprogramar.onclick = () => reprogramarReservaEstudiante(res.id, res.fecha_hora);
             const btnCancelar = document.createElement('button');
@@ -755,7 +757,9 @@ async function cancelarReservaEstudiante(reservaId) {
 }
 async function reprogramarReservaEstudiante(reservaId, fechaActual) {
     const valorLocal = (() => {
-        const f = new Date(fechaActual);
+        const f = fechaActual ? new Date(fechaActual) : new Date();
+        // Si la fecha original no es válida o ya pasó, sugerir una hora futura.
+        if (Number.isNaN(f.getTime()) || f <= new Date()) f.setTime(Date.now() + 60 * 60 * 1000);
         f.setMinutes(f.getMinutes() - f.getTimezoneOffset());
         return f.toISOString().slice(0,16);
     })();
