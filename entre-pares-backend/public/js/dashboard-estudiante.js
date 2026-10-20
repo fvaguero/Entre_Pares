@@ -673,6 +673,77 @@ function inicializarFiltrosYCalendarioReservas() {
     const input=document.getElementById('fechaHoraReserva');
     if(input){const ahora=new Date();ahora.setMinutes(ahora.getMinutes()-ahora.getTimezoneOffset());input.min=ahora.toISOString().slice(0,16);}
 }
+
+/* Comprobante interno imprimible para pagos registrados como pagados. */
+function escaparHTMLComprobante(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[caracter]);
+}
+
+function generarComprobantePago(reservaId) {
+    const reserva = reservasEstudianteCache.find(r => String(r.id) === String(reservaId));
+    if (!reserva) {
+        mostrarNotificacionEstudiante('No se encontró la tutoría para generar el comprobante.', 'error');
+        return;
+    }
+    const estadoPago = String(reserva.estado_pago || '').trim().toLowerCase();
+    if (!['pagado', 'pagada', 'aprobado', 'aprobada', 'completado', 'completada', 'acreditado', 'acreditada'].includes(estadoPago)) {
+        mostrarNotificacionEstudiante('El comprobante estará disponible cuando el pago figure como confirmado.', 'error');
+        return;
+    }
+    const fechaTutoría = reserva.fecha_hora && !Number.isNaN(new Date(reserva.fecha_hora).getTime())
+        ? new Date(reserva.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
+        : 'No especificada';
+    const fechaEmision = new Date().toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' });
+    const importe = Number(reserva.precio || reserva.tutor?.precio_hora || 0);
+    const numero = 'EP-' + String(reserva.id).replace(/[^a-zA-Z0-9]/g, '').slice(-12).toUpperCase();
+    const ventana = window.open('', '_blank');
+    if (!ventana) {
+        mostrarNotificacionEstudiante('Permití las ventanas emergentes para imprimir el comprobante.', 'error');
+        return;
+    }
+    const html = `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprobante ${escaparHTMLComprobante(numero)} · Entre Pares</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#0f172a;font-family:Arial,sans-serif}
+.ticket{max-width:720px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px}
+header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:20px}
+h1{margin:0;font-size:26px;color:#1d4ed8}h2{font-size:18px;margin:24px 0 12px}
+.muted{color:#64748b;font-size:13px}.status{background:#dcfce7;color:#166534;border-radius:999px;padding:8px 12px;font-weight:bold;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}.field{padding:12px;background:#f8fafc;border-radius:8px}.label{display:block;color:#64748b;font-size:11px;text-transform:uppercase;margin-bottom:6px}.value{font-weight:600;overflow-wrap:anywhere}
+.total{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding:18px;background:#eff6ff;border-radius:10px}.amount{font-size:25px;font-weight:800;color:#1d4ed8}
+.note{border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;font-size:11px;color:#64748b;line-height:1.5}
+button{display:block;margin:20px auto 0;padding:12px 20px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:bold;cursor:pointer}
+@media print{body{padding:0;background:white}.ticket{border:0;border-radius:0;max-width:none;padding:12px}.no-print{display:none!important}}
+@media(max-width:520px){body{padding:10px}.ticket{padding:18px}.grid{grid-template-columns:1fr}header{flex-direction:column}}
+</style>
+</head>
+<body>
+<main class="ticket">
+<header><div><h1>ENTRE PARES</h1><p class="muted">Comprobante interno de pago de tutoría</p></div><span class="status">✓ PAGO REGISTRADO</span></header>
+<div class="grid">
+<div class="field"><span class="label">Número de comprobante</span><span class="value">${escaparHTMLComprobante(numero)}</span></div>
+<div class="field"><span class="label">Fecha de emisión</span><span class="value">${escaparHTMLComprobante(fechaEmision)}</span></div>
+<div class="field"><span class="label">Estudiante</span><span class="value">${escaparHTMLComprobante(document.getElementById('nombreUsuarioHeader')?.textContent || 'Estudiante')}</span></div>
+<div class="field"><span class="label">Tutor/a</span><span class="value">${escaparHTMLComprobante(reserva.tutor?.nombre_completo || 'No disponible')}</span></div>
+<div class="field"><span class="label">Materia</span><span class="value">${escaparHTMLComprobante(reserva.materia || 'Tutoría')}</span></div>
+<div class="field"><span class="label">Fecha de tutoría</span><span class="value">${escaparHTMLComprobante(fechaTutoría)}</span></div>
+</div>
+<div class="total"><div><span class="label">Importe registrado</span><span class="muted">Estado: ${escaparHTMLComprobante(reserva.estado_pago)}</span></div><div class="amount">${importe.toLocaleString('es-AR',{style:'currency',currency:'ARS'})}</div></div>
+<p class="note">Este documento es un comprobante interno generado por Entre Pares a partir del estado de pago registrado en la plataforma. No constituye factura ni comprobante fiscal de AFIP/ARCA. Conservá el número de referencia para cualquier consulta.</p>
+<button class="no-print" onclick="window.print()">Imprimir / Guardar como PDF</button>
+</main>
+</body></html>`;
+    ventana.document.open();
+    ventana.document.write(html);
+    ventana.document.close();
+}
+
 function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaReservas=null) {
     const cont=document.getElementById(contenedorId);if(!cont)return;
     const reservas=(listaReservas || reservasFiltradas()).slice().sort((a,b)=>new Date(b.fecha_hora||b.creado_at||0)-new Date(a.fecha_hora||a.creado_at||0));
@@ -712,6 +783,16 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
             btnCancelar.onclick = () => cancelarReservaEstudiante(res.id);
             acciones.append(btnReprogramar, btnCancelar);
             card.appendChild(acciones);
+        }
+        const pagoNormalizado = String(res.estado_pago || '').trim().toLowerCase();
+        if (['pagado','pagada','aprobado','aprobada','completado','completada','acreditado','acreditada'].includes(pagoNormalizado)) {
+            const btnComprobante = document.createElement('button');
+            btnComprobante.type = 'button';
+            btnComprobante.className = 'btn';
+            btnComprobante.style.cssText = 'width:100%;margin-top:.7rem;background:#dcfce7;color:#166534;padding:.6rem;font-weight:600;';
+            btnComprobante.textContent = '🧾 Ver / imprimir comprobante';
+            btnComprobante.onclick = () => generarComprobantePago(res.id);
+            card.appendChild(btnComprobante);
         }
         if(estado==='Aceptada'){
             if(res.estado_pago==='Pendiente'||!res.estado_pago){
