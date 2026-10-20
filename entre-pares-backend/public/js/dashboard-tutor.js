@@ -924,7 +924,7 @@ window.cargarCatalogoCanjesTutor = async function() {
         if (saldoEl) saldoEl.textContent = 'Saldo disponible: ' + saldo + ' pts';
 
         const { data: recompensas, error: errorRecompensas } = await supabaseClient
-            .from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos').eq('activa', true).order('costo_puntos', { ascending: true });
+            .from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos,rol_destinatario').eq('activa', true).eq('rol_destinatario', 'tutor').order('costo_puntos', { ascending: true });
         if (errorRecompensas) throw errorRecompensas;
         catalogo.replaceChildren();
         if (!recompensas?.length) { const vacio=document.createElement('p');vacio.style.color='#64748b';vacio.textContent='Todavía no hay recompensas activas.';catalogo.appendChild(vacio); }
