@@ -735,6 +735,11 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
 
 /* Cancelación y reprogramación desde el panel del estudiante. */
 async function cancelarReservaEstudiante(reservaId) {
+    const reservaActual = reservasEstudianteCache.find(r => String(r.id) === String(reservaId));
+    if (reservaActual && estadoReservaNormalizado(reservaActual.estado) === 'Finalizada') {
+        mostrarNotificacionEstudiante('No se puede cancelar una tutoría que ya está finalizada.', 'error');
+        return;
+    }
     const confirmacion = await Swal.fire({
         title: '¿Cancelar esta tutoría?',
         text: 'La tutoría dejará de figurar como confirmada y no debería generar recordatorios.',
@@ -756,6 +761,11 @@ async function cancelarReservaEstudiante(reservaId) {
     }
 }
 async function reprogramarReservaEstudiante(reservaId, fechaActual) {
+    const reservaActual = reservasEstudianteCache.find(r => String(r.id) === String(reservaId));
+    if (reservaActual && estadoReservaNormalizado(reservaActual.estado) === 'Finalizada') {
+        mostrarNotificacionEstudiante('No se puede reprogramar una tutoría que ya está finalizada.', 'error');
+        return;
+    }
     const valorLocal = (() => {
         const f = fechaActual ? new Date(fechaActual) : new Date();
         // Si la fecha original no es válida o ya pasó, sugerir una hora futura.
