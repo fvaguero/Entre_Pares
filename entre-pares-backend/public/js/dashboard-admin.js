@@ -346,10 +346,10 @@ function inicializarHerramientasPuntosAdmin() {
     const formRecompensa=document.getElementById('formRecompensaAdmin');
     if(formRecompensa) formRecompensa.addEventListener('submit',async event=>{
         event.preventDefault();
-        const nombre=document.getElementById('recompensaNombre').value.trim(),costo=Number(document.getElementById('recompensaCosto').value),descripcion=document.getElementById('recompensaDescripcion').value.trim();
-        if(nombre.length<3||!Number.isInteger(costo)||costo<1){alert('Revisá el nombre y el costo.');return;}
+        const nombre=document.getElementById('recompensaNombre').value.trim(),costo=Number(document.getElementById('recompensaCosto').value),descripcion=document.getElementById('recompensaDescripcion').value.trim(),rol_destinatario=document.getElementById('recompensaRol').value;
+        if(nombre.length<3||!Number.isInteger(costo)||costo<1||!['estudiante','tutor'].includes(rol_destinatario)){alert('Revisá el nombre, el costo y el destinatario.');return;}
         const {data:{user}}=await supabaseClient.auth.getUser();
-        const {error}=await supabaseClient.from('recompensas_puntos').insert({nombre,costo_puntos:costo,descripcion,activa:true,creado_por:user.id});
+        const {error}=await supabaseClient.from('recompensas_puntos').insert({nombre,costo_puntos:costo,descripcion,rol_destinatario,activa:true,creado_por:user.id});
         if(error){alert('No se pudo crear la recompensa: '+error.message);return;}
         formRecompensa.reset();await cargarRecompensasAdmin();
     });
@@ -388,9 +388,9 @@ async function resolverCanjeAdmin(id,accion){
 }
 async function cargarRecompensasAdmin(){
     const cont=document.getElementById('listaRecompensasAdmin');if(!cont)return;
-    const {data,error}=await supabaseClient.from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos,activa,actualizado_at').order('creado_at',{ascending:false});
+    const {data,error}=await supabaseClient.from('recompensas_puntos').select('id,nombre,descripcion,costo_puntos,rol_destinatario,activa,actualizado_at').order('creado_at',{ascending:false});
     if(error){cont.textContent='No se pudo cargar el catálogo. Aplicá la migración de recompensas y revisá los permisos.';return;}
-    crearTablaAdmin(cont,['Recompensa','Descripción','Costo','Estado','Acciones'],(data||[]).map(x=>{
+    crearTablaAdmin(cont,['Recompensa','Descripción','Costo','Destinatario','Estado','Acciones'],(data||[]).map(x=>{
         const a=document.createElement('div');
         a.append(botonAdmin('Editar','#475569',async()=>{
             const nombre=prompt('Nombre de la recompensa:',x.nombre);if(nombre===null)return;
@@ -400,8 +400,9 @@ async function cargarRecompensasAdmin(){
             if(error)alert(error.message);else cargarRecompensasAdmin();
         }),
         botonAdmin('Cambiar costo','#1d4ed8',async()=>{const v=prompt('Nuevo costo en puntos:',String(x.costo_puntos));if(v===null)return;const costo=Number(v);if(!Number.isInteger(costo)||costo<1){alert('El costo debe ser mayor a cero.');return;}const {error}=await supabaseClient.from('recompensas_puntos').update({costo_puntos:costo,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}),
+        botonAdmin('Cambiar destinatario','#7c3aed',async()=>{const actual=x.rol_destinatario||'estudiante';const nuevo=prompt('Destinatario: escribí "estudiante" o "tutor".',actual);if(nuevo===null)return;const rol=nuevo.trim().toLowerCase();if(!['estudiante','tutor'].includes(rol)){alert('El destinatario debe ser estudiante o tutor.');return;}const {error}=await supabaseClient.from('recompensas_puntos').update({rol_destinatario:rol,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}),
         botonAdmin(x.activa?'Desactivar':'Activar',x.activa?'#b91c1c':'#15803d',async()=>{const {error}=await supabaseClient.from('recompensas_puntos').update({activa:!x.activa,actualizado_at:new Date().toISOString()}).eq('id',x.id);if(error)alert(error.message);else cargarRecompensasAdmin();}));
-        return[x.nombre,x.descripcion,x.costo_puntos,x.activa?'Activa':'Inactiva',a];
+        return[x.nombre,x.descripcion,x.costo_puntos,(x.rol_destinatario||'estudiante')==='tutor'?'Tutor':'Estudiante',x.activa?'Activa':'Inactiva',a];
     }));
 }
 async function cargarReclamosAdmin(){
