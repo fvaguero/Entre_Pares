@@ -220,11 +220,16 @@ function renderizarTodasLasTutoriasAdmin() {
         const coincideMateria = !materia || String(reserva.materia || '').trim().toLowerCase() === materia;
         const coincideReserva = !estadoReserva || normalizarEstadoAdmin(reserva.estado) === estadoReserva;
         const coincideEstadoPago = !estadoPago || String(reserva.estado_pago || 'Pendiente').trim() === estadoPago;
+        const desde = document.getElementById('filtroFechaDesdeAdmin')?.value || '';
+        const hasta = document.getElementById('filtroFechaHastaAdmin')?.value || '';
+        const fechaReserva = reserva.fecha_hora ? fechaLocalArgentina(new Date(reserva.fecha_hora)) : '';
+        const coincideDesde = !desde || (fechaReserva && fechaReserva >= desde);
+        const coincideHasta = !hasta || (fechaReserva && fechaReserva <= hasta);
         let coincideVistaPago = true;
         if (vistaPago === 'pagar_hoy') coincideVistaPago = esTutoriaDeHoy(reserva) && esPagoPendiente(reserva);
         if (vistaPago === 'pendientes') coincideVistaPago = esPagoPendiente(reserva);
         if (vistaPago === 'pagados') coincideVistaPago = esPagoPagado(reserva);
-        return coincideMateria && coincideReserva && coincideEstadoPago && coincideVistaPago;
+        return coincideMateria && coincideReserva && coincideEstadoPago && coincideVistaPago && coincideDesde && coincideHasta;
     });
 
     contenedor.replaceChildren();
@@ -273,7 +278,7 @@ function renderizarTodasLasTutoriasAdmin() {
     });
 }
 
-['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin'].forEach(id => {
+['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin', 'filtroFechaDesdeAdmin', 'filtroFechaHastaAdmin'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', renderizarTodasLasTutoriasAdmin);
 });
 document.getElementById('filtroVistaPagoAdmin')?.addEventListener('change', () => {
@@ -282,7 +287,7 @@ document.getElementById('filtroVistaPagoAdmin')?.addEventListener('change', () =
     renderizarTodasLasTutoriasAdmin();
 });
 document.getElementById('limpiarFiltrosAdmin')?.addEventListener('click', () => {
-    ['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin', 'filtroVistaPagoAdmin'].forEach(id => {
+    ['filtroMateriaAdmin', 'filtroEstadoReservaAdmin', 'filtroEstadoPagoAdmin', 'filtroVistaPagoAdmin', 'filtroFechaDesdeAdmin', 'filtroFechaHastaAdmin'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -606,3 +611,75 @@ async function cargarActividadAdmin() {
         contenedor.textContent = 'No se pudo cargar la actividad. Revisá las políticas de lectura de las tablas.';
     }
 }
+
+
+// ==========================================
+// EXPORTACIÓN CSV PARA INFORMES ADMINISTRATIVOS
+// ==========================================
+function descargarCSVAdmin(nombreArchivo, filas) {
+    if (!Array.isArray(filas) || !filas.length) {
+        alert('No hay datos para exportar con los filtros actuales.');
+        return;
+    }
+    const escapar = valor => {
+        let texto = String(valor ?? '');
+        // Evita que hojas de cálculo interpreten contenido de celdas como fórmulas.
+        if (/^[=+@\\-\\t\\r]/.test(texto)) texto = "'" + texto;
+        return '"' + texto.replace(/"/g, '""') + '"';
+    };
+    const csv = '\\uFEFF' + filas.map(fila => fila.map(escapar).join(';')).join('\\r\\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombreArchivo;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    URL.revokeObjectURL(url);
+}
+
+function obtenerTutoriasFiltradasAdmin() {
+    const materia = (document.getElementById('filtroMateriaAdmin')?.value || '').trim().toLowerCase();
+    const estadoReserva = document.getElementById('filtroEstadoReservaAdmin')?.value || '';
+    const estadoPago = document.getElementById('filtroEstadoPagoAdmin')?.value || '';
+    const vistaPago = document.getElementById('filtroVistaPagoAdmin')?.value || '';
+    const desde = document.getElementById('filtroFechaDesdeAdmin')?.value || '';
+    const hasta = document.getElementById('filtroFechaHastaAdmin')?.value || '';
+    return reservasAdminCache.filter(reserva => {
+        const fecha = reserva.fecha_hora ? fechaLocalArgentina(new Date(reserva.fecha_hora)) : '';
+        return (!materia || String(reserva.materia || '').trim().toLowerCase() === materia)
+            && (!estadoReserva || normalizarEstadoAdmin(reserva.estado) === estadoReserva)
+            && (!estadoPago || String(reserva.estado_pago || 'Pendiente').trim() === estadoPago)
+            && (!vistaPago || (vistaPago === 'pagar_hoy' ? esTutoriaDeHoy(reserva) && esPagoPendiente(reserva) : vistaPago === 'pendientes' ? esPagoPendiente(reserva) : esPagoPagado(reserva)))
+            && (!desde || (fecha && fecha >= desde))
+            && (!hasta || (fecha && fecha <= hasta));
+    });
+}
+
+document.getElementById('exportarTutoriasAdmin')?.addEventListener('click', () => {
+    const filas = [['Materia','Estudiante','Tutor','Fecha y hora','Estado de tutoría','Importe ARS','Estado del pago']];
+    obtenerTutoriasFiltradasAdmin().forEach(r => filas.push([
+        r.materia || '',
+        r.estudiante?.nombre_completo || '',
+        r.tutor?.nombre_completo || '',
+        r.fecha_hora ? new Date(r.fecha_hora).toLocaleString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'}) : '',
+        normalizarEstadoAdmin(r.estado),
+        Number(r.precio || 0).toFixed(2),
+        r.estado_pago || 'Pendiente'
+    ]));
+    descargarCSVAdmin('entre-pares-tutorias.csv', filas);
+});
+
+document.getElementById('exportarUsuariosDashboardAdmin')?.addEventListener('click', () => {
+    const busqueda = (document.getElementById('buscarUsuariosDashboardAdmin')?.value || '').trim().toLocaleLowerCase('es');
+    const rol = document.getElementById('filtroRolUsuariosDashboardAdmin')?.value || '';
+    const estado = document.getElementById('filtroEstadoUsuariosDashboardAdmin')?.value || '';
+    const usuarios = usuariosDashboardAdmin.filter(u => {
+        const texto = [u.nombre_completo,u.email,u.sede_universitaria,u.rol,u.estado_verificacion].filter(Boolean).join(' ').toLocaleLowerCase('es');
+        return (!busqueda || texto.includes(busqueda)) && (!rol || String(u.rol || '') === rol) && (!estado || String(u.estado_verificacion || '') === estado);
+    });
+    const filas = [['Nombre','Correo','Rol','Sede universitaria','Estado de verificación']];
+    usuarios.forEach(u => filas.push([u.nombre_completo || '',u.email || '',u.rol || '',u.sede_universitaria || '',u.estado_verificacion || '']));
+    descargarCSVAdmin('entre-pares-usuarios.csv', filas);
+});
