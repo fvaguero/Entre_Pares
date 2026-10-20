@@ -42,7 +42,7 @@ begin
   from public.perfiles p
   where p.id = v_usuario;
 
-  if not found or v_rol_usuario not in ('estudiante', 'tutor') then
+  if not found or coalesce(v_rol_usuario, '') not in ('estudiante', 'tutor') then
     raise exception 'Solo estudiantes y tutores pueden solicitar recompensas.';
   end if;
 
