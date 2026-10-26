@@ -31,6 +31,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let destinatarioActivoId = null;
+let reservaChatActivaId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
@@ -1132,6 +1133,7 @@ async function cargarContactos(supabaseClient, miId) {
                 btn.classList.add('active');
                 document.getElementById('chatHeaderNombre').textContent = c.nombre;
                 document.getElementById('chatHeaderEstado').style.display = 'block';
+                actualizarReservaActivaChatEstudiante(supabaseClient, miId, c.id);
                 cargarHistorialChat(supabaseClient, miId, c.id);
             });
             lista.appendChild(btn);
@@ -1145,6 +1147,9 @@ async function cargarContactos(supabaseClient, miId) {
 function inicializarChat(supabaseClient, usuarioActualId) {
     const formMensaje = document.getElementById('formEnviarMensaje');
     const inputTexto = document.getElementById('inputMensajeTexto');
+    const btnHorario = document.getElementById('btnProponerHorarioChat');
+    if (btnHorario) btnHorario.addEventListener('click', () => proponerHorarioDesdeChat(supabaseClient, usuarioActualId));
+    actualizarEstadoBotonHorarioChat();
 
     if (formMensaje) {
         formMensaje.addEventListener('submit', async (e) => {
@@ -1187,6 +1192,78 @@ function inicializarChat(supabaseClient, usuarioActualId) {
         .subscribe();
 }
 
+function actualizarEstadoBotonHorarioChat() {
+    const btn = document.getElementById('btnProponerHorarioChat');
+    if (!btn) return;
+    btn.disabled = !reservaChatActivaId || !destinatarioActivoId;
+    btn.style.opacity = btn.disabled ? '.55' : '1';
+}
+
+async function actualizarReservaActivaChatEstudiante(client, estudianteId, tutorId) {
+    reservaChatActivaId = null;
+    actualizarEstadoBotonHorarioChat();
+    const { data, error } = await client.from('reservas')
+        .select('id,estado,fecha_hora')
+        .eq('estudiante_id', estudianteId)
+        .eq('tutor_id', tutorId)
+        .order('id', { ascending: false });
+    if (error) {
+        console.error('No se pudo identificar la tutoría del chat:', error);
+        return;
+    }
+    const reserva = (data || []).find(r => ['pendiente','aceptada','aprobada','confirmada'].includes(String(r.estado || '').toLowerCase()));
+    reservaChatActivaId = reserva?.id || null;
+    actualizarEstadoBotonHorarioChat();
+}
+
+async function proponerHorarioDesdeChat(client, miId) {
+    if (!destinatarioActivoId || !reservaChatActivaId) {
+        mostrarNotificacionEstudiante('Seleccioná una conversación con una tutoría activa.', 'error');
+        return;
+    }
+    const ahora = new Date();
+    const minima = new Date(ahora.getTime() + 60 * 60 * 1000);
+    const local = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
+    const { value } = await Swal.fire({
+        title: 'Proponer fecha y horario',
+        text: 'La otra persona deberá aceptar la propuesta. Esto no confirma la tutoría.',
+        input: 'datetime-local',
+        inputValue: local(minima),
+        inputAttributes: { min: local(minima), style: 'width:100%;' },
+        showCancelButton: true,
+        confirmButtonText: 'Enviar propuesta',
+        cancelButtonText: 'Cancelar',
+        inputValidator: v => !v ? 'Elegí fecha y hora.' : (new Date(v) <= new Date() ? 'La fecha debe ser futura.' : undefined)
+    });
+    if (!value) return;
+    const { error } = await client.rpc('proponer_horario_desde_chat', {
+        p_reserva_id: reservaChatActivaId,
+        p_fecha_propuesta: new Date(value).toISOString()
+    });
+    if (error) {
+        console.error('Error al proponer horario:', error);
+        mostrarNotificacionEstudiante(error.message || 'No se pudo enviar la propuesta.', 'error');
+        return;
+    }
+    mostrarNotificacionEstudiante('Propuesta enviada al chat. La tutoría todavía no está confirmada.', 'exito');
+    await cargarHistorialChat(client, miId, destinatarioActivoId);
+}
+
+async function responderPropuestaHorarioChat(client, propuestaId, aceptar, miId, otroId) {
+    const { error } = await client.rpc('responder_propuesta_horario_chat', {
+        p_propuesta_id: propuestaId,
+        p_aceptar: aceptar
+    });
+    if (error) {
+        console.error('Error al responder propuesta de horario:', error);
+        mostrarNotificacionEstudiante(error.message || 'No se pudo responder la propuesta.', 'error');
+        return;
+    }
+    mostrarNotificacionEstudiante(aceptar ? 'Horario aceptado. La fecha de la tutoría se actualizó.' : 'Propuesta rechazada. La fecha anterior se mantiene.', 'exito');
+    await cargarHistorialChat(client, miId, otroId);
+    await cargarMisReservas(client, miId);
+}
+
 async function cargarHistorialChat(supabaseClient, miId, otroId) {
     const bandeja = document.getElementById('chatBandeja');
     if (!bandeja) return;
@@ -1219,6 +1296,12 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         `;
         return;
     }
+
+    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
+    const { data: propuestas } = idsPropuestas.length
+        ? await supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
+        : { data: [] };
+    const propuestasPorId = new Map((propuestas || []).map(p => [String(p.id), p]));
 
     mensajes.forEach(msg => {
         const esDelSistema = !msg.remitente_id || msg.remitente_id === 'sistema' || msg.remitente_id === null;
@@ -1264,9 +1347,41 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 burbuja.style.borderRadius = '18px 18px 18px 4px';
             }
 
-            const textoP = document.createElement('div');
-            textoP.textContent = msg.contenido;
-            burbuja.appendChild(textoP);
+            const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|(.+)$/);
+            const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\\|([^|]+)\\|(ACEPTADA|RECHAZADA)$/);
+            if (propuestaMatch) {
+                const propuesta = propuestasPorId.get(propuestaMatch[1]);
+                const titulo = document.createElement('strong');
+                titulo.textContent = '📅 Propuesta de fecha y horario';
+                burbuja.appendChild(titulo);
+                const fecha = document.createElement('p');
+                fecha.textContent = propuesta ? new Date(propuesta.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : new Date(propuestaMatch[2]).toLocaleString('es-AR');
+                fecha.style.margin = '.45rem 0';
+                burbuja.appendChild(fecha);
+                const estado = document.createElement('p');
+                estado.style.fontWeight = '700';
+                estado.textContent = propuesta?.estado && propuesta.estado !== 'Pendiente' ? 'Estado: ' + propuesta.estado : 'Pendiente de respuesta';
+                burbuja.appendChild(estado);
+                if (propuesta?.estado === 'Pendiente' && propuesta.propuesto_por !== miId) {
+                    const acciones = document.createElement('div');
+                    acciones.style.display = 'flex'; acciones.style.gap = '.4rem'; acciones.style.marginTop = '.5rem';
+                    [['Aceptar',true],['Rechazar',false]].forEach(([label,aceptar]) => {
+                        const b = document.createElement('button'); b.type='button'; b.textContent=label;
+                        b.style.cssText='border:0;border-radius:6px;padding:.4rem .65rem;cursor:pointer;background:'+(aceptar?'#16a34a':'#fee2e2')+';color:'+(aceptar?'white':'#991b1b');
+                        b.addEventListener('click',()=>responderPropuestaHorarioChat(supabaseClient,propuesta.id,aceptar,miId,otroId));
+                        acciones.appendChild(b);
+                    });
+                    burbuja.appendChild(acciones);
+                }
+            } else if (respuestaMatch) {
+                const textoP = document.createElement('div');
+                textoP.textContent = respuestaMatch[2] === 'ACEPTADA' ? '✅ La propuesta de horario fue aceptada.' : '❌ La propuesta de horario fue rechazada.';
+                burbuja.appendChild(textoP);
+            } else {
+                const textoP = document.createElement('div');
+                textoP.textContent = msg.contenido;
+                burbuja.appendChild(textoP);
+            }
 
             const timestamp = msg.created_at || msg.creado_at;
             if (timestamp) {
