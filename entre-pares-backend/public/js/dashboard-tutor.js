@@ -219,6 +219,7 @@ async function cargarSolicitudesYTutorias() {
 
         if (error) throw error;
         reservasTutorCache = reservas || [];
+        await cargarSolicitudesReprogramacionTutor();
         resenasTutorPorReserva = new Set();
         const idsReservas = reservasTutorCache.map(r => r.id).filter(Boolean);
         if (idsReservas.length) {
@@ -336,6 +337,78 @@ function actualizarMateriasFiltroTutor(){const s=document.getElementById('filtro
 function inicializarAgendaTutor(){['filtroMateriaTutor','filtroEstadoTutor'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{renderizarAgendaTutor();renderizarCalendarioTutor();}));document.getElementById('limpiarFiltrosTutor')?.addEventListener('click',()=>{document.getElementById('filtroMateriaTutor').value='';document.getElementById('filtroEstadoTutor').value='';diaSeleccionadoTutor=null;renderizarAgendaTutor();renderizarCalendarioTutor();});document.getElementById('mesTutorAnterior')?.addEventListener('click',()=>{mesCalendarioTutor=new Date(mesCalendarioTutor.getFullYear(),mesCalendarioTutor.getMonth()-1,1);renderizarCalendarioTutor();});document.getElementById('mesTutorSiguiente')?.addEventListener('click',()=>{mesCalendarioTutor=new Date(mesCalendarioTutor.getFullYear(),mesCalendarioTutor.getMonth()+1,1);renderizarCalendarioTutor();});}
 function claveDiaTutor(f){return f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0');}
 function renderizarAgendaTutor(contenedorId='listaTutoriasAceptadas', listaReservas=null){const cont=document.getElementById(contenedorId);if(!cont)return;const rs=(listaReservas||reservasFiltradasTutor()).filter(r=>['aceptada','aprobada','finalizada'].includes(String(r.estado||'').toLowerCase())).sort((a,b)=>new Date(a.fecha_hora||a.creado_at||0)-new Date(b.fecha_hora||b.creado_at||0));cont.innerHTML='';if(!rs.length){cont.innerHTML='<p style="color:#64748b;font-size:.85rem;text-align:center;grid-column:1/-1;">No hay tutorías que coincidan con los filtros.</p>';return;}rs.forEach(r=>{const estadoNormalizado=String(r.estado||'').trim().toLowerCase();const fin=['finalizada','finalizado','completada','completado'].includes(estadoNormalizado)||estadoAgendaTutor(r.estado)==='Finalizada',card=document.createElement('div');card.style.cssText='border:1px solid #e2e8f0;padding:1rem;border-radius:8px;background:white;';const head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;gap:.5rem;';const t=document.createElement('strong');t.textContent=r.materia||'Tutoría';const yaCalificada=resenasTutorPorReserva.has(String(r.id));const badge=document.createElement('span');badge.style.cssText='background:'+(fin?(yaCalificada?'#15803d':'#2563eb'):'#16a34a')+';color:white;padding:2px 6px;border-radius:4px;font-size:.7rem;';badge.textContent=fin?(yaCalificada?'Finalizada · Calificada':'Finalizada · Sin calificar'):'Confirmada';head.append(t,badge);card.appendChild(head);const p=document.createElement('p');p.style.cssText='color:#475569;font-size:.85rem;';p.textContent='Estudiante: '+(r.estudiante?.nombre_completo||'Estudiante');card.appendChild(p);const f=document.createElement('p');f.style.cssText='color:#475569;font-size:.85rem;';f.textContent='📅 '+(r.fecha_hora?new Date(r.fecha_hora).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'}):'Fecha y hora a coordinar');card.appendChild(f);const c=document.createElement('p');c.style.cssText='color:#475569;font-size:.85rem;';c.textContent='Consulta: '+(r.comentarios||'Sin descripción');card.appendChild(c);if(fin){if(resenasTutorPorReserva.has(String(r.id))){const nota=document.createElement('p');nota.style.cssText='margin-top:.5rem;padding:.6rem;border-radius:6px;background:#f0fdf4;color:#166534;font-weight:600;text-align:center;font-size:.85rem;';nota.textContent='✅ Ya calificaste al estudiante';card.appendChild(nota);}else{const b=document.createElement('button');b.className='btn btn-yellow';b.style.cssText='width:100%;padding:.5rem;';b.textContent='⭐ Calificar Estudiante';b.onclick=()=>window.abrirModalResenaTutor(r.id,r.estudiante_id,r.estudiante?.nombre_completo||'Estudiante');card.appendChild(b);}}else{if(r.fecha_hora&&new Date(r.fecha_hora)>new Date()){const acciones=document.createElement('div');acciones.style.cssText='display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;';const reprogramar=document.createElement('button');reprogramar.type='button';reprogramar.className='btn';reprogramar.textContent='📅 Reprogramar';reprogramar.style.cssText='flex:1;background:#e0f2fe;color:#075985;padding:.5rem;';reprogramar.onclick=()=>reprogramarReservaTutor(r.id,r.fecha_hora);const cancelar=document.createElement('button');cancelar.type='button';cancelar.className='btn';cancelar.textContent='✖ Cancelar';cancelar.style.cssText='flex:1;background:#fee2e2;color:#991b1b;padding:.5rem;';cancelar.onclick=()=>cancelarReservaTutor(r.id);acciones.append(reprogramar,cancelar);card.appendChild(acciones);}const a=document.createElement('a');a.href='https://meet.jit.si/EntrePares-'+r.id;a.target='_blank';a.rel='noopener noreferrer';a.className='btn';a.style.cssText='display:block;text-align:center;margin-top:.5rem;background:#2563eb;color:white;padding:.5rem;text-decoration:none;border-radius:4px;';a.textContent='Unirse a Videollamada';card.appendChild(a);const b=document.createElement('button');b.className='btn';b.style.cssText='width:100%;margin-top:.5rem;background:#0f172a;color:white;padding:.5rem;';b.textContent='🏁 Marcar como Finalizada';b.onclick=()=>window.marcarTutoriaFinalizada(r.id);card.appendChild(b);}cont.appendChild(card);});}
+
+async function cargarSolicitudesReprogramacionTutor() {
+    const cont = document.getElementById('solicitudesReprogramacionTutor');
+    if (!cont || !usuarioActual) return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('solicitudes_reprogramacion')
+            .select('id,reserva_id,fecha_original,fecha_propuesta,created_at,estudiante:estudiante_id(nombre_completo),reserva:reserva_id(materia)')
+            .eq('tutor_id', usuarioActual.id)
+            .eq('estado', 'Pendiente')
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        cont.replaceChildren();
+        if (!data?.length) {
+            cont.textContent = 'No tenés solicitudes de reprogramación pendientes.';
+            return;
+        }
+        data.forEach(s => {
+            const card = document.createElement('article');
+            card.style.cssText = 'border:1px solid #bae6fd;background:#f0f9ff;border-radius:9px;padding:.9rem;';
+            const title = document.createElement('strong');
+            title.textContent = (s.reserva?.materia || 'Tutoría') + ' · ' + (s.estudiante?.nombre_completo || 'Estudiante');
+            const oldDate = document.createElement('p');
+            oldDate.style.cssText = 'margin:.45rem 0;color:#475569;font-size:.85rem;';
+            oldDate.textContent = 'Fecha actual: ' + (s.fecha_original ? new Date(s.fecha_original).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'No especificada');
+            const newDate = document.createElement('p');
+            newDate.style.cssText = 'margin:.25rem 0 .7rem;color:#075985;font-weight:700;font-size:.9rem;';
+            newDate.textContent = 'Nueva propuesta: ' + new Date(s.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'});
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display:flex;gap:.5rem;flex-wrap:wrap;';
+            const accept = document.createElement('button');
+            accept.type='button'; accept.className='btn'; accept.textContent='✓ Aceptar nueva fecha';
+            accept.style.cssText='background:#16a34a;color:white;padding:.55rem .8rem;flex:1;';
+            accept.addEventListener('click',()=>resolverSolicitudReprogramacion(s.id,true));
+            const reject = document.createElement('button');
+            reject.type='button'; reject.className='btn'; reject.textContent='✕ Rechazar';
+            reject.style.cssText='background:#fee2e2;color:#991b1b;padding:.55rem .8rem;flex:1;';
+            reject.addEventListener('click',()=>resolverSolicitudReprogramacion(s.id,false));
+            actions.append(accept,reject);
+            card.append(title,oldDate,newDate,actions);
+            cont.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error al cargar solicitudes de reprogramación:', error);
+        cont.textContent = 'No se pudieron cargar las solicitudes. Verificá que hayas ejecutado la migración de Supabase.';
+    }
+}
+
+async function resolverSolicitudReprogramacion(solicitudId, aceptar) {
+    const decision = await Swal.fire({
+        title: aceptar ? '¿Aceptar la nueva fecha?' : '¿Rechazar la propuesta?',
+        text: aceptar ? 'La fecha de la tutoría y los calendarios de ambos participantes se actualizarán.' : 'La fecha original de la tutoría se mantendrá.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: aceptar ? 'Sí, aceptar' : 'Sí, rechazar',
+        cancelButtonText: 'Volver'
+    });
+    if (!decision.isConfirmed) return;
+    try {
+        const { error } = await supabaseClient.rpc('responder_reprogramacion_reserva', {
+            p_solicitud_id: solicitudId,
+            p_aceptar: aceptar
+        });
+        if (error) throw error;
+        mostrarNotificacion(aceptar ? 'Nueva fecha aceptada. Se actualizó la tutoría.' : 'Propuesta rechazada. Se conserva la fecha original.', 'exito');
+        await cargarSolicitudesReprogramacionTutor();
+        await cargarSolicitudesYTutorias();
+    } catch (error) {
+        console.error('Error al responder reprogramación:', error);
+        mostrarNotificacion(error.message || 'No se pudo responder la solicitud.', 'error');
+    }
+}
 
 async function cancelarReservaTutor(reservaId) {
     const reservaActual = (reservasTutorCache || []).find(r => String(r.id) === String(reservaId));
