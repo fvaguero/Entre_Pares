@@ -674,36 +674,67 @@ function inicializarFiltrosYCalendarioReservas() {
     if(input){const ahora=new Date();ahora.setMinutes(ahora.getMinutes()-ahora.getTimezoneOffset());input.min=ahora.toISOString().slice(0,16);}
 }
 
-/* Comprobante interno imprimible para pagos registrados como pagados. */
+/* Comprobante interno imprimible. Se verifica el pago nuevamente en Supabase antes de emitirlo. */
 function escaparHTMLComprobante(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[caracter]);
 }
 
-function generarComprobantePago(reservaId) {
-    const reserva = reservasEstudianteCache.find(r => String(r.id) === String(reservaId));
-    if (!reserva) {
-        mostrarNotificacionEstudiante('No se encontró la tutoría para generar el comprobante.', 'error');
-        return;
-    }
-    const estadoPago = String(reserva.estado_pago || '').trim().toLowerCase();
-    if (!['pagado', 'pagada', 'aprobado', 'aprobada', 'completado', 'completada', 'acreditado', 'acreditada'].includes(estadoPago)) {
-        mostrarNotificacionEstudiante('El comprobante estará disponible cuando el pago figure como confirmado.', 'error');
-        return;
-    }
-    const fechaTutoría = reserva.fecha_hora && !Number.isNaN(new Date(reserva.fecha_hora).getTime())
-        ? new Date(reserva.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
-        : 'No especificada';
-    const fechaEmision = new Date().toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' });
-    const importe = Number(reserva.precio || reserva.tutor?.precio_hora || 0);
-    const numero = 'EP-' + String(reserva.id).replace(/[^a-zA-Z0-9]/g, '').slice(-12).toUpperCase();
+async function generarComprobantePago(reservaId) {
+    // Abrir la pestaña de forma síncrona para evitar que el navegador bloquee la ventana emergente.
     const ventana = window.open('', '_blank');
     if (!ventana) {
         mostrarNotificacionEstudiante('Permití las ventanas emergentes para imprimir el comprobante.', 'error');
         return;
     }
-    const html = `<!doctype html>
+
+    ventana.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Preparando comprobante</title><body style="font-family:Arial;padding:2rem;color:#334155">Verificando el estado del pago…</body></html>');
+
+    try {
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        if (userError || !user) throw new Error('Tu sesión no está disponible. Iniciá sesión nuevamente.');
+
+        // No se confía en la caché del navegador: se consulta la reserva actual y se valida su titular.
+        const { data: reserva, error: reservaError } = await supabaseClient
+            .from('reservas')
+            .select('*, tutor:tutor_id (nombre_completo, email)')
+            .eq('id', reservaId)
+            .eq('estudiante_id', user.id)
+            .single();
+
+        if (reservaError || !reserva) throw new Error('No se encontró la tutoría o no tenés permiso para consultar este comprobante.');
+
+        const estadoPago = String(reserva.estado_pago || '').trim().toLowerCase();
+        const estadosConfirmados = ['pagado', 'pagada', 'aprobado', 'aprobada', 'completado', 'completada', 'acreditado', 'acreditada'];
+        if (!estadosConfirmados.includes(estadoPago)) {
+            throw new Error('El comprobante estará disponible cuando Mercado Pago o la administración confirmen el pago.');
+        }
+
+        const { data: perfil, error: perfilError } = await supabaseClient
+            .from('perfiles')
+            .select('nombre_completo')
+            .eq('id', user.id)
+            .maybeSingle();
+        if (perfilError) throw perfilError;
+
+        const fechaTutoría = reserva.fecha_hora && !Number.isNaN(new Date(reserva.fecha_hora).getTime())
+            ? new Date(reserva.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
+            : 'No especificada';
+        const fechaPago = reserva.fecha_pago && !Number.isNaN(new Date(reserva.fecha_pago).getTime())
+            ? new Date(reserva.fecha_pago).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
+            : 'No registrada';
+        const fechaEmision = new Date().toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' });
+        const importeRegistrado = Number(reserva.precio);
+        const importeValido = Number.isFinite(importeRegistrado) && importeRegistrado > 0;
+        const importeTexto = importeValido
+            ? importeRegistrado.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
+            : 'No informado en la reserva';
+        const numero = 'EP-' + String(reserva.id).replace(/[^a-zA-Z0-9]/g, '').slice(-12).toUpperCase();
+        const nombreEstudiante = perfil?.nombre_completo || user.email || 'Estudiante';
+        const nombreTutor = reserva.tutor?.nombre_completo || 'No disponible';
+
+        const html = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -713,35 +744,41 @@ function generarComprobantePago(reservaId) {
 *{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#0f172a;font-family:Arial,sans-serif}
 .ticket{max-width:720px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px}
 header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:20px}
-h1{margin:0;font-size:26px;color:#1d4ed8}h2{font-size:18px;margin:24px 0 12px}
-.muted{color:#64748b;font-size:13px}.status{background:#dcfce7;color:#166534;border-radius:999px;padding:8px 12px;font-weight:bold;font-size:12px}
+h1{margin:0;font-size:26px;color:#1d4ed8}.muted{color:#64748b;font-size:13px}.status{background:#dcfce7;color:#166534;border-radius:999px;padding:8px 12px;font-weight:bold;font-size:12px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}.field{padding:12px;background:#f8fafc;border-radius:8px}.label{display:block;color:#64748b;font-size:11px;text-transform:uppercase;margin-bottom:6px}.value{font-weight:600;overflow-wrap:anywhere}
-.total{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding:18px;background:#eff6ff;border-radius:10px}.amount{font-size:25px;font-weight:800;color:#1d4ed8}
+.total{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:24px;padding:18px;background:#eff6ff;border-radius:10px}.amount{font-size:25px;font-weight:800;color:#1d4ed8;text-align:right}
 .note{border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;font-size:11px;color:#64748b;line-height:1.5}
 button{display:block;margin:20px auto 0;padding:12px 20px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:bold;cursor:pointer}
 @media print{body{padding:0;background:white}.ticket{border:0;border-radius:0;max-width:none;padding:12px}.no-print{display:none!important}}
-@media(max-width:520px){body{padding:10px}.ticket{padding:18px}.grid{grid-template-columns:1fr}header{flex-direction:column}}
+@media(max-width:520px){body{padding:10px}.ticket{padding:18px}.grid{grid-template-columns:1fr}header{flex-direction:column}.total{align-items:flex-start;flex-direction:column}.amount{text-align:left}}
 </style>
 </head>
 <body>
 <main class="ticket">
-<header><div><h1>ENTRE PARES</h1><p class="muted">Comprobante interno de pago de tutoría</p></div><span class="status">✓ PAGO REGISTRADO</span></header>
+<header><div><h1>ENTRE PARES</h1><p class="muted">Comprobante interno de pago de tutoría</p></div><span class="status">✓ PAGO CONFIRMADO</span></header>
 <div class="grid">
 <div class="field"><span class="label">Número de comprobante</span><span class="value">${escaparHTMLComprobante(numero)}</span></div>
 <div class="field"><span class="label">Fecha de emisión</span><span class="value">${escaparHTMLComprobante(fechaEmision)}</span></div>
-<div class="field"><span class="label">Estudiante</span><span class="value">${escaparHTMLComprobante(document.getElementById('nombreUsuarioHeader')?.textContent || 'Estudiante')}</span></div>
-<div class="field"><span class="label">Tutor/a</span><span class="value">${escaparHTMLComprobante(reserva.tutor?.nombre_completo || 'No disponible')}</span></div>
+<div class="field"><span class="label">Estudiante</span><span class="value">${escaparHTMLComprobante(nombreEstudiante)}</span></div>
+<div class="field"><span class="label">Tutor/a</span><span class="value">${escaparHTMLComprobante(nombreTutor)}</span></div>
 <div class="field"><span class="label">Materia</span><span class="value">${escaparHTMLComprobante(reserva.materia || 'Tutoría')}</span></div>
 <div class="field"><span class="label">Fecha de tutoría</span><span class="value">${escaparHTMLComprobante(fechaTutoría)}</span></div>
+<div class="field"><span class="label">Fecha de pago</span><span class="value">${escaparHTMLComprobante(fechaPago)}</span></div>
+<div class="field"><span class="label">Estado del pago</span><span class="value">${escaparHTMLComprobante(reserva.estado_pago)}</span></div>
 </div>
-<div class="total"><div><span class="label">Importe registrado</span><span class="muted">Estado: ${escaparHTMLComprobante(reserva.estado_pago)}</span></div><div class="amount">${importe.toLocaleString('es-AR',{style:'currency',currency:'ARS'})}</div></div>
-<p class="note">Este documento es un comprobante interno generado por Entre Pares a partir del estado de pago registrado en la plataforma. No constituye factura ni comprobante fiscal de AFIP/ARCA. Conservá el número de referencia para cualquier consulta.</p>
+<div class="total"><div><span class="label">Importe registrado en la reserva</span><span class="muted">Moneda: pesos argentinos (ARS)</span></div><div class="amount">${escaparHTMLComprobante(importeTexto)}</div></div>
+<p class="note">Este documento es un comprobante interno generado por Entre Pares a partir de los datos registrados en la plataforma. No constituye factura ni comprobante fiscal de AFIP/ARCA. Si el importe o la fecha de pago no figuran, contactá a administración para verificar el registro.</p>
 <button class="no-print" onclick="window.print()">Imprimir / Guardar como PDF</button>
 </main>
 </body></html>`;
-    ventana.document.open();
-    ventana.document.write(html);
-    ventana.document.close();
+        ventana.document.open();
+        ventana.document.write(html);
+        ventana.document.close();
+    } catch (error) {
+        console.error('Error al generar comprobante:', error);
+        ventana.close();
+        mostrarNotificacionEstudiante(error.message || 'No se pudo generar el comprobante.', 'error');
+    }
 }
 
 function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaReservas=null) {
