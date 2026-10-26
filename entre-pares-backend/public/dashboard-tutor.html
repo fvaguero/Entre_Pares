@@ -203,6 +203,7 @@
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario-tutor', this)">📅 Calendario</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-estadisticas-tutor', this); cargarEstadisticasPersonalesTutor()">📊 Mi progreso</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-pagos', this)">💰 Mis Pagos y Ganancias</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-comprobantes', this); cargarComprobantes()">🧾 Comprobantes de pago</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes', this); cargarCatalogoCanjesTutor()">🏆 Canjear Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Materias</button>
@@ -431,7 +432,15 @@
                 </div>
             </section>
 
-            <!-- 6. HISTORIAL DE NOTIFICACIONES DETALLADAS -->
+            <!-- 6. HISTORIAL DE NOTIFICACIONES DETALLADAS -->            <section id="seccion-comprobantes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Comprobantes de pago</h1>
+                    <p style="color:#64748b;">Consultá e imprimí los comprobantes de los pagos asociados a tus tutorías.</p>
+                </div>
+                <div id="listaComprobantes" style="display:grid;gap:.8rem;">Cargando comprobantes…</div>
+            </section>
+
+
             <section id="seccion-notificaciones" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial de Notificaciones</h1>
@@ -529,6 +538,7 @@
 
     <!-- Scripts principales y de notificaciones -->
     <script src="js/dashboard-tutor.js"></script>
+    <script src="js/comprobantes.js"></script>
 <footer class="site-footer" style="grid-column: 1 / -1;">
         <div class="footer-container">
             <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
