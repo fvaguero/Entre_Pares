@@ -229,6 +229,7 @@
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Estudiante</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-buscar', this)">🔍 Buscar Tutores</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reservas', this)">📋 Mis Consultas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-comprobantes', this); cargarComprobantes()">🧾 Comprobantes de pago</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario', this)">📅 Calendario</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-estadisticas', this); cargarEstadisticasPersonales()">📊 Mi progreso</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
@@ -475,7 +476,15 @@
                 </div>
             </section>
 
-            <!-- 5. HISTORIAL DE NOTIFICACIONES DETALLADAS -->
+            <!-- 5. HISTORIAL DE NOTIFICACIONES DETALLADAS -->            <section id="seccion-comprobantes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Comprobantes de pago</h1>
+                    <p style="color:#64748b;">Consultá e imprimí los comprobantes de tus tutorías con pagos confirmados.</p>
+                </div>
+                <div id="listaComprobantes" style="display:grid;gap:.8rem;">Cargando comprobantes…</div>
+            </section>
+
+
             <section id="seccion-notificaciones" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial de Notificaciones</h1>
@@ -633,5 +642,6 @@
     </script>
 
     <script src="js/dashboard-estudiante.js"></script>
+    <script src="js/comprobantes.js"></script>
 </body>
 </html>
