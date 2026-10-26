@@ -23,9 +23,15 @@
             let consulta = client.from('reservas')
                 .select('*, estudiante:estudiante_id (nombre_completo, email), tutor:tutor_id (nombre_completo, email)')
                 .order('creado_at',{ascending:false});
-            if (perfil.rol === 'Estudiante') consulta = consulta.eq('estudiante_id',user.id);
-            else if (perfil.rol === 'Tutor') consulta = consulta.eq('tutor_id',user.id);
-            else if (perfil.rol !== 'Administrador') throw new Error('Tu rol no tiene acceso a los comprobantes.');
+            const panelTutor = window.location.pathname.toLowerCase().includes('dashboard-tutor');
+            const panelEstudiante = window.location.pathname.toLowerCase().includes('dashboard-estudiante');
+            if (perfil.rol === 'Estudiante' || (perfil.rol === 'Ambos' && panelEstudiante)) {
+                consulta = consulta.eq('estudiante_id',user.id);
+            } else if (perfil.rol === 'Tutor' || (perfil.rol === 'Ambos' && panelTutor)) {
+                consulta = consulta.eq('tutor_id',user.id);
+            } else if (perfil.rol !== 'Administrador') {
+                throw new Error('Tu rol no tiene acceso a los comprobantes desde este panel.');
+            }
             const {data:reservas,error} = await consulta;
             if (error) throw error;
 
