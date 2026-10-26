@@ -129,6 +129,7 @@
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Administrador</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-tutores', this)">🛡️ Validar Tutores</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-tutorias', this)">📊 Control de Tutorías</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-comprobantes', this); cargarComprobantes()">🧾 Comprobantes de pago</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-metricas', this)">📈 Métricas Generales</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-usuarios-admin', this); cargarUsuariosAdmin()">👥 Gestión de usuarios</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-actividad-admin', this); cargarActividadAdmin()">🕒 Registro de actividad</button>
@@ -205,7 +206,15 @@
                 </div>
             </section>
 
-            <!-- 3. MÉTRICAS GENERALES -->
+            <!-- 3. MÉTRICAS GENERALES -->            <section id="seccion-comprobantes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Comprobantes de pago</h1>
+                    <p style="color:#64748b;">Consultá e imprimí los comprobantes de todas las tutorías con pagos confirmados.</p>
+                </div>
+                <div id="listaComprobantes" style="display:grid;gap:.8rem;">Cargando comprobantes…</div>
+            </section>
+
+
             <section id="seccion-metricas" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Métricas de la Plataforma</h1>
@@ -343,6 +352,7 @@
 
     <!-- Scripts principales y de notificaciones -->
     <script src="js/dashboard-admin.js"></script>
+    <script src="js/comprobantes.js"></script>
     <script src="js/notificaciones.js"></script>
 
     <footer class="site-footer" style="grid-column: 1 / -1;">
