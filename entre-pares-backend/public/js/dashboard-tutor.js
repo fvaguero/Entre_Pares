@@ -769,7 +769,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         return;
     }
 
-    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
+    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const { data: propuestas } = idsPropuestas.length
         ? await supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
         : { data: [] };
@@ -822,8 +822,8 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 burbuja.style.borderRadius = '18px 18px 18px 4px';
             }
 
-            const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|(.+)$/);
-            const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\\|([^|]+)\\|(ACEPTADA|RECHAZADA)$/);
+            const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|(.+)$/);
+            const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\|([^|]+)\|(ACEPTADA|RECHAZADA)$/);
             if (propuestaMatch) {
                 const propuesta = propuestasPorId.get(propuestaMatch[1]);
                 const titulo = document.createElement('strong');
