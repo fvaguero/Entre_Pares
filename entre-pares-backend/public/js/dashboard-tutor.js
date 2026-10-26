@@ -344,7 +344,7 @@ async function cargarSolicitudesReprogramacionTutor() {
     try {
         const { data, error } = await supabaseClient
             .from('solicitudes_reprogramacion')
-            .select('id,reserva_id,fecha_original,fecha_propuesta,created_at,estudiante:estudiante_id(nombre_completo),reserva:reserva_id(materia)')
+            .select('id,reserva_id,fecha_original,fecha_propuesta,created_at,estudiante:estudiante_id(nombre_completo),reserva:reservas(materia)')
             .eq('tutor_id', usuarioActual.id)
             .eq('estado', 'Pendiente')
             .order('created_at', { ascending: true });
