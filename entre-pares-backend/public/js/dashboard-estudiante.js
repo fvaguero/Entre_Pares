@@ -103,6 +103,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar datos del estudiante y activar Realtime
     inicializarFiltrosYCalendarioReservas();
     cargarMisReservas(supabaseClient, userId);
+    // Refrescar agenda y calendario cuando el tutor confirme una reprogramación.
+    supabaseClient
+        .channel('reservas-estudiante-' + userId)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'reservas',
+            filter: 'estudiante_id=eq.' + userId
+        }, () => cargarMisReservas(supabaseClient, userId))
+        .subscribe();
+
     inicializarChat(supabaseClient, userId);
     cargarContactos(supabaseClient, userId);
     const buscarContactoChat = document.getElementById('buscarContactoChat');
