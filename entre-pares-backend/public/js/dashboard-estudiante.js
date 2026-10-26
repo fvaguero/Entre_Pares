@@ -1267,39 +1267,29 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
    ============================================================ */
 window.pagarTutoria = async function(reservaId, materia, precio) {
     const btn = document.getElementById(`btn-pagar-${reservaId}`);
-    if(btn) {
-        btn.textContent = "Generando pago...";
+    if (btn) {
         btn.disabled = true;
+        btn.textContent = 'Generando pago seguro…';
     }
 
     try {
-        mostrarNotificacionEstudiante("Generando link de pago seguro...", "exito");
-        
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        if (sessionError || !session) throw new Error('Tu sesión venció. Iniciá sesión nuevamente.');
+
+        // La Edge Function determina el precio desde Supabase; no se envían importes confiados al navegador.
         const { data, error } = await supabaseClient.functions.invoke('crear-pago-mp', {
-            body: {
-                reservaId: reservaId,
-                titulo: materia,
-                precio: precio || 3000, 
-                emailEstudiante: session.user.email
-            }
+            body: { reservaId },
         });
-
         if (error) throw error;
+        if (!data?.urlPago) throw new Error(data?.error || 'No se recibió el enlace de Mercado Pago.');
 
-        if (data && data.urlPago) {
-            window.location.href = data.urlPago;
-        } else {
-            throw new Error("No se recibió la URL de pago.");
-        }
-
+        window.location.assign(data.urlPago);
     } catch (err) {
-        console.error("Error al generar pago:", err);
-        mostrarNotificacionEstudiante("No se pudo generar el link de pago.", "error");
-        if(btn) {
-            btn.textContent = `💳 Pagar Tutoría ($${precio})`;
+        console.error('Error al generar pago:', err);
+        mostrarNotificacionEstudiante(err.message || 'No se pudo generar el link de pago.', 'error');
+        if (btn) {
             btn.disabled = false;
+            btn.textContent = '💳 Intentar pagar nuevamente';
         }
     }
 };
