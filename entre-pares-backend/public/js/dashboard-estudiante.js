@@ -721,9 +721,12 @@ async function generarComprobantePago(reservaId) {
         const fechaTutoría = reserva.fecha_hora && !Number.isNaN(new Date(reserva.fecha_hora).getTime())
             ? new Date(reserva.fecha_hora).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
             : 'No especificada';
-        const fechaPago = reserva.fecha_pago && !Number.isNaN(new Date(reserva.fecha_pago).getTime())
-            ? new Date(reserva.fecha_pago).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
+        const fechaPagoRegistrada = reserva.mercadopago_paid_at || reserva.fecha_pago;
+        const fechaPago = fechaPagoRegistrada && !Number.isNaN(new Date(fechaPagoRegistrada).getTime())
+            ? new Date(fechaPagoRegistrada).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' })
             : 'No registrada';
+        const medioPago = reserva.mercadopago_payment_type || 'No informado';
+        const idOperacion = reserva.mercadopago_payment_id || 'No disponible';
         const fechaEmision = new Date().toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Argentina/Buenos_Aires' });
         const importeRegistrado = Number(reserva.precio);
         const importeValido = Number.isFinite(importeRegistrado) && importeRegistrado > 0;
@@ -765,6 +768,8 @@ button{display:block;margin:20px auto 0;padding:12px 20px;border:0;border-radius
 <div class="field"><span class="label">Fecha de tutoría</span><span class="value">${escaparHTMLComprobante(fechaTutoría)}</span></div>
 <div class="field"><span class="label">Fecha de pago</span><span class="value">${escaparHTMLComprobante(fechaPago)}</span></div>
 <div class="field"><span class="label">Estado del pago</span><span class="value">${escaparHTMLComprobante(reserva.estado_pago)}</span></div>
+<div class="field"><span class="label">Medio de pago</span><span class="value">${escaparHTMLComprobante(medioPago)}</span></div>
+<div class="field"><span class="label">Identificador de operación</span><span class="value">${escaparHTMLComprobante(idOperacion)}</span></div>
 </div>
 <div class="total"><div><span class="label">Importe registrado en la reserva</span><span class="muted">Moneda: pesos argentinos (ARS)</span></div><div class="amount">${escaparHTMLComprobante(importeTexto)}</div></div>
 <p class="note">Este documento es un comprobante interno generado por Entre Pares a partir de los datos registrados en la plataforma. No constituye factura ni comprobante fiscal de AFIP/ARCA. Si el importe o la fecha de pago no figuran, contactá a administración para verificar el registro.</p>
