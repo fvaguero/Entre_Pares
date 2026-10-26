@@ -60,7 +60,7 @@ begin
     values (
         auth.uid(), v_destinatario,
         'HORARIO_PROPUESTA|' || v_id::text || '|' ||
-        to_char(p_fecha_propuesta at time zone 'America/Argentina/Buenos_Aires','YYYY-MM-DD"T"HH24:MI:SSOF')
+        to_char(p_fecha_propuesta at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS') || 'Z'
     );
     return v_id;
 exception when unique_violation then
