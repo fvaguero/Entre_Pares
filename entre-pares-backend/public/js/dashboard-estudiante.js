@@ -811,19 +811,22 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
         if (['Aceptada','Pendiente'].includes(estado)) {
             const acciones = document.createElement('div');
             acciones.style.cssText = 'display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap;';
-            const btnReprogramar = document.createElement('button');
-            btnReprogramar.type = 'button';
-            btnReprogramar.className = 'btn';
-            btnReprogramar.textContent = '📅 Solicitar reprogramación';
-            btnReprogramar.style.cssText = 'flex:1;background:#e0f2fe;color:#075985;padding:.5rem;';
-            btnReprogramar.onclick = () => reprogramarReservaEstudiante(res.id, res.fecha_hora);
+            if (estado === 'Aceptada') {
+                const btnReprogramar = document.createElement('button');
+                btnReprogramar.type = 'button';
+                btnReprogramar.className = 'btn';
+                btnReprogramar.textContent = '📅 Solicitar reprogramación';
+                btnReprogramar.style.cssText = 'flex:1;background:#e0f2fe;color:#075985;padding:.5rem;';
+                btnReprogramar.onclick = () => reprogramarReservaEstudiante(res.id, res.fecha_hora);
+                acciones.appendChild(btnReprogramar);
+            }
             const btnCancelar = document.createElement('button');
             btnCancelar.type = 'button';
             btnCancelar.className = 'btn';
             btnCancelar.textContent = '✖ Cancelar tutoría';
             btnCancelar.style.cssText = 'flex:1;background:#fee2e2;color:#991b1b;padding:.5rem;';
             btnCancelar.onclick = () => cancelarReservaEstudiante(res.id);
-            acciones.append(btnReprogramar, btnCancelar);
+            acciones.append(btnCancelar);
             card.appendChild(acciones);
         }
         const pagoNormalizado = String(res.estado_pago || '').trim().toLowerCase();
