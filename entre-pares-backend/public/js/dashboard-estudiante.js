@@ -885,36 +885,54 @@ async function cancelarReservaEstudiante(reservaId) {
 }
 async function reprogramarReservaEstudiante(reservaId, fechaActual) {
     const reservaActual = reservasEstudianteCache.find(r => String(r.id) === String(reservaId));
-    if (reservaActual && estadoReservaNormalizado(reservaActual.estado) === 'Finalizada') {
-        mostrarNotificacionEstudiante('No se puede reprogramar una tutoría que ya está finalizada.', 'error');
+    if (!reservaActual || estadoReservaNormalizado(reservaActual.estado) !== 'Aceptada') {
+        mostrarNotificacionEstudiante('Solo podés solicitar cambios para tutorías confirmadas.', 'error');
         return;
     }
-    const valorLocal = (() => {
-        const f = fechaActual ? new Date(fechaActual) : new Date();
-        // Si la fecha original no es válida o ya pasó, sugerir una hora futura.
-        if (Number.isNaN(f.getTime()) || f <= new Date()) f.setTime(Date.now() + 60 * 60 * 1000);
-        f.setMinutes(f.getMinutes() - f.getTimezoneOffset());
-        return f.toISOString().slice(0,16);
-    })();
+    const { data: pendientes, error: errorPendiente } = await supabaseClient
+        .from('solicitudes_reprogramacion')
+        .select('id')
+        .eq('reserva_id', reservaId)
+        .eq('estado', 'Pendiente')
+        .limit(1);
+    if (errorPendiente) {
+        console.error('Error consultando solicitudes pendientes:', errorPendiente);
+        mostrarNotificacionEstudiante('No se pudo verificar si ya existe una solicitud pendiente.', 'error');
+        return;
+    }
+    if (pendientes?.length) {
+        mostrarNotificacionEstudiante('Ya hay una propuesta pendiente de respuesta para esta tutoría.', 'error');
+        return;
+    }
+
+    const ahora = new Date();
+    const minima = new Date(ahora.getTime() + 60 * 60 * 1000);
+    const fechaInicial = fechaActual && new Date(fechaActual) > minima ? new Date(fechaActual) : minima;
+    const aLocal = f => { const d = new Date(f); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); };
     const { value: nuevaFecha } = await Swal.fire({
-        title: 'Reprogramar tutoría',
+        title: 'Proponer nueva fecha',
+        html: '<p style="color:#64748b;font-size:.9rem;margin-bottom:12px;">Elegí una fecha y horario. Tu tutor recibirá la propuesta por el chat y deberá aceptarla para confirmar el cambio.</p>',
         input: 'datetime-local',
-        inputValue: valorLocal,
-        inputAttributes: { min: (() => { const n = new Date(); n.setMinutes(n.getMinutes()-n.getTimezoneOffset()); return n.toISOString().slice(0,16); })() },
+        inputValue: aLocal(fechaInicial),
+        inputAttributes: { min: aLocal(minima), style: 'width:100%;' },
         showCancelButton: true,
-        confirmButtonText: 'Guardar horario',
+        confirmButtonText: 'Enviar propuesta al tutor',
         cancelButtonText: 'Cancelar',
         inputValidator: value => !value ? 'Elegí una fecha y hora.' : (new Date(value) <= new Date() ? 'La fecha debe ser futura.' : undefined)
     });
     if (!nuevaFecha) return;
+
     try {
-        const { error } = await supabaseClient.rpc('reprogramar_reserva_participante', { p_reserva_id: String(reservaId), p_nueva_fecha: new Date(nuevaFecha).toISOString() });
+        const { error } = await supabaseClient.rpc('solicitar_reprogramacion_reserva', {
+            p_reserva_id: String(reservaId),
+            p_fecha_propuesta: new Date(nuevaFecha).toISOString()
+        });
         if (error) throw error;
-        mostrarNotificacionEstudiante('Horario actualizado. Coordiná el cambio con el tutor por mensajes.', 'exito');
+        mostrarNotificacionEstudiante('Propuesta enviada al chat del tutor. La fecha actual no cambia hasta que la acepte.', 'exito');
         await cargarMisReservas(supabaseClient, userId);
     } catch (error) {
-        console.error('Error al reprogramar tutoría:', error);
-        mostrarNotificacionEstudiante('No se pudo reprogramar. Revisá los permisos de reservas en Supabase.', 'error');
+        console.error('Error al solicitar reprogramación:', error);
+        mostrarNotificacionEstudiante(error.message || 'No se pudo enviar la propuesta de reprogramación.', 'error');
     }
 }
 
