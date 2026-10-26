@@ -769,11 +769,18 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         return;
     }
 
-    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
-    const { data: propuestas } = idsPropuestas.length
-        ? await supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
-        : { data: [] };
+    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
+    const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
+    const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
+        idsPropuestas.length
+            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
+            : Promise.resolve({ data: [] }),
+        idsReprogramaciones.length
+            ? supabaseClient.from('solicitudes_reprogramacion').select('id,fecha_propuesta,fecha_original,estado,creada_por').in('id', idsReprogramaciones)
+            : Promise.resolve({ data: [] })
+    ]);
     const propuestasPorId = new Map((propuestas || []).map(p => [String(p.id), p]));
+    const reprogramacionesPorId = new Map((solicitudesReprogramacion || []).map(p => [String(p.id), p]));
 
     mensajes.forEach(msg => {
         // Detectar si el mensaje es del sistema/notificación o de un usuario
@@ -822,9 +829,34 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 burbuja.style.borderRadius = '18px 18px 18px 4px';
             }
 
+            const solicitudReprogramacionMatch = String(msg.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\\|([^|]+)\\|/);
             const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|(.+)$/);
             const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\|([^|]+)\|(ACEPTADA|RECHAZADA)$/);
-            if (propuestaMatch) {
+            if (solicitudReprogramacionMatch) {
+                const solicitud = reprogramacionesPorId.get(solicitudReprogramacionMatch[1]);
+                const titulo = document.createElement('strong');
+                titulo.textContent = '🔁 Solicitud de reprogramación';
+                burbuja.appendChild(titulo);
+                const fecha = document.createElement('p');
+                fecha.style.margin = '.45rem 0';
+                fecha.textContent = solicitud ? 'Nueva fecha propuesta: ' + new Date(solicitud.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'Se envió una solicitud de cambio de fecha.';
+                burbuja.appendChild(fecha);
+                const estado = document.createElement('p');
+                estado.style.fontWeight = '700';
+                estado.textContent = solicitud?.estado && solicitud.estado !== 'Pendiente' ? 'Estado: ' + solicitud.estado : 'Pendiente de respuesta del tutor';
+                burbuja.appendChild(estado);
+                if (solicitud?.estado === 'Pendiente' && solicitud.creada_por !== miId) {
+                    const acciones = document.createElement('div');
+                    acciones.style.display = 'flex'; acciones.style.gap = '.4rem'; acciones.style.marginTop = '.5rem';
+                    [['Aceptar nueva fecha',true],['Rechazar',false]].forEach(([label,aceptar]) => {
+                        const b = document.createElement('button'); b.type='button'; b.textContent=label;
+                        b.style.cssText='border:0;border-radius:6px;padding:.4rem .65rem;cursor:pointer;background:'+(aceptar?'#16a34a':'#fee2e2')+';color:'+(aceptar?'white':'#991b1b');
+                        b.addEventListener('click',()=>resolverSolicitudReprogramacion(solicitud.id,aceptar));
+                        acciones.appendChild(b);
+                    });
+                    burbuja.appendChild(acciones);
+                }
+            } else if (propuestaMatch) {
                 const propuesta = propuestasPorId.get(propuestaMatch[1]);
                 const titulo = document.createElement('strong');
                 titulo.textContent = '📅 Propuesta de fecha y horario';
