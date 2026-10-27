@@ -307,7 +307,7 @@ async function cargarMetricas() {
             {count:reclamosPendientes,error:errorReclamos}
         ] = await Promise.all([
             supabaseClient.from('perfiles').select('id',{count:'exact',head:true}),
-            supabaseClient.from('perfiles').select('*',{count:'exact',head:true}).eq('estado_verificacion','Aprobado'),
+            supabaseClient.from('perfiles').select('id',{count:'exact',head:true}).eq('estado_verificacion','Aprobado'),
             supabaseClient.from('reservas').select('*',{count:'exact',head:true}),
             supabaseClient.from('reservas').select('*',{count:'exact',head:true}).ilike('estado','finalizada'),
             supabaseClient.from('resenas').select('calificacion'),
