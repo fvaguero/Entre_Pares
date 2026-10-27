@@ -84,6 +84,7 @@ as
 select tutor_id, fecha_hora, estado
 from public.reservas
 where fecha_hora is not null
+  and fecha_hora >= now()
   and lower(coalesce(estado,'')) in ('aceptada','aprobada','confirmada');
 grant select on public.horarios_tutores_publicos to anon, authenticated;
 
