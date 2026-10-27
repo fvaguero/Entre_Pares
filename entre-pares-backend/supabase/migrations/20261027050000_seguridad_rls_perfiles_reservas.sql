@@ -297,12 +297,21 @@ begin
 
   if new.estado is distinct from old.estado then
     if old.tutor_id = auth.uid() then
-      if lower(coalesce(new.estado,'')) not in ('aceptada','aprobada','rechazada','finalizada','cancelada') then
-        raise exception 'El tutor no puede establecer ese estado.';
+      if lower(coalesce(old.estado,'')) = 'pendiente' then
+        if lower(coalesce(new.estado,'')) not in ('aceptada','aprobada','rechazada') then
+          raise exception 'Desde una solicitud pendiente, el tutor solo puede aceptar o rechazar.';
+        end if;
+      elsif lower(coalesce(old.estado,'')) in ('aceptada','aprobada','confirmada') then
+        if lower(coalesce(new.estado,'')) not in ('finalizada','cancelada','cancelado') then
+          raise exception 'Una tutoría activa solo puede finalizarse o cancelarse.';
+        end if;
+      else
+        raise exception 'No se puede cambiar el estado actual de esta tutoría.';
       end if;
     elsif old.estudiante_id = auth.uid() then
-      if lower(coalesce(new.estado,'')) not in ('cancelada','cancelado') then
-        raise exception 'El estudiante solo puede cancelar su propia solicitud.';
+      if lower(coalesce(old.estado,'')) in ('finalizada','finalizado','completada','completado','rechazada','cancelada','cancelado')
+         or lower(coalesce(new.estado,'')) not in ('cancelada','cancelado') then
+        raise exception 'Solo podés cancelar una tutoría que todavía no haya finalizado.';
       end if;
     else
       raise exception 'No sos participante de esta reserva.';
