@@ -190,6 +190,7 @@ if (btnCerrarSesion) {
                 mostrarNotificacion("¡Calificación enviada al estudiante con éxito!", "exito");
                 e.target.reset();
                 await cargarSolicitudesYTutorias();
+    await cargarSolicitudesReprogramacionTutor();
             } catch (err) {
                 console.error("Error al guardar reseña del tutor:", err);
                 mostrarNotificacion("No se pudo guardar la calificación.", "error");
@@ -345,7 +346,7 @@ async function cargarSolicitudesReprogramacionTutor() {
     try {
         const { data, error } = await supabaseClient
             .from('propuestas_horario_chat')
-            .select('id,reserva_id,fecha_anterior,fecha_propuesta,tipo,created_at,propuesto_por,estudiante:estudiante_id(nombre_completo),reserva:reservas(materia)')
+            .select('id,reserva_id,estudiante_id,fecha_anterior,fecha_propuesta,tipo,created_at,propuesto_por,estudiante:estudiante_id(nombre_completo),reserva:reservas(materia)')
             .eq('tutor_id', usuarioActual.id)
             .eq('estado', 'Pendiente')
             .neq('propuesto_por', usuarioActual.id)
