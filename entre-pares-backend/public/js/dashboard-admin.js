@@ -66,7 +66,7 @@ async function cargarTutoresPendientes() {
     if (!contenedor) return;
     try {
         const { data: tutores, error } = await supabaseClient
-            .from('perfiles')
+            .from('perfiles_privados')
             .select('*')
             .in('rol', ['Tutor', 'Ambos'])
             .eq('estado_verificacion', 'Pendiente');
@@ -306,7 +306,7 @@ async function cargarMetricas() {
             {count:canjesPendientes,error:errorCanjes},
             {count:reclamosPendientes,error:errorReclamos}
         ] = await Promise.all([
-            supabaseClient.from('perfiles').select('*',{count:'exact',head:true}),
+            supabaseClient.from('perfiles').select('id',{count:'exact',head:true}),
             supabaseClient.from('perfiles').select('*',{count:'exact',head:true}).eq('estado_verificacion','Aprobado'),
             supabaseClient.from('reservas').select('*',{count:'exact',head:true}),
             supabaseClient.from('reservas').select('*',{count:'exact',head:true}).ilike('estado','finalizada'),
