@@ -760,7 +760,7 @@ async function responderPropuestaHorarioChat(client, propuestaId, aceptar, miId,
         return;
     }
     mostrarNotificacion(aceptar ? 'Horario aceptado. La fecha de la tutoría se actualizó.' : 'Propuesta rechazada. La fecha anterior se mantiene.', 'exito');
-    await cargarHistorialChat(client, miId, otroId);
+    if (destinatarioActivoId === otroId) await cargarHistorialChat(client, miId, otroId);
     await cargarSolicitudesYTutorias();
 }
 
