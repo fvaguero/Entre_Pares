@@ -26,7 +26,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select exists (
     select 1 from public.perfiles p
     where p.id = p_tutor_id
@@ -294,11 +294,6 @@ using (
   (auth.uid() = remitente_id or auth.uid() = destinatario_id)
   and exists (
     select 1 from public.reservas r
-    where (r.estudiante_id = mensajes.remitente_id and r.tutor_id = mensajes.destinatario_id)
-       or (r.tutor_id = mensajes.remitente_id and r.estudiante_id = mensajes.destinatario_id)
-  )
-  and exists (
-    select 1 from public.reservas r
     where (
       (r.estudiante_id = mensajes.remitente_id and r.tutor_id = mensajes.destinatario_id)
       or (r.tutor_id = mensajes.remitente_id and r.estudiante_id = mensajes.destinatario_id)
@@ -313,8 +308,11 @@ with check (
   auth.uid() = remitente_id
   and exists (
     select 1 from public.reservas r
-    where (r.estudiante_id = mensajes.remitente_id and r.tutor_id = mensajes.destinatario_id)
-       or (r.tutor_id = mensajes.remitente_id and r.estudiante_id = mensajes.destinatario_id)
+    where (
+      (r.estudiante_id = mensajes.remitente_id and r.tutor_id = mensajes.destinatario_id)
+      or (r.tutor_id = mensajes.remitente_id and r.estudiante_id = mensajes.destinatario_id)
+    )
+    and lower(coalesce(r.estado,'')) in ('aceptada','aprobada','confirmada','finalizada','finalizado','completada','completado')
   )
 );
 
@@ -359,7 +357,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 begin
   if auth.uid() is not null and not public.usuario_actual_es_admin() then
     if new.usuario_id is distinct from old.usuario_id
