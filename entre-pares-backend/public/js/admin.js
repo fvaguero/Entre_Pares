@@ -48,7 +48,7 @@ async function cargarDatosAdminFinanzas(){
  const tbody=document.getElementById('tablaAdminFinanzas');if(!tbody)return;
  tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;">Cargando finanzas...</td></tr>';
  try{
-  const consulta='id,materia,precio,estado_pago,estado_liquidacion,estado,fecha_hora,creado_at,fecha_pago,fecha_liquidacion,estudiante:estudiante_id(nombre_completo,email),tutor:tutor_id(nombre_completo)';
+  const consulta='id,tutor_id,materia,precio,estado_pago,estado_liquidacion,estado,fecha_hora,creado_at,fecha_pago,fecha_liquidacion,estudiante:estudiante_id(nombre_completo,email),tutor:tutor_id(nombre_completo)';
   const {data,error}=await supabaseClient.from('reservas').select(consulta).order('creado_at',{ascending:false});
   if(error){if(String(error.message||'').includes('fecha_pago')||String(error.message||'').includes('fecha_liquidacion')||String(error.message||'').includes('estado_liquidacion'))throw new Error('Faltan columnas del control financiero. Aplicá la migración SQL 20261020_control_financiero_admin.sql en Supabase.');throw error;}
   reservasFinanzasCache=data||[];
