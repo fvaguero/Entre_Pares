@@ -51,6 +51,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             .eq('id', userId)
             .single();
 
+        if (perfilError || !perfil || !['Estudiante', 'Ambos'].includes(perfil.rol)) {
+            alert('Esta sección requiere una cuenta de Estudiante o una cuenta dual.');
+            window.location.href = 'index.html';
+            return;
+        }
+
         if (perfil) {
             const spanNombre = document.getElementById('nombreUsuarioHeader');
             if (spanNombre) spanNombre.textContent = perfil.nombre_completo || 'Estudiante';
