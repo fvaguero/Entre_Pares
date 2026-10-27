@@ -30,11 +30,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     inicializarPanelRecordatorios(usuarioActual.id);
 
     try {
-        const { data: perfil } = await supabaseClient
+        const { data: perfil, error: perfilError } = await supabaseClient
             .from('perfiles')
             .select('*')
             .eq('id', usuarioActual.id)
             .single();
+
+        if (perfilError || !perfil || !['Tutor', 'Ambos'].includes(perfil.rol)) {
+            alert('Esta sección requiere una cuenta de Tutor o una cuenta dual.');
+            window.location.href = 'index.html';
+            return;
+        }
 
         if (perfil) {
             const spanNombre = document.getElementById('nombreUsuarioHeader');
