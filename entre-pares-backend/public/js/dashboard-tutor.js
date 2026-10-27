@@ -688,37 +688,74 @@ function actualizarEstadoBotonHorarioChat() {
 
 async function proponerHorarioDesdeChat(client, miId) {
     if (!destinatarioActivoId || !reservaChatActivaId) {
-        mostrarNotificacion('Seleccioná una conversación con una tutoría activa.', 'error');
+        const mensaje = 'Esta conversación no tiene una tutoría activa asociada. No se puede proponer un horario todavía.';
+        if (typeof mostrarNotificacionEstudiante === 'function') mostrarNotificacionEstudiante(mensaje, 'error');
+        else mostrarNotificacion(mensaje, 'error');
         return;
     }
+
     const ahora = new Date();
     const minima = new Date(ahora.getTime() + 60 * 60 * 1000);
-    const local = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
-    const { value } = await Swal.fire({
-        title: 'Proponer fecha y horario',
-        text: 'La otra persona deberá aceptar la propuesta. Esto no confirma la tutoría.',
-        input: 'datetime-local',
-        inputValue: local(minima),
-        inputAttributes: { min: local(minima), style: 'width:100%;' },
+    const fechaMinima = new Date(minima.getTime() - minima.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const horaMinima = minima.toTimeString().slice(0, 5);
+
+    const { value: horario } = await Swal.fire({
+        title: '📅 Proponer fecha y horario',
+        html: `
+            <div style="text-align:left;display:grid;gap:12px;margin-top:12px;">
+                <label for="fechaPropuestaChat" style="font-weight:600;color:#334155;">Elegí el día</label>
+                <input id="fechaPropuestaChat" type="date" min="${fechaMinima}" value="${fechaMinima}" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;">
+                <label for="horaPropuestaChat" style="font-weight:600;color:#334155;">Elegí el horario</label>
+                <input id="horaPropuestaChat" type="time" value="${horaMinima}" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;">
+                <p style="font-size:.82rem;color:#64748b;margin:0;">La otra persona recibirá la propuesta en este chat y deberá aceptarla. La fecha actual no cambiará hasta entonces.</p>
+            </div>`,
+        focusConfirm: false,
         showCancelButton: true,
         confirmButtonText: 'Enviar propuesta',
         cancelButtonText: 'Cancelar',
-        inputValidator: v => !v ? 'Elegí fecha y hora.' : (new Date(v) <= new Date() ? 'La fecha debe ser futura.' : undefined)
+        didOpen: () => {
+            const fechaInput = document.getElementById('fechaPropuestaChat');
+            if (fechaInput && typeof fechaInput.showPicker === 'function') {
+                try { fechaInput.showPicker(); } catch (_) { fechaInput.focus(); }
+            }
+        },
+        preConfirm: () => {
+            const fecha = document.getElementById('fechaPropuestaChat')?.value;
+            const hora = document.getElementById('horaPropuestaChat')?.value;
+            if (!fecha || !hora) {
+                Swal.showValidationMessage('Seleccioná una fecha y un horario.');
+                return false;
+            }
+            const seleccion = new Date(`${fecha}T${hora}:00`);
+            if (Number.isNaN(seleccion.getTime()) || seleccion <= new Date()) {
+                Swal.showValidationMessage('La fecha y hora deben ser futuras.');
+                return false;
+            }
+            if (seleccion < minima) {
+                Swal.showValidationMessage('Elegí un horario con al menos una hora de anticipación.');
+                return false;
+            }
+            return seleccion.toISOString();
+        }
     });
-    if (!value) return;
+    if (!horario) return;
+
     const { error } = await client.rpc('proponer_horario_desde_chat', {
         p_reserva_id: reservaChatActivaId,
-        p_fecha_propuesta: new Date(value).toISOString()
+        p_fecha_propuesta: horario
     });
     if (error) {
         console.error('Error al proponer horario:', error);
-        mostrarNotificacion(error.message || 'No se pudo enviar la propuesta.', 'error');
+        const mensaje = error.message || 'No se pudo enviar la propuesta.';
+        if (typeof mostrarNotificacionEstudiante === 'function') mostrarNotificacionEstudiante(mensaje, 'error');
+        else mostrarNotificacion(mensaje, 'error');
         return;
     }
-    mostrarNotificacion('Propuesta enviada al chat. La tutoría todavía no está confirmada.', 'exito');
+    const mensaje = 'Propuesta enviada al chat. La tutoría todavía no está confirmada.';
+    if (typeof mostrarNotificacionEstudiante === 'function') mostrarNotificacionEstudiante(mensaje, 'exito');
+    else mostrarNotificacion(mensaje, 'exito');
     await cargarHistorialChat(client, miId, destinatarioActivoId);
 }
-
 async function responderPropuestaHorarioChat(client, propuestaId, aceptar, miId, otroId) {
     const { error } = await client.rpc('responder_propuesta_horario_chat', {
         p_propuesta_id: propuestaId,
