@@ -13,6 +13,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let usuarioActual = null;
 let destinatarioActivoId = null;
 let reservaChatActivaId = null;
+let reservaChatActivaFecha = null;
 let reservasTutorCache = [];
 let resenasTutorPorReserva = new Set();
 let pagosTutorCache = [];
@@ -674,9 +675,9 @@ function inicializarChat(supabaseClient, usuarioActualId) {
 function actualizarEstadoBotonHorarioChat() {
     const btn = document.getElementById('btnProponerHorarioChat');
     if (!btn) return;
-    btn.disabled = !destinatarioActivoId;
+    btn.disabled = !destinatarioActivoId || !reservaChatActivaId || Boolean(reservaChatActivaFecha);
     btn.style.opacity = btn.disabled ? '.65' : '1';
-    btn.title = !destinatarioActivoId ? 'Seleccioná una conversación para proponer un horario.' : (!reservaChatActivaId ? 'No se detectó una tutoría activa en esta conversación.' : 'Proponer una nueva fecha y horario.');
+    btn.title = !destinatarioActivoId ? 'Seleccioná una conversación.' : (!reservaChatActivaId ? 'No se detectó una tutoría aceptada.' : (reservaChatActivaFecha ? 'La reprogramación debe solicitarla el estudiante desde su chat.' : 'Proponer la primera fecha acordada.'));
 }
 
 async function proponerHorarioDesdeChat(client, miId) {
@@ -983,6 +984,7 @@ async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId
 
     const reservaActiva = (reservas || []).find(r => ['aceptada','aprobada','confirmada'].includes(String(r.estado || '').toLowerCase())) || null;
     reservaChatActivaId = reservaActiva?.id || null;
+    reservaChatActivaFecha = reservaActiva?.fecha_hora || null;
     actualizarEstadoBotonHorarioChat();
 
     const btnConfirmar = document.getElementById('btnConfirmarCita');
