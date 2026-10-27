@@ -1195,8 +1195,9 @@ function inicializarChat(supabaseClient, usuarioActualId) {
 function actualizarEstadoBotonHorarioChat() {
     const btn = document.getElementById('btnProponerHorarioChat');
     if (!btn) return;
-    btn.disabled = !reservaChatActivaId || !destinatarioActivoId;
-    btn.style.opacity = btn.disabled ? '.55' : '1';
+    btn.disabled = !destinatarioActivoId;
+    btn.style.opacity = btn.disabled ? '.65' : '1';
+    btn.title = !destinatarioActivoId ? 'Seleccioná una conversación para proponer un horario.' : (!reservaChatActivaId ? 'No se detectó una tutoría activa en esta conversación.' : 'Proponer una nueva fecha y horario.');
 }
 
 async function actualizarReservaActivaChatEstudiante(client, estudianteId, tutorId) {
