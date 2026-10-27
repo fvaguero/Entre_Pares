@@ -271,7 +271,9 @@ app.get('/api/reservas/:userId', autenticar, async (req, res) => {
         }
 
         let query = supabaseAdmin.from('reservas').select('*');
-        if (esTutor(req.perfil)) {
+        if (req.perfil.rol === 'Ambos') {
+            query = query.or(`tutor_id.eq.${req.authUser.id},estudiante_id.eq.${req.authUser.id}`);
+        } else if (esTutor(req.perfil)) {
             query = query.eq('tutor_id', req.authUser.id);
         } else if (esEstudiante(req.perfil)) {
             query = query.eq('estudiante_id', req.authUser.id);
@@ -322,8 +324,11 @@ app.put('/api/reservas/:id/estado', autenticar, async (req, res) => {
             if (esEstudianteAsignado && !transicionesEstudiante.includes(estado)) {
                 return respuestaError(res, 403, 'El estudiante solo puede cancelar sus propias reservas.');
             }
-            if (reserva.estado !== 'Pendiente' && estado !== 'Cancelada') {
-                return respuestaError(res, 409, 'La reserva ya no está pendiente y no admite esta modificación.');
+            if (esTutorAsignado && reserva.estado !== 'Pendiente') {
+                return respuestaError(res, 409, 'Solo se pueden responder solicitudes que estén pendientes.');
+            }
+            if (esEstudianteAsignado && !['Pendiente', 'Aceptada', 'Aprobado', 'Confirmada'].includes(reserva.estado)) {
+                return respuestaError(res, 409, 'Esta tutoría ya no se puede cancelar.');
             }
         }
 
