@@ -960,6 +960,9 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
 }
 async function seleccionarContactoParaChat(supabaseClient, tutorId, estudianteId, nombreEstudiante) {
     destinatarioActivoId = estudianteId;
+    reservaChatActivaId = null;
+    reservaChatActivaFecha = null;
+    actualizarEstadoBotonHorarioChat();
     
     const headerChat = document.getElementById('chatHeader');
     headerChat.innerHTML = `
