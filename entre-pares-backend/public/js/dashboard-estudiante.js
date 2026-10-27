@@ -236,7 +236,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         estudiante_id: userId,
                         tutor_id: tutorId,
                         materia: materia,
-                        fecha_hora: fechaHora,
+                        fecha_hora: null,
+                        estado_programacion: 'Sin coordinar',
                         comentarios: comentarios,
                         estado: 'Pendiente',
                         estado_pago: 'Pendiente'
@@ -815,7 +816,7 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
         badge.textContent=estado==='Aceptada'?'Confirmada':(estado==='Finalizada'?(yaCalificada?'Finalizada · Calificada':'Finalizada · Sin calificar'):estado);
         cab.append(titulo,badge);
         const tutor=document.createElement('p');tutor.style.cssText='color:#475569;margin:.3rem 0;';tutor.textContent='Tutor: '+(res.tutor?.nombre_completo||'Asignado');
-        const fecha=document.createElement('p');fecha.style.cssText='color:#475569;margin:.3rem 0;';fecha.textContent='📅 '+mostrarFechaReserva(res.fecha_hora);
+        const fecha=document.createElement('p');fecha.style.cssText='color:#475569;margin:.3rem 0;';fecha.textContent=res.fecha_hora?'📅 Fecha confirmada: '+mostrarFechaReserva(res.fecha_hora):'📅 Fecha y horario pendientes de coordinación';
         const duda=document.createElement('p');duda.style.cssText='color:#475569;margin:.3rem 0;';duda.textContent='Duda: '+(res.comentarios||'Sin descripción');
         card.append(cab,tutor,fecha,duda);
         // Mostrar acciones para toda reserva activa, aunque la fecha esté vacía o haya pasado.
@@ -824,13 +825,6 @@ function renderizarReservasEstudiante(contenedorId='listaMisReservas', listaRese
             const acciones = document.createElement('div');
             acciones.style.cssText = 'display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap;';
             if (estado === 'Aceptada') {
-                const btnReprogramar = document.createElement('button');
-                btnReprogramar.type = 'button';
-                btnReprogramar.className = 'btn';
-                btnReprogramar.textContent = '📅 Solicitar reprogramación';
-                btnReprogramar.style.cssText = 'flex:1;background:#e0f2fe;color:#075985;padding:.5rem;';
-                btnReprogramar.onclick = () => reprogramarReservaEstudiante(res.id, res.fecha_hora);
-                acciones.appendChild(btnReprogramar);
             }
             const btnCancelar = document.createElement('button');
             btnCancelar.type = 'button';
@@ -1339,7 +1333,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
         idsPropuestas.length
-            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
+            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por').in('id', idsPropuestas)
             : Promise.resolve({ data: [] }),
         idsReprogramaciones.length
             ? supabaseClient.from('solicitudes_reprogramacion').select('id,fecha_propuesta,fecha_original,estado,creada_por').in('id', idsReprogramaciones)
@@ -1422,10 +1416,10 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
             } else if (propuestaMatch) {
                 const propuesta = propuestasPorId.get(propuestaMatch[1]);
                 const titulo = document.createElement('strong');
-                titulo.textContent = '📅 Propuesta de fecha y horario';
+                titulo.textContent = propuesta?.tipo === 'ProgramacionInicial' ? '📅 Propuesta de primera fecha' : '🔁 Solicitud de reprogramación';
                 burbuja.appendChild(titulo);
                 const fecha = document.createElement('p');
-                fecha.textContent = propuesta ? new Date(propuesta.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : new Date(propuestaMatch[2]).toLocaleString('es-AR');
+                fecha.textContent = (propuesta?.tipo === 'Reprogramacion' && propuesta?.fecha_anterior ? 'Fecha actual: ' + new Date(propuesta.fecha_anterior).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) + ' · Nueva fecha: ' : 'Fecha propuesta: ') + (propuesta ? new Date(propuesta.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : new Date(propuestaMatch[2]).toLocaleString('es-AR'));
                 fecha.style.margin = '.45rem 0';
                 burbuja.appendChild(fecha);
                 const estado = document.createElement('p');
@@ -1445,7 +1439,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 }
             } else if (respuestaMatch) {
                 const textoP = document.createElement('div');
-                textoP.textContent = respuestaMatch[2] === 'ACEPTADA' ? '✅ La propuesta de horario fue aceptada.' : '❌ La propuesta de horario fue rechazada.';
+                textoP.textContent = respuestaMatch[2] === 'ACEPTADA' ? (respuestaMatch[3] === 'PROGRAMACION' ? '✅ La fecha inicial fue confirmada y ya aparece en ambos calendarios.' : '✅ La reprogramación fue aceptada. Los calendarios fueron actualizados.') : (respuestaMatch[3] === 'PROGRAMACION' ? '❌ La fecha inicial no fue aceptada. Todavía deben coordinar un horario.' : '❌ La reprogramación fue rechazada. Se mantiene la fecha confirmada anterior.');
                 burbuja.appendChild(textoP);
             } else {
                 const textoP = document.createElement('div');
