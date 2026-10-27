@@ -51,7 +51,15 @@ async function cargarDatosAdminFinanzas(){
   const consulta='id,materia,precio,estado_pago,estado_liquidacion,estado,fecha_hora,creado_at,fecha_pago,fecha_liquidacion,estudiante:estudiante_id(nombre_completo,email),tutor:tutor_id(nombre_completo)';
   const {data,error}=await supabaseClient.from('reservas').select(consulta).order('creado_at',{ascending:false});
   if(error){if(String(error.message||'').includes('fecha_pago')||String(error.message||'').includes('fecha_liquidacion')||String(error.message||'').includes('estado_liquidacion'))throw new Error('Faltan columnas del control financiero. Aplicá la migración SQL 20261020_control_financiero_admin.sql en Supabase.');throw error;}
-  reservasFinanzasCache=data||[];renderizarFinanzas();renderizarAlertas();
+  reservasFinanzasCache=data||[];
+  const idsTutores=[...new Set(reservasFinanzasCache.map(r=>r.tutor_id).filter(Boolean))];
+  if(idsTutores.length){
+   const {data:perfilesPrivados,error:errorPerfiles}=await supabaseClient.from('perfiles_privados').select('id,cvu_alias').in('id',idsTutores);
+   if(errorPerfiles)throw errorPerfiles;
+   const aliasPorTutor=new Map((perfilesPrivados||[]).map(p=>[String(p.id),p.cvu_alias||'']));
+   reservasFinanzasCache.forEach(r=>{if(r.tutor)r.tutor.cvu_alias=aliasPorTutor.get(String(r.tutor_id))||'';});
+  }
+  renderizarFinanzas();renderizarAlertas();
  }catch(e){console.error('Error al cargar finanzas:',e);tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:#b91c1c;">'+esc(e.message||'No se pudieron cargar las finanzas.')+'</td></tr>';const a=document.getElementById('alertasPagosAdmin');if(a)a.innerHTML='<p style="margin:0;color:#92400e;">Para activar fechas reales e historial, aplicá primero la migración SQL de control financiero.</p>';}
 }
 function filtradas(){
