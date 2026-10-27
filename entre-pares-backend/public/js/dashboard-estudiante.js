@@ -1,4 +1,4 @@
-// Gamificación: niveles y progreso del usuario.
+// Gamificación: niveles, progreso y beneficios del usuario.
 function obtenerNivelGamificacion(puntos) {
     const total = Math.max(0, Number(puntos) || 0);
     if (total <= 100) return { nombre: 'Principiante', insignia: '🌱', minimo: 0, maximo: 100, siguiente: 101 };
@@ -13,16 +13,17 @@ function mostrarNivelGamificacion(puntos) {
     const nombre = document.getElementById('nivelGamificacion');
     const barra = document.getElementById('progresoGamificacion');
     const texto = document.getElementById('textoProgresoGamificacion');
+    const progreso = document.querySelector('[role="progressbar"][aria-label="Progreso al siguiente nivel"]');
     if (nombre) nombre.textContent = nivel.insignia + ' ' + nivel.nombre;
     if (!nivel.maximo) {
         if (barra) barra.style.width = '100%';
+        if (progreso) progreso.setAttribute('aria-valuenow', '100');
         if (texto) texto.textContent = '¡Felicitaciones! Alcanzaste el nivel máximo con ' + total + ' puntos.';
         return;
     }
-    const puntosDelNivel = total - nivel.minimo;
-    const puntosDelTramo = nivel.maximo - nivel.minimo + 1;
-    const porcentaje = Math.max(0, Math.min(100, ((puntosDelNivel + 1) / puntosDelTramo) * 100));
+    const porcentaje = Math.max(0, Math.min(100, ((total - nivel.minimo + 1) / (nivel.maximo - nivel.minimo + 1)) * 100));
     if (barra) barra.style.width = porcentaje + '%';
+    if (progreso) progreso.setAttribute('aria-valuenow', String(Math.round(porcentaje)));
     if (texto) texto.textContent = 'Tenés ' + total + ' puntos. Te faltan ' + (nivel.siguiente - total) + ' para el próximo nivel.';
 }
 
