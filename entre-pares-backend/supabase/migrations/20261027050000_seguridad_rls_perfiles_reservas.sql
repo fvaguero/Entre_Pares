@@ -290,7 +290,22 @@ drop policy if exists "Usuarios pueden enviar mensajes" on public.mensajes;
 drop policy if exists "Usuarios pueden leer sus mensajes" on public.mensajes;
 create policy "mensajes_select_participantes"
 on public.mensajes for select to authenticated
-using (auth.uid() = remitente_id or auth.uid() = destinatario_id);
+using (
+  (auth.uid() = remitente_id or auth.uid() = destinatario_id)
+  and exists (
+    select 1 from public.reservas r
+    where (r.estudiante_id = mensajes.remitente_id and r.tutor_id = mensajes.destinatario_id)
+       or (r.tutor_id = mensajes.remitente_id and r.estudiante_id = mensajes.destinatario_id)
+  )
+  and exists (
+    select 1 from public.reservas r
+    where (
+      (r.estudiante_id = mensajes.remitente_id and r.tutor_id = mensajes.destinatario_id)
+      or (r.tutor_id = mensajes.remitente_id and r.estudiante_id = mensajes.destinatario_id)
+    )
+    and lower(coalesce(r.estado,'')) in ('aceptada','aprobada','confirmada','finalizada','finalizado','completada','completado')
+  )
+);
 
 create policy "mensajes_insert_participantes_tutoria"
 on public.mensajes for insert to authenticated
@@ -338,5 +353,59 @@ create policy "notificaciones_update_propia"
 on public.notificaciones for update to authenticated
 using (auth.uid() = usuario_id)
 with check (auth.uid() = usuario_id);
+
+create or replace function public.proteger_actualizacion_notificacion()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if auth.uid() is not null and not public.usuario_actual_es_admin() then
+    if new.usuario_id is distinct from old.usuario_id
+       or (to_jsonb(new) - 'leida') is distinct from (to_jsonb(old) - 'leida') then
+      raise exception 'Solo podés marcar como leídas tus propias notificaciones.';
+    end if;
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists trg_proteger_actualizacion_notificacion on public.notificaciones;
+create trigger trg_proteger_actualizacion_notificacion
+before update on public.notificaciones
+for each row execute function public.proteger_actualizacion_notificacion();
+
+-- Elimina políticas redundantes de puntos y deja una única regla por operación.
+drop policy if exists "Usuario ve sus canjes" on public.canjes_puntos;
+drop policy if exists "Ver mis canjes" on public.canjes_puntos;
+drop policy if exists "Usuario solicita canje" on public.canjes_puntos;
+drop policy if exists "Solicitar mis canjes" on public.canjes_puntos;
+create policy "canjes_select_propio_o_admin"
+on public.canjes_puntos for select to authenticated
+using (usuario_id = auth.uid() or public.usuario_actual_es_admin());
+create policy "canjes_insert_propio_pendiente"
+on public.canjes_puntos for insert to authenticated
+with check (
+  usuario_id = auth.uid()
+  and lower(coalesce(estado,'')) = 'pendiente'
+  and confirmado_por is null
+  and confirmado_at is null
+);
+
+drop policy if exists "Usuario ve sus contribuciones" on public.contribuciones_comunidad;
+drop policy if exists "Ver mis contribuciones" on public.contribuciones_comunidad;
+drop policy if exists "Crear mis contribuciones" on public.contribuciones_comunidad;
+drop policy if exists "Usuario crea su contribucion pendiente" on public.contribuciones_comunidad;
+create policy "contribuciones_select_propio_o_admin"
+on public.contribuciones_comunidad for select to authenticated
+using (usuario_id = auth.uid() or public.usuario_actual_es_admin());
+create policy "contribuciones_insert_propia_pendiente"
+on public.contribuciones_comunidad for insert to authenticated
+with check (
+  usuario_id = auth.uid()
+  and lower(coalesce(estado,'')) = 'pendiente'
+  and revisada_por is null
+  and revisada_at is null
+);
 
 commit;
