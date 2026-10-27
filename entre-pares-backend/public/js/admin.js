@@ -12,10 +12,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const {data:{user},error:userError} = await supabaseClient.auth.getUser();
     if (userError || !user) { window.location.href='login.html'; return; }
-    const correoAdmin='valentinaseco2004@gmail.com';
-    const {data:perfil,error:perfilError}=await supabaseClient.from('perfiles').select('rol').eq('id',user.id).maybeSingle();
-    if (user.email!==correoAdmin && (perfilError || !perfil || perfil.rol!=='Administrador')) {
-      alert('Acceso denegado. No tienes permisos de administrador.'); window.location.href='index.html'; return;
+    const {data:perfil,error:perfilError}=await supabaseClient
+      .from('perfiles')
+      .select('rol')
+      .eq('id',user.id)
+      .maybeSingle();
+
+    if (perfilError || !perfil || perfil.rol !== 'Administrador') {
+      alert('Acceso denegado. Esta cuenta no tiene permisos de administrador.');
+      await supabaseClient.auth.signOut();
+      window.location.href='login.html';
+      return;
     }
     conectarFiltrosPagos();
     conectarFiltrosUsuariosAdmin();
