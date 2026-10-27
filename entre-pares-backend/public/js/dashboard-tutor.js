@@ -1,9 +1,27 @@
+// Mantiene los mismos rangos y cálculo de progreso que el panel estudiante.
 function obtenerNivelGamificacionTutor(puntos) {
     const total = Math.max(0, Number(puntos) || 0);
-    if (total <= 100) return { nombre: 'Principiante', insignia: '🌱' };
-    if (total <= 300) return { nombre: 'Colaborador', insignia: '⭐' };
-    if (total <= 600) return { nombre: 'Académico Pro', insignia: '🔥' };
-    return { nombre: 'Leyenda Entre Pares', insignia: '👑' };
+    if (total <= 100) return { nombre: 'Principiante', insignia: '🌱', minimo: 0, maximo: 100, siguiente: 101 };
+    if (total <= 300) return { nombre: 'Colaborador', insignia: '⭐', minimo: 101, maximo: 300, siguiente: 301 };
+    if (total <= 600) return { nombre: 'Académico Pro', insignia: '🔥', minimo: 301, maximo: 600, siguiente: 601 };
+    return { nombre: 'Leyenda Entre Pares', insignia: '👑', minimo: 601, maximo: null, siguiente: null };
+}
+
+function mostrarNivelGamificacionTutor(puntos) {
+    const total = Math.max(0, Number(puntos) || 0);
+    const nivel = obtenerNivelGamificacionTutor(total);
+    const nombre = document.getElementById('nivelGamificacionTutor');
+    const barra = document.getElementById('progresoGamificacionTutor');
+    const texto = document.getElementById('textoProgresoGamificacionTutor');
+    if (nombre) nombre.textContent = nivel.insignia + ' ' + nivel.nombre;
+    if (!nivel.maximo) {
+        if (barra) barra.style.width = '100%';
+        if (texto) texto.textContent = '¡Felicitaciones! Alcanzaste el nivel máximo con ' + total + ' puntos.';
+        return;
+    }
+    const porcentaje = Math.max(0, Math.min(100, ((total - nivel.minimo + 1) / (nivel.maximo - nivel.minimo + 1)) * 100));
+    if (barra) barra.style.width = porcentaje + '%';
+    if (texto) texto.textContent = 'Tenés ' + total + ' puntos. Te faltan ' + (nivel.siguiente - total) + ' para el próximo nivel.';
 }
 
 const SUPABASE_URL = 'https://uecwotydamsjstpovbzz.supabase.co';
@@ -50,9 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const puntosTutor = Number(perfil.puntos_gamificacion ?? 0);
             const spanPuntosTutor = document.getElementById('puntosGamificacionTutor');
             const spanNivelTutor = document.getElementById('nivelGamificacionTutor');
-            const nivelTutor = obtenerNivelGamificacionTutor(puntosTutor);
             if (spanPuntosTutor) spanPuntosTutor.textContent = puntosTutor + ' pts';
-            if (spanNivelTutor) spanNivelTutor.textContent = nivelTutor.insignia + ' ' + nivelTutor.nombre;
+            mostrarNivelGamificacionTutor(puntosTutor);
 
             const inputNombre = document.getElementById('perfilNombre');
             const inputEmail = document.getElementById('perfilEmail');
