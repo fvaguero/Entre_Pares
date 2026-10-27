@@ -525,7 +525,7 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
 
     try {
         let query = supabaseClient
-            .from('perfiles')
+            .from('perfiles_publicos')
             .select('*')
             .in('rol', ['Tutor', 'Ambos']);
 
@@ -1038,7 +1038,7 @@ window.verPerfilTutor = async function(tutorId) {
 
     try {
         const { data: tutor, error: errorTutor } = await supabaseClient
-            .from('perfiles')
+            .from('perfiles_publicos')
             .select('*')
             .eq('id', tutorId)
             .single();
