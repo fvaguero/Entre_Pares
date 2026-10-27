@@ -1329,7 +1329,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         return;
     }
 
-    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
+    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
         idsPropuestas.length
