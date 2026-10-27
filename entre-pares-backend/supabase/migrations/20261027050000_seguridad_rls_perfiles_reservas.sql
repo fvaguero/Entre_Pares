@@ -51,6 +51,16 @@ where rol in ('Tutor','Ambos')
 
 grant select on public.perfiles_publicos to anon, authenticated;
 
+-- Disponibilidad pública: expone solo bloques ocupados, nunca estudiante, precio ni pago.
+create or replace view public.horarios_tutores_publicos
+with (security_barrier = true)
+as
+select tutor_id, fecha_hora, estado
+from public.reservas
+where fecha_hora is not null
+  and lower(coalesce(estado,'')) in ('aceptada','aprobada','confirmada');
+grant select on public.horarios_tutores_publicos to anon, authenticated;
+
 -- PERFILES
 alter table public.perfiles enable row level security;
 drop policy if exists "perfiles_select_protegido" on public.perfiles;
