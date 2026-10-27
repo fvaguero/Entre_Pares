@@ -51,6 +51,26 @@ where rol in ('Tutor','Ambos')
 
 grant select on public.perfiles_publicos to anon, authenticated;
 
+-- Vista privada: datos completos solo para el titular y administradores.
+create or replace view public.perfiles_privados
+with (security_barrier = true)
+as
+select *
+from public.perfiles
+where id = auth.uid()
+   or public.usuario_actual_es_admin();
+grant select on public.perfiles_privados to authenticated;
+
+-- En la tabla base solo se pueden leer columnas no bancarias/no documentales.
+-- Los datos privados se consultan por perfiles_privados, que filtra por titular/admin.
+revoke select on public.perfiles from anon, authenticated;
+grant select (
+  id, nombre_completo, email, rol, carrera, anio_estudio,
+  sede_universitaria, ubicacion, materias_impartidas, precio_hora,
+  calificacion_promedio, total_resenas, puntos_gamificacion,
+  estado_verificacion
+) on public.perfiles to authenticated;
+
 -- Disponibilidad pública: expone solo bloques ocupados, nunca estudiante, precio ni pago.
 create or replace view public.horarios_tutores_publicos
 with (security_barrier = true)
