@@ -811,7 +811,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
         idsPropuestas.length
-            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
+            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por').in('id', idsPropuestas)
             : Promise.resolve({ data: [] }),
         idsReprogramaciones.length
             ? supabaseClient.from('solicitudes_reprogramacion').select('id,fecha_propuesta,fecha_original,estado,creada_por').in('id', idsReprogramaciones)
@@ -897,10 +897,10 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
             } else if (propuestaMatch) {
                 const propuesta = propuestasPorId.get(propuestaMatch[1]);
                 const titulo = document.createElement('strong');
-                titulo.textContent = '📅 Propuesta de fecha y horario';
+                titulo.textContent = propuesta?.tipo === 'ProgramacionInicial' ? '📅 Propuesta de primera fecha' : '🔁 Solicitud de reprogramación';
                 burbuja.appendChild(titulo);
                 const fecha = document.createElement('p');
-                fecha.textContent = propuesta ? new Date(propuesta.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : new Date(propuestaMatch[2]).toLocaleString('es-AR');
+                fecha.textContent = (propuesta?.tipo === 'Reprogramacion' && propuesta?.fecha_anterior ? 'Fecha actual: ' + new Date(propuesta.fecha_anterior).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) + ' · Nueva fecha: ' : 'Fecha propuesta: ') + (propuesta ? new Date(propuesta.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : new Date(propuestaMatch[2]).toLocaleString('es-AR'));
                 fecha.style.margin = '.45rem 0';
                 burbuja.appendChild(fecha);
                 const estado = document.createElement('p');
@@ -920,7 +920,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 }
             } else if (respuestaMatch) {
                 const textoP = document.createElement('div');
-                textoP.textContent = respuestaMatch[2] === 'ACEPTADA' ? '✅ La propuesta de horario fue aceptada.' : '❌ La propuesta de horario fue rechazada.';
+                textoP.textContent = respuestaMatch[2] === 'ACEPTADA' ? (respuestaMatch[3] === 'PROGRAMACION' ? '✅ La fecha inicial fue confirmada y ya aparece en ambos calendarios.' : '✅ La reprogramación fue aceptada. Los calendarios fueron actualizados.') : (respuestaMatch[3] === 'PROGRAMACION' ? '❌ La fecha inicial no fue aceptada. Todavía deben coordinar un horario.' : '❌ La reprogramación fue rechazada. Se mantiene la fecha confirmada anterior.');
                 burbuja.appendChild(textoP);
             } else {
                 const textoP = document.createElement('div');
