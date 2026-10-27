@@ -32,6 +32,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 let destinatarioActivoId = null;
 let reservaChatActivaId = null;
+let reservaChatActivaFecha = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
@@ -1189,13 +1190,23 @@ function inicializarChat(supabaseClient, usuarioActualId) {
 function actualizarEstadoBotonHorarioChat() {
     const btn = document.getElementById('btnProponerHorarioChat');
     if (!btn) return;
-    btn.disabled = !destinatarioActivoId;
+    btn.disabled = !destinatarioActivoId || !reservaChatActivaId;
     btn.style.opacity = btn.disabled ? '.65' : '1';
-    btn.title = !destinatarioActivoId ? 'Seleccioná una conversación para proponer un horario.' : (!reservaChatActivaId ? 'No se detectó una tutoría activa en esta conversación.' : 'Proponer una nueva fecha y horario.');
+    btn.textContent = reservaChatActivaFecha
+        ? '🔁 Solicitar reprogramación'
+        : '📅 Proponer fecha y horario';
+    btn.title = !destinatarioActivoId
+        ? 'Seleccioná una conversación.'
+        : (!reservaChatActivaId
+            ? 'No se detectó una tutoría activa en esta conversación.'
+            : (reservaChatActivaFecha
+                ? 'Solicitar al tutor un cambio de fecha y horario.'
+                : 'Coordinar la primera fecha de la tutoría.'));
 }
 
 async function actualizarReservaActivaChatEstudiante(client, estudianteId, tutorId) {
     reservaChatActivaId = null;
+    reservaChatActivaFecha = null;
     actualizarEstadoBotonHorarioChat();
     const { data, error } = await client.from('reservas')
         .select('id,estado,fecha_hora')
@@ -1208,6 +1219,7 @@ async function actualizarReservaActivaChatEstudiante(client, estudianteId, tutor
     }
     const reserva = (data || []).find(r => ['aceptada','aprobada','confirmada'].includes(String(r.estado || '').toLowerCase()));
     reservaChatActivaId = reserva?.id || null;
+    reservaChatActivaFecha = reserva?.fecha_hora || null;
     actualizarEstadoBotonHorarioChat();
 }
 
