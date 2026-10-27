@@ -344,71 +344,59 @@ async function cargarSolicitudesReprogramacionTutor() {
     if (!cont || !usuarioActual) return;
     try {
         const { data, error } = await supabaseClient
-            .from('solicitudes_reprogramacion')
-            .select('id,reserva_id,fecha_original,fecha_propuesta,created_at,estudiante:estudiante_id(nombre_completo),reserva:reservas(materia)')
+            .from('propuestas_horario_chat')
+            .select('id,reserva_id,fecha_anterior,fecha_propuesta,tipo,created_at,propuesto_por,estudiante:estudiante_id(nombre_completo),reserva:reservas(materia)')
             .eq('tutor_id', usuarioActual.id)
             .eq('estado', 'Pendiente')
+            .neq('propuesto_por', usuarioActual.id)
             .order('created_at', { ascending: true });
         if (error) throw error;
         cont.replaceChildren();
         if (!data?.length) {
-            cont.textContent = 'No tenés solicitudes de reprogramación pendientes.';
+            cont.textContent = 'No tenés propuestas de fecha pendientes de respuesta.';
             return;
         }
-        data.forEach(s => {
+        data.forEach(p => {
             const card = document.createElement('article');
             card.style.cssText = 'border:1px solid #bae6fd;background:#f0f9ff;border-radius:9px;padding:.9rem;';
             const title = document.createElement('strong');
-            title.textContent = (s.reserva?.materia || 'Tutoría') + ' · ' + (s.estudiante?.nombre_completo || 'Estudiante');
+            title.textContent = (p.reserva?.materia || 'Tutoría') + ' · ' + (p.estudiante?.nombre_completo || 'Estudiante');
+            const tipo = document.createElement('p');
+            tipo.style.cssText = 'margin:.4rem 0;color:#0369a1;font-weight:700;font-size:.85rem;';
+            tipo.textContent = p.tipo === 'ProgramacionInicial' ? 'Primera fecha propuesta' : 'Solicitud de reprogramación';
             const oldDate = document.createElement('p');
-            oldDate.style.cssText = 'margin:.45rem 0;color:#475569;font-size:.85rem;';
-            oldDate.textContent = 'Fecha actual: ' + (s.fecha_original ? new Date(s.fecha_original).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'No especificada');
+            oldDate.style.cssText = 'margin:.35rem 0;color:#475569;font-size:.85rem;';
+            oldDate.textContent = p.fecha_anterior
+                ? 'Fecha vigente: ' + new Date(p.fecha_anterior).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'})
+                : 'Todavía no hay una fecha confirmada.';
             const newDate = document.createElement('p');
             newDate.style.cssText = 'margin:.25rem 0 .7rem;color:#075985;font-weight:700;font-size:.9rem;';
-            newDate.textContent = 'Nueva propuesta: ' + new Date(s.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'});
+            newDate.textContent = 'Fecha propuesta: ' + new Date(p.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'});
+            const sent = document.createElement('small');
+            sent.textContent = 'Enviada: ' + new Date(p.created_at).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'});
             const actions = document.createElement('div');
-            actions.style.cssText = 'display:flex;gap:.5rem;flex-wrap:wrap;';
+            actions.style.cssText = 'display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.65rem;';
             const accept = document.createElement('button');
-            accept.type='button'; accept.className='btn'; accept.textContent='✓ Aceptar nueva fecha';
+            accept.type='button'; accept.className='btn'; accept.textContent='✓ Aceptar fecha';
             accept.style.cssText='background:#16a34a;color:white;padding:.55rem .8rem;flex:1;';
-            accept.addEventListener('click',()=>resolverSolicitudReprogramacion(s.id,true));
+            accept.addEventListener('click',()=>responderPropuestaHorarioChat(supabaseClient,p.id,true,usuarioActual.id,p.estudiante_id));
             const reject = document.createElement('button');
             reject.type='button'; reject.className='btn'; reject.textContent='✕ Rechazar';
             reject.style.cssText='background:#fee2e2;color:#991b1b;padding:.55rem .8rem;flex:1;';
-            reject.addEventListener('click',()=>resolverSolicitudReprogramacion(s.id,false));
+            reject.addEventListener('click',()=>responderPropuestaHorarioChat(supabaseClient,p.id,false,usuarioActual.id,p.estudiante_id));
             actions.append(accept,reject);
-            card.append(title,oldDate,newDate,actions);
+            card.append(title,tipo,oldDate,newDate,sent,actions);
             cont.appendChild(card);
         });
     } catch (error) {
-        console.error('Error al cargar solicitudes de reprogramación:', error);
-        cont.textContent = 'No se pudieron cargar las solicitudes. Verificá que hayas ejecutado la migración de Supabase.';
+        console.error('Error al cargar propuestas de fecha:', error);
+        cont.textContent = 'No se pudieron cargar las propuestas. Verificá que hayas ejecutado la última migración de Supabase.';
     }
 }
 
 async function resolverSolicitudReprogramacion(solicitudId, aceptar) {
-    const decision = await Swal.fire({
-        title: aceptar ? '¿Aceptar la nueva fecha?' : '¿Rechazar la propuesta?',
-        text: aceptar ? 'La fecha de la tutoría y los calendarios de ambos participantes se actualizarán.' : 'La fecha original de la tutoría se mantendrá.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: aceptar ? 'Sí, aceptar' : 'Sí, rechazar',
-        cancelButtonText: 'Volver'
-    });
-    if (!decision.isConfirmed) return;
-    try {
-        const { error } = await supabaseClient.rpc('responder_reprogramacion_reserva', {
-            p_solicitud_id: solicitudId,
-            p_aceptar: aceptar
-        });
-        if (error) throw error;
-        mostrarNotificacion(aceptar ? 'Nueva fecha aceptada. Se actualizó la tutoría.' : 'Propuesta rechazada. Se conserva la fecha original.', 'exito');
-        await cargarSolicitudesReprogramacionTutor();
-        await cargarSolicitudesYTutorias();
-    } catch (error) {
-        console.error('Error al responder reprogramación:', error);
-        mostrarNotificacion(error.message || 'No se pudo responder la solicitud.', 'error');
-    }
+    // Compatibilidad con solicitudes antiguas: el flujo nuevo responde desde propuestas_horario_chat.
+    return responderPropuestaHorarioChat(supabaseClient, solicitudId, aceptar, usuarioActual.id, destinatarioActivoId);
 }
 
 async function cancelarReservaTutor(reservaId) {
