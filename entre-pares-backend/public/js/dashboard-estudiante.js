@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verificar perfil, rol y rellenar datos en la cabecera y perfil
     try {
         const { data: perfil, error: perfilError } = await supabaseClient
-            .from('perfiles')
+            .from('perfiles_privados')
             .select('*')
             .eq('id', userId)
             .single();
