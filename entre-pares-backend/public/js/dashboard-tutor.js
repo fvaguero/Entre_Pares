@@ -200,6 +200,9 @@ if (btnCerrarSesion) {
 
     inicializarAgendaTutor();
     cargarSolicitudesYTutorias();
+    supabaseClient.channel('reservas-tutor-' + usuarioActual.id)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reservas', filter: 'tutor_id=eq.' + usuarioActual.id }, () => cargarSolicitudesYTutorias())
+        .subscribe();
     cargarPanelPagosTutor();
 
     inicializarChat(supabaseClient, usuarioActual.id);
