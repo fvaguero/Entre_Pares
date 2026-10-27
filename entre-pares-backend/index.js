@@ -167,7 +167,7 @@ app.post('/api/auth/recuperar', async (req, res) => {
 app.get('/api/tutores', async (req, res) => {
     try {
         const { data, error } = await supabase
-            .from('perfiles')
+            .from('perfiles_publicos')
             .select('id, nombre_completo, rol, carrera, anio_estudio, sede_universitaria, ubicacion, materias_impartidas, precio_hora, calificacion_promedio, total_resenas, puntos_gamificacion, estado_verificacion')
             .or('rol.eq.Tutor,rol.eq.Ambos')
             .eq('estado_verificacion', 'Aprobado');
