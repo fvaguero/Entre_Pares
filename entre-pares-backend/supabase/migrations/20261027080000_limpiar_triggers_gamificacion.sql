@@ -11,8 +11,8 @@ DROP TRIGGER IF EXISTS trg_puntos_reserva_finalizada
 DROP TRIGGER IF EXISTS trg_puntos_contribucion_aprobada
     ON public.contribuciones_comunidad;
 
--- Los dos índices únicos protegen las mismas columnas.
--- Se conserva movimientos_puntos_accion_unica_idx.
-DROP INDEX IF EXISTS public.movimientos_puntos_accion_unica;
+-- Conservar la restricción UNIQUE movimientos_puntos_accion_unica.
+-- Eliminar solamente el índice independiente duplicado.
+DROP INDEX IF EXISTS public.movimientos_puntos_accion_unica_idx;
 
 COMMIT;
