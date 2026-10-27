@@ -1335,7 +1335,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     }
 
     const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
-    const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]);
+    const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
         idsPropuestas.length
             ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,estado,propuesto_por').in('id', idsPropuestas)
@@ -1391,17 +1391,17 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 burbuja.style.borderRadius = '18px 18px 18px 4px';
             }
 
-            const solicitudReprogramacionMatch = String(msg.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\\|([^|]+)\\|/);
+            const solicitudReprogramacionMatch = String(msg.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/);
             const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|(.+)$/);
             const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\|([^|]+)\|(ACEPTADA|RECHAZADA)$/);
             if (solicitudReprogramacionMatch) {
                 const solicitud = reprogramacionesPorId.get(solicitudReprogramacionMatch[1]);
                 const titulo = document.createElement('strong');
-                titulo.textContent = '🔁 Solicitud de reprogramación';
+                titulo.textContent = '🔁 El estudiante solicitó la reprogramación';
                 burbuja.appendChild(titulo);
                 const fecha = document.createElement('p');
                 fecha.style.margin = '.45rem 0';
-                fecha.textContent = solicitud ? 'Nueva fecha propuesta: ' + new Date(solicitud.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'Se envió una solicitud de cambio de fecha.';
+                fecha.textContent = solicitud ? 'El estudiante solicitó cambiar la tutoría para el: ' + new Date(solicitud.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'El estudiante solicitó reprogramar la tutoría.';
                 burbuja.appendChild(fecha);
                 const estado = document.createElement('p');
                 estado.style.fontWeight = '700';
