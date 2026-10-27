@@ -66,6 +66,9 @@ begin
     end if;
 
     v_tipo := case when v_reserva.fecha_hora is null then 'ProgramacionInicial' else 'Reprogramacion' end;
+    if v_tipo = 'Reprogramacion' and auth.uid() <> v_reserva.estudiante_id then
+        raise exception 'La solicitud de reprogramación debe iniciarla el estudiante. El tutor puede aceptarla o rechazarla.';
+    end if;
     v_destinatario := case when auth.uid() = v_reserva.estudiante_id
         then v_reserva.tutor_id else v_reserva.estudiante_id end;
 
