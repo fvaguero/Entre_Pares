@@ -65,6 +65,7 @@ grant select on public.horarios_tutores_publicos to anon, authenticated;
 alter table public.perfiles enable row level security;
 drop policy if exists "perfiles_select_protegido" on public.perfiles;
 drop policy if exists "perfiles_insert_propio" on public.perfiles;
+drop policy if exists "Permitir inserción de perfiles a usuarios autenticados" on public.perfiles;
 drop policy if exists "perfiles_update_propio_o_admin" on public.perfiles;
 
 create policy "perfiles_select_protegido"
@@ -384,6 +385,8 @@ before update on public.notificaciones
 for each row execute function public.proteger_actualizacion_notificacion();
 
 -- Elimina políticas redundantes de puntos y deja una única regla por operación.
+drop policy if exists "Cada usuario consulta sus movimientos" on public.movimientos_puntos;
+drop policy if exists "Administradores ven todos los canjes" on public.canjes_puntos;
 drop policy if exists "Usuario ve sus canjes" on public.canjes_puntos;
 drop policy if exists "Ver mis canjes" on public.canjes_puntos;
 drop policy if exists "Usuario solicita canje" on public.canjes_puntos;
