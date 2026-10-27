@@ -149,6 +149,37 @@ create trigger trg_proteger_campos_perfil
 before update on public.perfiles
 for each row execute function public.proteger_campos_perfil();
 
+create or replace function public.proteger_insert_perfil()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if auth.uid() is not null and not public.usuario_actual_es_admin() then
+    if new.id is distinct from auth.uid() then
+      raise exception 'Solo podés crear tu propio perfil.';
+    end if;
+    if new.rol not in ('Estudiante','Tutor','Ambos') then
+      raise exception 'El rol solicitado no es válido.';
+    end if;
+    new.puntos_gamificacion := 0;
+    new.calificacion_promedio := 5.0;
+    new.total_resenas := 0;
+    if new.rol = 'Estudiante' then
+      new.estado_verificacion := 'Aprobado';
+    else
+      new.estado_verificacion := 'Pendiente';
+    end if;
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists trg_proteger_insert_perfil on public.perfiles;
+create trigger trg_proteger_insert_perfil
+before insert on public.perfiles
+for each row execute function public.proteger_insert_perfil();
+
 -- RESERVAS
 alter table public.reservas enable row level security;
 drop policy if exists "reservas_select_participantes_admin" on public.reservas;
@@ -177,6 +208,51 @@ with check (
   )
   and public.perfil_tutor_aprobado(reservas.tutor_id)
 );
+
+create or replace function public.proteger_insert_reserva()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_precio numeric;
+begin
+  if auth.uid() is not null and not public.usuario_actual_es_admin() then
+    if new.estudiante_id is distinct from auth.uid() then
+      raise exception 'Solo podés crear reservas a tu nombre.';
+    end if;
+    select p.precio_hora into v_precio
+    from public.perfiles p
+    where p.id = new.tutor_id
+      and p.rol in ('Tutor','Ambos')
+      and p.estado_verificacion = 'Aprobado';
+    if not found then raise exception 'El tutor no está disponible o no fue aprobado.'; end if;
+
+    new := jsonb_populate_record(new, jsonb_build_object(
+      'estado', 'Pendiente',
+      'estado_pago', 'Pendiente',
+      'estado_liquidacion', 'Pendiente',
+      'fecha_hora', null,
+      'estado_programacion', 'Sin coordinar',
+      'precio', coalesce(v_precio, 3000),
+      'fecha_pago', null,
+      'fecha_liquidacion', null,
+      'mercadopago_payment_id', null,
+      'mercadopago_preference_id', null,
+      'mercadopago_status', null,
+      'mercadopago_payment_type', null,
+      'mercadopago_external_reference', null,
+      'mercadopago_paid_at', null
+    ));
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists trg_proteger_insert_reserva on public.reservas;
+create trigger trg_proteger_insert_reserva
+before insert on public.reservas
+for each row execute function public.proteger_insert_reserva();
 
 create policy "reservas_update_participantes_admin"
 on public.reservas for update to authenticated
