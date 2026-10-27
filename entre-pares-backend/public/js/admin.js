@@ -145,7 +145,7 @@ function conectarFiltrosUsuariosAdmin(){
 async function cargarDatosAdminUsuarios(){
  const tbody=document.getElementById('tablaAdminUsuarios');if(!tbody)return;
  try{
-  const {data,error}=await supabaseClient.from('perfiles').select('*').order('nombre_completo',{ascending:true});
+  const {data,error}=await supabaseClient.from('perfiles_privados').select('*').order('nombre_completo',{ascending:true});
   if(error)throw error;
   usuariosAdminCache=data||[];
   renderizarUsuariosAdmin();
