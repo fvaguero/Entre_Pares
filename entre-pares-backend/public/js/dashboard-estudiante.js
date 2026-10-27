@@ -571,7 +571,7 @@ async function cargarTutoresEnMapa(supabaseClient, mapa, filtroMateria = '', fil
             const desde = new Date(fechaConsulta.getTime() - 60 * 60 * 1000).toISOString();
             const hasta = new Date(fechaConsulta.getTime() + 60 * 60 * 1000).toISOString();
             const { data: reservasOcupadas, error: errorOcupadas } = await supabaseClient
-                .from('reservas').select('tutor_id, fecha_hora, estado')
+                .from('horarios_tutores_publicos').select('tutor_id, fecha_hora, estado')
                 .gte('fecha_hora', desde).lte('fecha_hora', hasta);
             if (errorOcupadas) throw errorOcupadas;
             (reservasOcupadas || []).forEach(reserva => {
