@@ -20,6 +20,23 @@ $$;
 revoke all on function public.usuario_actual_es_admin() from public;
 grant execute on function public.usuario_actual_es_admin() to authenticated;
 
+create or replace function public.perfil_tutor_aprobado(p_tutor_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select exists (
+    select 1 from public.perfiles p
+    where p.id = p_tutor_id
+      and p.rol in ('Tutor','Ambos')
+      and p.estado_verificacion = 'Aprobado'
+  );
+$;
+revoke all on function public.perfil_tutor_aprobado(uuid) from public;
+grant execute on function public.perfil_tutor_aprobado(uuid) to authenticated;
+
 -- Vista pública con únicamente datos académicos/profesionales no sensibles.
 create or replace view public.perfiles_publicos
 with (security_barrier = true)
@@ -58,7 +75,7 @@ on public.perfiles for insert to authenticated
 with check (
   id = auth.uid()
   and coalesce(rol,'') <> 'Administrador'
-  and coalesce(estado_verificacion,'Pendiente') <> 'Aprobado'
+  and (rol = 'Estudiante' or (rol in ('Tutor','Ambos') and coalesce(estado_verificacion,'Pendiente') = 'Pendiente'))
 );
 
 create policy "perfiles_update_propio_o_admin"
@@ -121,12 +138,7 @@ with check (
     where estudiante.id = auth.uid()
       and estudiante.rol in ('Estudiante','Ambos')
   )
-  and exists (
-    select 1 from public.perfiles tutor
-    where tutor.id = reservas.tutor_id
-      and tutor.rol in ('Tutor','Ambos')
-      and tutor.estado_verificacion = 'Aprobado'
-  )
+  and public.perfil_tutor_aprobado(reservas.tutor_id)
 );
 
 create policy "reservas_update_participantes_admin"
