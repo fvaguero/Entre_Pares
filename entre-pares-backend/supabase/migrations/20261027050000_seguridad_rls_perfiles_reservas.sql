@@ -16,7 +16,7 @@ as $$
     where p.id = auth.uid()
       and p.rol = 'Administrador'
   );
-$$$;
+$$;
 revoke all on function public.usuario_actual_es_admin() from public;
 grant execute on function public.usuario_actual_es_admin() to authenticated;
 
@@ -143,7 +143,7 @@ begin
   end if;
   return new;
 end;
-$$$;
+$$;
 
 drop trigger if exists trg_proteger_campos_perfil on public.perfiles;
 create trigger trg_proteger_campos_perfil
@@ -155,7 +155,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 begin
   if auth.uid() is not null and not public.usuario_actual_es_admin() then
     if new.id is distinct from auth.uid() then
@@ -175,7 +175,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 drop trigger if exists trg_proteger_insert_perfil on public.perfiles;
 create trigger trg_proteger_insert_perfil
 before insert on public.perfiles
@@ -215,7 +215,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_precio numeric;
 begin
@@ -249,7 +249,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 drop trigger if exists trg_proteger_insert_reserva on public.reservas;
 create trigger trg_proteger_insert_reserva
 before insert on public.reservas
@@ -320,7 +320,7 @@ begin
   end if;
   return new;
 end;
-$$$;
+$$;
 
 drop trigger if exists trg_proteger_campos_reserva on public.reservas;
 create trigger trg_proteger_campos_reserva
@@ -404,7 +404,7 @@ begin
     insert into public.mensajes (remitente_id, destinatario_id, contenido)
     values (auth.uid(), v_destinatario, v_texto);
 end;
-$$$;
+$$;
 revoke all on function public.responder_propuesta_horario_chat(uuid,boolean) from public;
 grant execute on function public.responder_propuesta_horario_chat(uuid,boolean) to authenticated;
 
