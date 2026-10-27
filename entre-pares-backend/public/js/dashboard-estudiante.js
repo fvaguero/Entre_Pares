@@ -1333,7 +1333,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
     const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
         idsPropuestas.length
-            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por,created_at,responded_at').in('id', idsPropuestas)
+            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por,respondido_por,created_at,responded_at').in('id', idsPropuestas)
             : Promise.resolve({ data: [] }),
         idsReprogramaciones.length
             ? supabaseClient.from('solicitudes_reprogramacion').select('id,fecha_propuesta,fecha_original,estado,creada_por').in('id', idsReprogramaciones)
@@ -1430,7 +1430,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
                 auditoria.style.display = 'block';
                 auditoria.style.marginTop = '.35rem';
                 auditoria.style.opacity = '.8';
-                auditoria.textContent = 'Propuesta enviada: ' + (propuesta?.created_at ? new Date(propuesta.created_at).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'fecha no disponible') + (propuesta?.responded_at ? ' · Respondida: ' + new Date(propuesta.responded_at).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : '');
+                auditoria.textContent = 'Propuesta enviada: ' + (propuesta?.created_at ? new Date(propuesta.created_at).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'fecha no disponible') + (propuesta?.responded_at ? ' · Respondida: ' + new Date(propuesta.responded_at).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : '') + ' · ' + (propuesta?.propuesto_por === miId ? 'La propusiste vos' : 'La propuso la otra persona') + (propuesta?.respondido_por ? ' · Respondió ' + (propuesta.respondido_por === miId ? 'vos' : 'la otra persona') : '');
                 burbuja.appendChild(auditoria);
                 if (propuesta?.estado === 'Pendiente' && propuesta.propuesto_por !== miId) {
                     const acciones = document.createElement('div');
