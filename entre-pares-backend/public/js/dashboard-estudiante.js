@@ -1212,7 +1212,7 @@ async function actualizarReservaActivaChatEstudiante(client, estudianteId, tutor
         console.error('No se pudo identificar la tutoría del chat:', error);
         return;
     }
-    const reserva = (data || []).find(r => ['pendiente','aceptada','aprobada','confirmada'].includes(String(r.estado || '').toLowerCase()));
+    const reserva = (data || []).find(r => ['aceptada','aprobada','confirmada'].includes(String(r.estado || '').toLowerCase()));
     reservaChatActivaId = reserva?.id || null;
     actualizarEstadoBotonHorarioChat();
 }
@@ -1282,7 +1282,7 @@ async function proponerHorarioDesdeChat(client, miId) {
         else mostrarNotificacion(mensaje, 'error');
         return;
     }
-    const mensaje = 'Propuesta enviada al chat. La tutoría todavía no está confirmada.';
+    const mensaje = 'Propuesta enviada al chat. La tutoría ya está activa; la fecha se actualizará cuando la otra persona acepte.';
     if (typeof mostrarNotificacionEstudiante === 'function') mostrarNotificacionEstudiante(mensaje, 'exito');
     else mostrarNotificacion(mensaje, 'exito');
     await cargarHistorialChat(client, miId, destinatarioActivoId);
