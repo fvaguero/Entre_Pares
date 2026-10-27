@@ -70,6 +70,12 @@ grant select (
   calificacion_promedio, total_resenas, puntos_gamificacion,
   estado_verificacion
 ) on public.perfiles to authenticated;
+revoke update on public.perfiles from anon, authenticated;
+grant update (
+  nombre_completo, fecha_nacimiento, carrera, sede_universitaria,
+  materias_impartidas, precio_hora, ubicacion, cbu, cvu_alias,
+  estado_verificacion
+) on public.perfiles to authenticated;
 
 -- Disponibilidad pública: expone solo bloques ocupados, nunca estudiante, precio ni pago.
 create or replace view public.horarios_tutores_publicos
