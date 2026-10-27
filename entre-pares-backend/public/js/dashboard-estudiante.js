@@ -307,10 +307,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (errorResena) throw errorResena;
 
-                await supabaseClient
-                    .from('reservas')
-                    .update({ estado: 'Finalizada' })
-                    .eq('id', reservaId);
 
                 document.getElementById('modalResena').style.display = 'none';
                 mostrarNotificacionEstudiante("¡Gracias por calificar al tutor!", "exito");
