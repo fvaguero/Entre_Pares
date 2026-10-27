@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         const { data: perfil, error: perfilError } = await supabaseClient
-            .from('perfiles')
+            .from('perfiles_privados')
             .select('*')
             .eq('id', usuarioActual.id)
             .single();
@@ -491,7 +491,7 @@ window.verPerfilEstudiante = async function(estudianteId) {
     try {
         const { data: estudiante, error: errEstudiante } = await supabaseClient
             .from('perfiles')
-            .select('*')
+            .select('id,nombre_completo,email,carrera,sede_universitaria')
             .eq('id', estudianteId)
             .single();
 
