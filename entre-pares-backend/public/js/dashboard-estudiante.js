@@ -1388,7 +1388,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
 
             const solicitudReprogramacionMatch = String(msg.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/);
             const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|(.+)$/);
-            const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\|([^|]+)\|(ACEPTADA|RECHAZADA)$/);
+            const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\|([^|]+)\|(ACEPTADA|RECHAZADA)(?:\|([^|]+))?$/);
             if (solicitudReprogramacionMatch) {
                 const solicitud = reprogramacionesPorId.get(solicitudReprogramacionMatch[1]);
                 const titulo = document.createElement('strong');
