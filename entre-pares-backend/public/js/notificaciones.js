@@ -28,7 +28,7 @@
             : 'Hace un momento';
         const lista = document.getElementById('listaNotificaciones');
         if (lista) {
-            if (lista.textContent.includes('No hay notificaciones')) lista.replaceChildren();
+            if (lista.textContent.includes('No hay notificaciones') || lista.textContent.includes('No se pudieron cargar')) lista.replaceChildren();
             const item = document.createElement('div');
             item.style.cssText = 'padding:10px 6px;border-bottom:1px solid #e2e8f0;font-size:.82rem;line-height:1.45;';
             item.append(
@@ -131,14 +131,41 @@
         boton.setAttribute('tabindex', '0');
         boton.setAttribute('aria-label', 'Abrir notificaciones');
         boton.setAttribute('aria-expanded', 'false');
+        // Mover el desplegable fuera del botón y del encabezado: evita
+        // problemas de recorte y capas que impedían ver las notificaciones.
+        document.body.appendChild(menu);
+        menu.style.position = 'fixed';
+        menu.style.zIndex = '2147483000';
+        menu.style.maxWidth = 'calc(100vw - 24px)';
+        menu.style.boxSizing = 'border-box';
+        menu.style.boxShadow = '0 12px 35px rgba(15,23,42,.18)';
+        const cerrar = () => {
+            menu.style.display = 'none';
+            boton.setAttribute('aria-expanded', 'false');
+        };
+        const posicionar = () => {
+            const rect = boton.getBoundingClientRect();
+            const ancho = Math.min(320, window.innerWidth - 24);
+            menu.style.width = ancho + 'px';
+            menu.style.left = Math.max(12, Math.min(window.innerWidth - ancho - 12, rect.right - ancho)) + 'px';
+            menu.style.top = Math.min(window.innerHeight - 24, rect.bottom + 8) + 'px';
+            menu.style.maxHeight = Math.max(120, window.innerHeight - rect.bottom - 24) + 'px';
+            menu.style.overflowY = 'auto';
+        };
         const alternar = () => {
             const abrir = menu.style.display !== 'block';
-            menu.style.display = abrir ? 'block' : 'none';
-            boton.setAttribute('aria-expanded', String(abrir));
-            if (abrir) void marcarComoLeidas();
+            if (!abrir) { cerrar(); return; }
+            posicionar();
+            menu.style.display = 'block';
+            boton.setAttribute('aria-expanded', 'true');
+            // Al abrir, verificar si llegaron avisos cuando Realtime estaba desconectado.
+            void (async () => {
+                await cargarHistorial();
+                await marcarComoLeidas();
+            })();
         };
         boton.addEventListener('click', e => {
-            if (menu.contains(e.target)) return;
+            e.preventDefault();
             e.stopPropagation();
             alternar();
         });
@@ -149,18 +176,20 @@
                 alternar();
             }
             if (e.key === 'Escape') {
-                menu.style.display = 'none';
-                boton.setAttribute('aria-expanded', 'false');
+                cerrar();
             }
         });
         // El menú está dentro del contenedor clickeable: evita cerrarlo al tocar sus avisos.
         menu.addEventListener('click', e => e.stopPropagation());
         document.addEventListener('click', e => {
-            if (!boton.contains(e.target)) {
-                menu.style.display = 'none';
-                boton.setAttribute('aria-expanded', 'false');
-            }
+            if (!boton.contains(e.target) && !menu.contains(e.target)) cerrar();
         });
+        window.addEventListener('resize', () => {
+            if (menu.style.display === 'block') posicionar();
+        });
+        window.addEventListener('scroll', () => {
+            if (menu.style.display === 'block') posicionar();
+        }, true);
         actualizarBadge();
         void inicializarDatos();
     }
