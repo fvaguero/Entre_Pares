@@ -147,7 +147,7 @@
             
             <div class="auth-buttons" style="display: flex; align-items: center; gap: 1rem;">
                 <!-- 🔔 Campanita de Notificaciones -->
-                <div id="btnCampanita" style="position: relative; display: inline-block; cursor: pointer;" title="Notificaciones">
+                <div id="btnCampanita" role="button" tabindex="0" aria-expanded="false" onclick="window.entreParesAbrirNotificaciones(event)" style="position: relative; display: inline-block; cursor: pointer;" title="Notificaciones">
                     <span style="font-size: 1.3rem; padding: 0.4rem; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; display: inline-block;">🔔</span>
                     <span id="badgeNoti" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none;">0</span>
                     
@@ -200,7 +200,11 @@
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Tutor</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-solicitudes', this)">📥 Solicitudes Pendientes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-agenda', this)">✅ Mis Tutorías Aceptadas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-calendario-tutor', this)">📅 Calendario</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-estadisticas-tutor', this); cargarEstadisticasPersonalesTutor()">📊 Mi progreso</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-pagos', this)">💰 Mis Pagos y Ganancias</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-comprobantes', this); cargarComprobantes()">🧾 Comprobantes de pago</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-canjes', this); cargarCatalogoCanjesTutor()">🏆 Canjear Puntos</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-mensajes', this)">💬 Mensajes</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-perfil', this)">⚙️ Mi Perfil y Materias</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-notificaciones', this)">🔔 Notificaciones</button>
@@ -210,6 +214,36 @@
         <main>
             <!-- 1. SOLICITUDES PENDIENTES -->
             <section id="seccion-solicitudes" class="content-section active">
+                <div class="panel-card" style="margin-bottom:1rem;border:1px solid #e2e8f0;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;">
+                    <div style="background:linear-gradient(135deg,#fef08a 0%,#fde047 100%);color:#713f12;border-radius:12px;padding:1.1rem;text-align:center;">
+                        <span style="font-size:2rem;">🏆</span>
+                        <h2 style="font-size:1.1rem;margin:.3rem 0;">Mi progreso en Entre Pares</h2>
+                        <p id="nivelGamificacionTutor" style="font-weight:700;margin:.2rem 0;">🌱 Principiante</p>
+                        <p id="puntosGamificacionTutor" style="font-size:1.8rem;font-weight:700;margin:.2rem 0;">0 pts</p>
+                        <div style="height:10px;background:rgba(113,63,18,.18);border-radius:999px;overflow:hidden;margin:.6rem 0;">
+                            <div id="progresoGamificacionTutor" style="height:100%;width:0%;background:#713f12;border-radius:999px;transition:width .25s ease;"></div>
+                        </div>
+                        <p id="textoProgresoGamificacionTutor" style="font-size:.82rem;margin:0;">Sumá puntos para avanzar de nivel.</p>
+                    </div>
+                    <div>
+                        <h3 style="font-size:1rem;margin:0 0 .45rem;">¿Cómo ganar puntos?</h3>
+                        <ul style="margin:0;padding-left:1.2rem;color:#475569;font-size:.86rem;line-height:1.7;">
+                            <li>Finalizar una tutoría: <strong>+20 puntos</strong> para tutor y estudiante.</li>
+                            <li>Calificar una tutoría: <strong>+5 puntos</strong> para quien califica.</li>
+                            <li>Contribución comunitaria aprobada: <strong>+10 puntos</strong>.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 style="font-size:1rem;margin:0 0 .45rem;">Niveles y beneficios</h3>
+                        <div style="display:grid;gap:.45rem;color:#475569;font-size:.83rem;">
+                            <div style="padding:.5rem;border-radius:8px;background:#f8fafc;"><strong>🌱 Principiante · 0–100</strong><br>Reservas y mensajería.</div>
+                            <div style="padding:.5rem;border-radius:8px;background:#f8fafc;"><strong>⭐ Colaborador · 101–300</strong><br>Insignia de reconocimiento en el perfil de tutor.</div>
+                            <div style="padding:.5rem;border-radius:8px;background:#f8fafc;"><strong>🔥 Académico Pro · 301–600</strong><br>Mayor visibilidad en búsquedas por materia.</div>
+                            <div style="padding:.5rem;border-radius:8px;background:#f8fafc;"><strong>👑 Leyenda Entre Pares · 601+</strong><br>Reconocimiento de máxima confianza y prioridad.</div>
+                        </div>
+                        <p style="font-size:.74rem;color:#64748b;margin:.5rem 0 0;">Los beneficios de nivel describen el esquema de reconocimiento; su disponibilidad depende de que cada función esté habilitada en la plataforma.</p>
+                    </div>
+                </div>
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Solicitudes de Tutoría</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Revisa y gestiona las reservas solicitadas por los estudiantes.</p>
@@ -223,14 +257,34 @@
 
             <!-- 2. MIS TUTORÍAS ACEPTADAS / AGENDA -->
             <section id="seccion-agenda" class="content-section">
-                <div class="panel-card" style="margin-bottom: 1.5rem;">
-                    <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Agenda de Tutorías Confirmadas</h1>
-                    <p style="color: #64748b; font-size: 0.9rem;">Tus encuentros académicos programados y enlaces de videollamada.</p>
+                <div class="panel-card" style="margin-bottom:1.5rem;"><h1 style="font-size:1.5rem;margin-bottom:.3rem;">Agenda de Tutorías</h1><p style="color:#64748b;font-size:.9rem;">Filtrá por materia o estado y consultá las fechas programadas.</p></div>
+                <div class="panel-card" style="margin-bottom:1.5rem;"><h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar tutorías</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+                <div class="form-group" style="margin:0;"><label for="filtroMateriaTutor">Materia</label><select id="filtroMateriaTutor" class="form-control"><option value="">Todas las materias</option></select></div>
+                <div class="form-group" style="margin:0;"><label for="filtroEstadoTutor">Estado</label><select id="filtroEstadoTutor" class="form-control"><option value="">Todos los estados</option><option value="Aceptada">Aceptadas / Confirmadas</option><option value="Finalizada">Finalizadas</option></select></div>
+                <button id="limpiarFiltrosTutor" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button></div></div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .4rem;">📅 Propuestas de fecha pendientes</h2>
+                    <p style="color:#64748b;font-size:.88rem;margin:.2rem 0 .8rem;">Revisá las propuestas de primera fecha y las reprogramaciones. La agenda solo cambia cuando aceptás una propuesta.</p>
+                    <div id="solicitudesReprogramacionTutor" style="display:grid;gap:.7rem;">
+                        <p style="color:#64748b;font-size:.85rem;">Cargando solicitudes…</p>
+                    </div>
+                </div>
+                <div class="panel-card"><div id="listaTutoriasAceptadas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"><p style="color:#64748b;font-size:.9rem;">Cargando agenda...</p></div></div>
+            </section>
+
+            <!-- CALENDARIO DEL TUTOR -->
+            <section id="seccion-calendario-tutor" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Calendario de tutorías</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Elegí un día para ver las tarjetas de las tutorías programadas. Los días marcados tienen consultas.</p>
                 </div>
                 <div class="panel-card">
-                    <div id="listaTutoriasAceptadas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <p style="color: #64748b; font-size: 0.9rem;">Cargando agenda...</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        <h2 style="font-size:1.15rem;margin:0;">Mis fechas</h2>
+                        <div style="display:flex;align-items:center;gap:.75rem;"><button id="mesTutorAnterior" type="button" class="btn" aria-label="Mes anterior" style="background:#f1f5f9;color:#334155;">‹</button><strong id="mesTutorTitulo" style="min-width:150px;text-align:center;"></strong><button id="mesTutorSiguiente" type="button" class="btn" aria-label="Mes siguiente" style="background:#f1f5f9;color:#334155;">›</button></div>
                     </div>
+                    <div id="calendarioTutor" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;"></div>
+                    <div id="detalleCalendarioTutor" style="margin-top:1rem;"></div>
                 </div>
             </section>
 
@@ -239,6 +293,14 @@
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Mis Pagos y Ganancias</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Aquí puedes ver el estado actual de tus cobros y transferencias por tutoría.</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar pagos</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="filtroMateriaPagosTutor">Materia</label><select id="filtroMateriaPagosTutor" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoPagoTutor">Estado del pago</label><select id="filtroEstadoPagoTutor" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Pagado">Pagado</option><option value="Completada">Completada</option><option value="Liquidado">Liquidado</option></select></div>
+                        <button id="limpiarFiltrosPagosTutor" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
+                    </div>
                 </div>
                 <div class="panel-card">
                     <div class="table-responsive">
@@ -273,6 +335,7 @@
                     <!-- Lista de Contactos / Conversaciones -->
                     <div class="panel-card" style="display: flex; flex-direction: column; padding: 1rem; overflow-y: auto;">
                         <h3 style="font-size: 0.95rem; margin-bottom: 0.8rem; color: #1e293b;">Conversaciones</h3>
+                        <input id="buscarContactoChatTutor" type="search" class="form-control" placeholder="Buscar conversación…" aria-label="Buscar conversación" style="margin-bottom:.7rem;">
                         <div id="listaContactos" style="display: flex; flex-direction: column; gap: 0.5rem;">
                             <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 2rem;">No hay chats activos.</p>
                         </div>
@@ -299,6 +362,12 @@
                                 <p style="font-size: 1rem; font-weight: 500; color: #64748b;">No hay mensajes aún.</p>
                                 <p style="font-size: 0.85rem; margin-top: 0.3rem;">Selecciona un chat a la izquierda para empezar.</p>
                             </div>
+                        </div>
+
+                        <div style="display:flex;justify-content:flex-end;padding:.55rem 1rem;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                            <button type="button" id="btnProponerHorarioChat" class="btn" style="display:inline-flex;align-items:center;gap:.4rem;background:#e0f2fe;color:#075985;border:1px solid #7dd3fc;padding:.65rem 1rem;border-radius:8px;font-weight:700;cursor:pointer;opacity:1;visibility:visible;">
+                                📅 Proponer fecha y horario
+                            </button>
                         </div>
 
                         <!-- Formulario de Envío Moderno -->
@@ -354,7 +423,61 @@
                 </div>
             </section>
 
-            <!-- 6. HISTORIAL DE NOTIFICACIONES DETALLADAS -->
+            <!-- CANJE DE PUNTOS DEL TUTOR -->
+            <section id="seccion-estadisticas-tutor" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">📊 Mis estadísticas como tutor</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Seguimiento de tus tutorías, calificaciones y puntos acumulados.</p>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Tutorías finalizadas</p><strong id="estadisticaTutorFinalizadas" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Promedio recibido</p><strong id="estadisticaTutorPromedio" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Puntos acumulados</p><strong id="estadisticaTutorPuntos" style="font-size:2rem;">—</strong></div>
+                    <div class="panel-card"><p style="color:#64748b;margin:0;">Estudiantes calificados</p><strong id="estadisticaTutorResenasEscritas" style="font-size:2rem;">—</strong></div>
+                </div>
+                <div class="panel-card" style="margin-top:1rem;"><h3 style="font-size:1rem;">Tutorías finalizadas por mes</h3><div id="graficoProgresoTutor" style="display:flex;align-items:end;gap:.7rem;min-height:150px;overflow-x:auto;padding:.5rem 0;"></div></div>
+                <div class="panel-card" style="margin-top:1rem;"><h3 style="font-size:1rem;">Actividad reciente</h3><div id="listaActividadTutor" style="display:flex;flex-direction:column;gap:.6rem;">Cargando…</div></div>
+            </section>
+
+            <section id="seccion-canjes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;background:linear-gradient(135deg,#fef08a 0%,#fde047 100%);color:#713f12;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .5rem;">🏆 Canjear Puntos</h1>
+                    <p style="margin:.2rem 0;">Canjeá tus puntos por beneficios y reconocimientos dentro de Entre Pares.</p>
+                    <p id="saldoCanjesTutor" style="font-size:1.6rem;font-weight:700;margin:.5rem 0;">Saldo disponible: -- pts</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .5rem;">Catálogo de recompensas</h2>
+                    <p style="color:#64748b;font-size:.9rem;">Los canjes quedan pendientes hasta que sean revisados y confirmados.</p>
+                    <div id="catalogoCanjesTutor" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin-top:1rem;">
+                        <p style="color:#64748b;">Cargando recompensas...</p>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;margin:0 0 .7rem;">¿Tenés un problema con tus puntos?</h2>
+                    <form id="formReclamoPuntosTutor" style="display:grid;gap:.7rem;">
+                        <div class="form-group" style="margin:0;"><label for="reclamoAsuntoTutor">Asunto</label><input id="reclamoAsuntoTutor" class="form-control" required minlength="3" maxlength="120" placeholder="Ej.: No se acreditaron mis puntos"></div>
+                        <div class="form-group" style="margin:0;"><label for="reclamoDescripcionTutor">Detalle del reclamo</label><textarea id="reclamoDescripcionTutor" class="form-control" required minlength="10" maxlength="3000" rows="3" placeholder="Describí el problema y agregá la referencia si corresponde."></textarea></div>
+                        <button type="submit" class="btn btn-yellow" style="justify-self:start;">Enviar reclamo</button>
+                    </form>
+                    <div id="historialReclamosTutor" style="margin-top:.8rem;"></div>
+                </div>
+                <div class="panel-card">
+                    <h2 style="font-size:1.1rem;margin:0 0 1rem;">Mis canjes</h2>
+                    <div id="historialCanjesTutor" style="display:flex;flex-direction:column;gap:.75rem;">
+                        <p style="color:#64748b;">Cargando historial...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. HISTORIAL DE NOTIFICACIONES DETALLADAS -->            <section id="seccion-comprobantes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Comprobantes de pago</h1>
+                    <p style="color:#64748b;">Consultá e imprimí los comprobantes de los pagos asociados a tus tutorías.</p>
+                </div>
+                <div id="listaComprobantes" style="display:grid;gap:.8rem;">Cargando comprobantes…</div>
+            </section>
+
+
             <section id="seccion-notificaciones" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial de Notificaciones</h1>
@@ -452,9 +575,40 @@
 
     <!-- Scripts principales y de notificaciones -->
     <script src="js/dashboard-tutor.js"></script>
-    <script src="js/notificaciones.js"></script>
-
-    <footer class="site-footer" style="grid-column: 1 / -1;">
+    <script src="js/comprobantes.js"></script>
+        <script>
+    // Apertura independiente de la campanita: no depende del servicio de datos.
+    window.entreParesAbrirNotificaciones = function(evento) {
+        if (evento.target.closest('#dropdownNotificaciones')) return;
+        evento.preventDefault();
+        evento.stopPropagation();
+        evento.stopImmediatePropagation();
+        const boton = document.getElementById('btnCampanita');
+        const menu = document.getElementById('dropdownNotificaciones');
+        if (!boton || !menu) return;
+        const visible = window.getComputedStyle(menu).display !== 'none';
+        if (visible) {
+            menu.style.display = 'none';
+            boton.setAttribute('aria-expanded', 'false');
+            return;
+        }
+        if (menu.parentElement !== document.body) document.body.appendChild(menu);
+        const rect = boton.getBoundingClientRect();
+        const ancho = Math.min(320, window.innerWidth - 24);
+        menu.style.setProperty('display', 'block', 'important');
+        menu.style.setProperty('position', 'fixed', 'important');
+        menu.style.setProperty('z-index', '2147483000', 'important');
+        menu.style.width = ancho + 'px';
+        menu.style.maxWidth = 'calc(100vw - 24px)';
+        menu.style.left = Math.max(12, Math.min(window.innerWidth - ancho - 12, rect.right - ancho)) + 'px';
+        menu.style.top = Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 130)) + 'px';
+        menu.style.maxHeight = 'min(65vh, 420px)';
+        menu.style.overflowY = 'auto';
+        boton.setAttribute('aria-expanded', 'true');
+    };
+    </script>
+    <script src="js/notificaciones.js?v=20261028-2"></script>
+<footer class="site-footer" style="grid-column: 1 / -1;">
         <div class="footer-container">
             <p class="footer-title">Entre Pares — Red de Tutorías Académicas</p>
             <p class="footer-copy">© 2026 Todos los derechos reservados. Catamarca, Argentina.</p>

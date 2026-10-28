@@ -1,4 +1,23 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const supabase = window.supabase.createClient('https://uecwotydamsjstpovbzz.supabase.co', 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2');
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const { data: perfil, error: perfilError } = await supabase
+        .from('perfiles')
+        .select('rol')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+    if (perfilError || !perfil || perfil.rol !== 'Ambos') {
+        alert('Esta sección requiere una cuenta de tipo Estudiante y Tutor.');
+        window.location.href = 'index.html';
+        return;
+    }
+
     const map = L.map('mapa').setView([-28.4695, -65.7852], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
@@ -30,11 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
             mensaje.textContent = "Guardando perfil...";
             mensaje.style.color = "var(--primary-blue)";
 
-            const supabase = window.supabase.createClient('https://uecwotydamsjstpovbzz.supabase.co', 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2');
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session: sesionActual }, error: errorSesion } = await supabase.auth.getSession();
 
-            if (!user) {
-                mensaje.textContent = "Error: Sesión expirada.";
+            if (errorSesion || !sesionActual) {
+                mensaje.textContent = "Error: Sesión expirada. Iniciá sesión nuevamente.";
                 mensaje.style.color = "red";
                 return;
             }
@@ -42,8 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const respuesta = await fetch('/api/tutor/perfil', {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.id, ciudad, materias })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sesionActual.access_token
+                    },
+                    body: JSON.stringify({ userId: sesionActual.user.id, ciudad, materias })
                 });
 
                 const resultado = await respuesta.json();

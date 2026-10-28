@@ -86,7 +86,7 @@
             
             <div class="auth-buttons" style="display: flex; align-items: center; gap: 1rem;">
                 <!-- 🔔 Campanita de Notificaciones -->
-                <div id="btnCampanita" style="position: relative; display: inline-block; cursor: pointer;" title="Notificaciones">
+                <div id="btnCampanita" role="button" tabindex="0" aria-expanded="false" onclick="window.entreParesAbrirNotificaciones(event)" style="position: relative; display: inline-block; cursor: pointer;" title="Notificaciones">
                     <span style="font-size: 1.3rem; padding: 0.4rem; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; display: inline-block;">🔔</span>
                     <span id="badgeNoti" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none;">0</span>
                     
@@ -129,7 +129,13 @@
             <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem;">Menú Administrador</p>
             <button class="sidebar-btn active" onclick="cambiarPestaña('seccion-tutores', this)">🛡️ Validar Tutores</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-tutorias', this)">📊 Control de Tutorías</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-comprobantes', this); cargarComprobantes()">🧾 Comprobantes de pago</button>
             <button class="sidebar-btn" onclick="cambiarPestaña('seccion-metricas', this)">📈 Métricas Generales</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-usuarios-admin', this); cargarUsuariosAdmin()">👥 Gestión de usuarios</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-actividad-admin', this); cargarActividadAdmin()">🕒 Registro de actividad</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-puntos-admin', this); cargarPanelPuntosAdmin()">🪙 Movimientos y canjes</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-recompensas-admin', this); cargarRecompensasAdmin()">🎁 Administrar recompensas</button>
+            <button class="sidebar-btn" onclick="cambiarPestaña('seccion-reclamos-admin', this); cargarReclamosAdmin()">🧾 Reclamos</button>
         </aside>
 
         <!-- Área de Contenido Dinámico -->
@@ -153,6 +159,46 @@
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Historial y Control de Tutorías</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Visualiza todas las reservas y encuentros agendados en el sistema.</p>
                 </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1rem;">
+                    <div class="panel-card" style="padding:1rem;">
+                        <p style="margin:0;color:#64748b;font-size:.82rem;">Pendientes para hoy</p>
+                        <strong id="statPagosHoyAdmin" style="display:block;font-size:1.7rem;color:#b45309;">-</strong>
+                        <small style="color:#64748b;">Tutorías de hoy sin pago registrado</small>
+                    </div>
+                    <div class="panel-card" style="padding:1rem;">
+                        <p style="margin:0;color:#64748b;font-size:.82rem;">Pagos pendientes</p>
+                        <strong id="statPagosPendientesAdmin" style="display:block;font-size:1.7rem;color:#dc2626;">-</strong>
+                        <small style="color:#64748b;">Reservas con pago pendiente</small>
+                    </div>
+                    <div class="panel-card" style="padding:1rem;">
+                        <p style="margin:0;color:#64748b;font-size:.82rem;">Pagos registrados</p>
+                        <strong id="statPagosPagadosAdmin" style="display:block;font-size:1.7rem;color:#15803d;">-</strong>
+                        <small style="color:#64748b;">Pagado, completado o liquidado</small>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h3 style="font-size:1rem;margin-bottom:1rem;">Filtrar tutorías y pagos</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;align-items:end;margin-bottom:1rem;">
+                        <div class="form-group" style="margin:0;">
+                            <label for="filtroVistaPagoAdmin">Vista rápida de pagos</label>
+                            <select id="filtroVistaPagoAdmin" class="form-control">
+                                <option value="">Todos los pagos</option>
+                                <option value="pagar_hoy">A pagar hoy</option>
+                                <option value="pendientes">Pendientes</option>
+                                <option value="pagados">Pagados</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="filtroMateriaAdmin">Materia</label><select id="filtroMateriaAdmin" class="form-control"><option value="">Todas las materias</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroFechaDesdeAdmin">Desde</label><input id="filtroFechaDesdeAdmin" type="date" class="form-control"></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroFechaHastaAdmin">Hasta</label><input id="filtroFechaHastaAdmin" type="date" class="form-control"></div>
+                        <button id="exportarTutoriasAdmin" type="button" class="btn" style="background:#dcfce7;color:#166534;padding:.7rem 1rem;">Exportar CSV</button>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoReservaAdmin">Estado de tutoría</label><select id="filtroEstadoReservaAdmin" class="form-control"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Aceptada">Aceptada</option><option value="Rechazada">Rechazada</option><option value="Finalizada">Finalizada</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoPagoAdmin">Estado del pago</label><select id="filtroEstadoPagoAdmin" class="form-control"><option value="">Todos los pagos</option><option value="Pendiente">Pendiente</option><option value="Pagado">Pagado</option><option value="Completada">Completada</option><option value="Liquidado">Liquidado</option></select></div>
+                        <button id="limpiarFiltrosAdmin" type="button" class="btn" style="background:#f1f5f9;color:#334155;padding:.7rem 1rem;">Limpiar filtros</button>
+                    </div>
+                </div>
                 <div class="panel-card">
                     <div id="listaTodasTutorias" style="display: flex; flex-direction: column; gap: 0.8rem; max-height: 500px; overflow-y: auto;">
                         <p style="color: #64748b; font-size: 0.9rem;">Cargando tutorías...</p>
@@ -160,13 +206,21 @@
                 </div>
             </section>
 
-            <!-- 3. MÉTRICAS GENERALES -->
+            <!-- 3. MÉTRICAS GENERALES -->            <section id="seccion-comprobantes" class="content-section">
+                <div class="panel-card" style="margin-bottom:1.5rem;">
+                    <h1 style="font-size:1.5rem;margin-bottom:.3rem;">Comprobantes de pago</h1>
+                    <p style="color:#64748b;">Consultá e imprimí los comprobantes de todas las tutorías con pagos confirmados.</p>
+                </div>
+                <div id="listaComprobantes" style="display:grid;gap:.8rem;">Cargando comprobantes…</div>
+            </section>
+
+
             <section id="seccion-metricas" class="content-section">
                 <div class="panel-card" style="margin-bottom: 1.5rem;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.3rem;">Métricas de la Plataforma</h1>
                     <p style="color: #64748b; font-size: 0.9rem;">Estadísticas generales de uso de Entre Pares.</p>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-bottom:1.5rem;">
                     <div class="panel-card" style="text-align: center; background: #f8fafc;">
                         <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">Total Usuarios</h3>
                         <p id="statUsuarios" style="font-size: 2rem; font-weight: 700; color: #0f172a; margin: 0;">-</p>
@@ -179,7 +233,94 @@
                         <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">Tutorías Solicitadas</h3>
                         <p id="statReservas" style="font-size: 2rem; font-weight: 700; color: #2563eb; margin: 0;">-</p>
                     </div>
+                    <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Tutorías finalizadas</h3><p id="statFinalizadasAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
+                    <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Promedio de reseñas</h3><p id="statPromedioResenasAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
+                    <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Puntos otorgados (historial)</h3><p id="statPuntosAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
+                    <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Canjes pendientes</h3><p id="statCanjesPendientesAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
+                    <div class="panel-card" style="text-align:center;background:#f8fafc;"><h3 style="font-size:.9rem;color:#64748b;margin-bottom:.5rem;">Reclamos pendientes</h3><p id="statReclamosPendientesAdmin" style="font-size:2rem;font-weight:700;margin:0;">-</p></div>
                 </div>
+                <div class="panel-card" style="margin-top:1.5rem;">
+                    <h2 style="font-size:1.1rem;margin-bottom:.35rem;">Actividad de la plataforma</h2>
+                    <p style="color:#64748b;font-size:.85rem;margin-bottom:1rem;">Comparación de estados de tutorías según los registros actuales.</p>
+                    <div style="max-width:760px;"><canvas id="graficoTutoriasAdmin" height="120" aria-label="Gráfico de tutorías por estado"></canvas></div>
+                    <div id="resumenGraficoTutoriasAdmin" style="color:#64748b;font-size:.85rem;margin-top:.75rem;">Cargando datos del gráfico…</div>
+                </div>
+            </section>
+
+            <section id="seccion-usuarios-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .35rem;">Gestión de usuarios</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Buscá perfiles por nombre, correo, rol o sede. Esta vista permite consultar la información registrada sin exponer credenciales.</p>
+                </div>
+                <div class="panel-card">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem;margin-bottom:1rem;">
+                        <div class="form-group" style="margin:0;"><label for="buscarUsuariosDashboardAdmin">Buscar usuario</label><input id="buscarUsuariosDashboardAdmin" class="form-control" type="search" placeholder="Nombre, correo o sede…"></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroRolUsuariosDashboardAdmin">Rol</label><select id="filtroRolUsuariosDashboardAdmin" class="form-control"><option value="">Todos los roles</option><option value="Estudiante">Estudiante</option><option value="Tutor">Tutor</option><option value="Ambos">Ambos</option><option value="Administrador">Administrador</option></select></div>
+                        <div class="form-group" style="margin:0;"><label for="filtroEstadoUsuariosDashboardAdmin">Verificación</label><select id="filtroEstadoUsuariosDashboardAdmin" class="form-control"><option value="">Todos los estados</option><option value="Aprobado">Aprobado</option><option value="Pendiente">Pendiente</option><option value="Rechazado">Rechazado</option></select></div>
+                        <button id="limpiarUsuariosDashboardAdmin" class="btn" type="button" style="background:#f1f5f9;color:#334155;">Limpiar filtros</button>
+                        <button id="exportarUsuariosDashboardAdmin" class="btn" type="button" style="background:#dcfce7;color:#166534;">Exportar CSV</button>
+                    </div>
+                    <p id="contadorUsuariosDashboardAdmin" style="color:#64748b;font-size:.85rem;">Cargando usuarios…</p>
+                    <div id="tablaUsuariosDashboardAdmin" style="overflow-x:auto;">Cargando directorio…</div>
+                </div>
+            </section>
+
+            <section id="seccion-actividad-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .35rem;">Registro de actividad</h1>
+                    <p style="color:#64748b;font-size:.9rem;">Resumen de los eventos recientes disponibles en tutorías y movimientos de puntos.</p>
+                </div>
+                <div class="panel-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem;">
+                        <p id="contadorActividadAdmin" style="color:#64748b;font-size:.85rem;margin:0;">Cargando actividad…</p>
+                        <button class="btn" type="button" onclick="cargarActividadAdmin()" style="background:#f1f5f9;color:#334155;">Actualizar</button>
+                    </div>
+                    <div id="listaActividadAdmin" style="display:grid;gap:.65rem;">Cargando actividad…</div>
+                </div>
+            </section>
+
+            <section id="seccion-puntos-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .4rem;">🪙 Control de puntos y canjes</h1>
+                    <p style="color:#64748b;">Consultá movimientos, revisá solicitudes y registrá ajustes justificados. No podés acreditarte puntos a tu propia cuenta.</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h3 style="font-size:1rem;">Ajuste manual de puntos</h3>
+                    <form id="formAjustePuntosAdmin" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="ajusteUsuarioId">ID de usuario (UUID)</label><input id="ajusteUsuarioId" class="form-control" required placeholder="UUID del perfil"></div>
+                        <div class="form-group" style="margin:0;"><label for="ajustePuntos">Puntos (+ o -)</label><input id="ajustePuntos" class="form-control" type="number" min="-10000" max="10000" required></div>
+                        <div class="form-group" style="margin:0;"><label for="ajusteReferencia">Referencia única</label><input id="ajusteReferencia" class="form-control" required minlength="3" placeholder="Ticket / caso"></div>
+                        <div class="form-group" style="margin:0;"><label for="ajusteDescripcion">Motivo</label><input id="ajusteDescripcion" class="form-control" required minlength="5" placeholder="Motivo del ajuste"></div>
+                        <button class="btn btn-yellow" type="submit">Registrar ajuste</button>
+                    </form>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;"><h3 style="font-size:1rem;">Canjes pendientes</h3><div id="listaCanjesAdmin">Cargando…</div></div>
+                <div class="panel-card"><h3 style="font-size:1rem;">Últimos movimientos</h3><div id="listaMovimientosPuntosAdmin">Cargando…</div></div>
+            </section>
+
+            <section id="seccion-recompensas-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .4rem;">🎁 Catálogo de recompensas</h1>
+                    <p style="color:#64748b;">Creá recompensas, modificá su costo y activalas o desactivalas sin cambiar código.</p>
+                </div>
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <form id="formRecompensaAdmin" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;align-items:end;">
+                        <div class="form-group" style="margin:0;"><label for="recompensaNombre">Nombre</label><input id="recompensaNombre" class="form-control" required minlength="3"></div>
+                        <div class="form-group" style="margin:0;"><label for="recompensaCosto">Costo en puntos</label><input id="recompensaCosto" class="form-control" type="number" min="1" required></div>
+                        <div class="form-group" style="margin:0;"><label for="recompensaDescripcion">Descripción</label><input id="recompensaDescripcion" class="form-control"></div>
+                        <div class="form-group" style="margin:0;"><label for="recompensaRol">Destinatario</label><select id="recompensaRol" class="form-control" required><option value="estudiante">Estudiante</option><option value="tutor">Tutor</option></select></div>
+                        <button type="submit" class="btn btn-yellow">Crear recompensa</button>
+                    </form>
+                </div>
+                <div class="panel-card"><div id="listaRecompensasAdmin">Cargando…</div></div>
+            </section>
+
+            <section id="seccion-reclamos-admin" class="content-section">
+                <div class="panel-card" style="margin-bottom:1rem;">
+                    <h1 style="font-size:1.5rem;margin:0 0 .4rem;">🧾 Reclamos de usuarios</h1>
+                    <p style="color:#64748b;">Revisá los casos pendientes y registrá una respuesta o resolución.</p>
+                </div>
+                <div class="panel-card"><div id="listaReclamosAdmin">Cargando…</div></div>
             </section>
         </main>
     </div>
@@ -211,7 +352,39 @@
 
     <!-- Scripts principales y de notificaciones -->
     <script src="js/dashboard-admin.js"></script>
-    <script src="js/notificaciones.js"></script>
+    <script src="js/comprobantes.js"></script>
+        <script>
+    // Apertura independiente de la campanita: no depende del servicio de datos.
+    window.entreParesAbrirNotificaciones = function(evento) {
+        if (evento.target.closest('#dropdownNotificaciones')) return;
+        evento.preventDefault();
+        evento.stopPropagation();
+        evento.stopImmediatePropagation();
+        const boton = document.getElementById('btnCampanita');
+        const menu = document.getElementById('dropdownNotificaciones');
+        if (!boton || !menu) return;
+        const visible = window.getComputedStyle(menu).display !== 'none';
+        if (visible) {
+            menu.style.display = 'none';
+            boton.setAttribute('aria-expanded', 'false');
+            return;
+        }
+        if (menu.parentElement !== document.body) document.body.appendChild(menu);
+        const rect = boton.getBoundingClientRect();
+        const ancho = Math.min(320, window.innerWidth - 24);
+        menu.style.setProperty('display', 'block', 'important');
+        menu.style.setProperty('position', 'fixed', 'important');
+        menu.style.setProperty('z-index', '2147483000', 'important');
+        menu.style.width = ancho + 'px';
+        menu.style.maxWidth = 'calc(100vw - 24px)';
+        menu.style.left = Math.max(12, Math.min(window.innerWidth - ancho - 12, rect.right - ancho)) + 'px';
+        menu.style.top = Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 130)) + 'px';
+        menu.style.maxHeight = 'min(65vh, 420px)';
+        menu.style.overflowY = 'auto';
+        boton.setAttribute('aria-expanded', 'true');
+    };
+    </script>
+    <script src="js/notificaciones.js?v=20261028-2"></script>
 
     <footer class="site-footer" style="grid-column: 1 / -1;">
         <div class="footer-container">
