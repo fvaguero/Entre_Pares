@@ -158,53 +158,6 @@
             transform: scale(0.95);
         }
     </style>
-
-    /* Entre Pares · diseño unificado de paneles · 2026 */
-    <style id="entre-pares-dashboard-ui">
-      :root { --ep-primary:#3156d3; --ep-primary-dark:#243fa3; --ep-ink:#17243c; --ep-muted:#617089; --ep-line:#e5eaf2; --ep-bg:#f4f7fc; --ep-radius:16px; }
-      body { background:var(--ep-bg)!important; color:var(--ep-ink); font-family:'Inter',system-ui,-apple-system,sans-serif; }
-      .dashboard-container { background:var(--ep-bg)!important; }
-      .sidebar { background:#fff!important; border-right:1px solid var(--ep-line)!important; box-shadow:5px 0 24px rgba(27,48,87,.025); }
-      .sidebar-btn { border-radius:11px!important; margin:2px 0; transition:background .18s,color .18s,transform .18s!important; }
-      .sidebar-btn:hover { background:#eef3ff!important; color:var(--ep-primary)!important; transform:translateX(2px); }
-      .sidebar-btn.active { background:#e8efff!important; color:var(--ep-primary-dark)!important; font-weight:700!important; box-shadow:inset 3px 0 0 var(--ep-primary); }
-      .content-section { max-width:1550px; width:100%; box-sizing:border-box; }
-      .content-section h1,.content-section h2,.content-section h3 { color:var(--ep-ink); letter-spacing:-.025em; }
-      .content-section h2 { font-size:clamp(1.35rem,2vw,1.8rem); }
-      .content-section p { line-height:1.55; }
-      .content-section > div:not(.modal):not(.swal2-container), .content-section article { border-radius:var(--ep-radius); }
-      .content-section input:not([type=checkbox]):not([type=radio]), .content-section select, .content-section textarea {
-        max-width:100%; box-sizing:border-box; border:1px solid #d5deeb; border-radius:10px; background:#fff; transition:border-color .2s,box-shadow .2s;
-      }
-      .content-section input:focus,.content-section select:focus,.content-section textarea:focus {
-        outline:0; border-color:var(--ep-primary)!important; box-shadow:0 0 0 3px rgba(49,86,211,.12);
-      }
-      .content-section button,.content-section .btn { transition:filter .18s,transform .18s,box-shadow .18s; }
-      .content-section button:not(:disabled):hover,.content-section .btn:hover { filter:brightness(.97); transform:translateY(-1px); }
-      .content-section button:focus-visible,.sidebar-btn:focus-visible { outline:3px solid rgba(49,86,211,.42); outline-offset:2px; }
-      .content-section button:disabled { cursor:not-allowed; opacity:.65; }
-      .content-section table { border-collapse:separate; border-spacing:0; width:100%; }
-      .content-section th { background:#f1f5fb; color:#475569; font-size:.82rem; text-align:left; }
-      .content-section th,.content-section td { padding:.8rem .9rem; border-bottom:1px solid var(--ep-line); }
-      .content-section tr:hover td { background:#f8faff; }
-      #chatBandeja { background:#f7f9fe; border-radius:14px; }
-      #calendarioTutor button,#calendarioReservas button { transition:background .15s,transform .15s; }
-      #calendarioTutor button:hover,#calendarioReservas button:hover { transform:translateY(-2px); }
-      @media (max-width:900px) {
-        .content-section { padding:1.1rem!important; }
-        .dashboard-container { min-width:0; }
-        .content-section table { font-size:.84rem; }
-      }
-      @media (max-width:600px) {
-        .content-section { padding:.8rem!important; }
-        .content-section h2 { font-size:1.35rem; }
-        .content-section th,.content-section td { padding:.55rem .5rem; }
-        .content-section input,.content-section select,.content-section textarea { font-size:16px; }
-      }
-      @media (prefers-reduced-motion:reduce) {
-        .content-section button,.sidebar-btn { transition:none!important; transform:none!important; }
-      }
-    </style>
 </head>
 <body>
 
