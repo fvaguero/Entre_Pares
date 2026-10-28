@@ -903,7 +903,7 @@ async function reprogramarReservaEstudiante(reservaId, fechaActual) {
         return;
     }
     const { data: pendientes, error: errorPendiente } = await supabaseClient
-        .from('solicitudes_reprogramacion')
+        .from('propuestas_horario_chat')
         .select('id')
         .eq('reserva_id', reservaId)
         .eq('estado', 'Pendiente')
@@ -936,7 +936,7 @@ async function reprogramarReservaEstudiante(reservaId, fechaActual) {
     if (!nuevaFecha) return;
 
     try {
-        const { error } = await supabaseClient.rpc('solicitar_reprogramacion_reserva', {
+        const { error } = await supabaseClient.rpc('proponer_horario_desde_chat', {
             p_reserva_id: String(reservaId),
             p_fecha_propuesta: new Date(nuevaFecha).toISOString()
         });
