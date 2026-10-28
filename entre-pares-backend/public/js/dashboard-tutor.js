@@ -423,8 +423,27 @@ async function cargarSolicitudesReprogramacionTutor() {
 }
 
 async function resolverSolicitudReprogramacion(solicitudId, aceptar) {
-    // Compatibilidad con solicitudes antiguas: el flujo nuevo responde desde propuestas_horario_chat.
-    return responderPropuestaHorarioChat(supabaseClient, solicitudId, aceptar, usuarioActual.id, destinatarioActivoId);
+    // Las solicitudes históricas pertenecen a solicitudes_reprogramacion,
+    // no a propuestas_horario_chat. Usar su RPC correspondiente.
+    if (!usuarioActual) return;
+    try {
+        const { error } = await supabaseClient.rpc('responder_reprogramacion_reserva', {
+            p_solicitud_id: solicitudId,
+            p_aceptar: aceptar
+        });
+        if (error) throw error;
+        mostrarNotificacion(
+            aceptar ? 'Solicitud antigua aceptada. Verificá el horario en la agenda.' : 'Solicitud antigua rechazada.',
+            'exito'
+        );
+        if (destinatarioActivoId) {
+            await cargarHistorialChat(supabaseClient, usuarioActual.id, destinatarioActivoId);
+        }
+        await cargarSolicitudesYTutorias();
+    } catch (error) {
+        console.error('Error al responder solicitud antigua:', error);
+        mostrarNotificacion(error.message || 'No se pudo responder la solicitud antigua.', 'error');
+    }
 }
 
 async function cancelarReservaTutor(reservaId) {
