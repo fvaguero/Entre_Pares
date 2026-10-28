@@ -216,13 +216,23 @@ if (btnCerrarSesion) {
                 await cargarSolicitudesYTutorias();
     await cargarSolicitudesReprogramacionTutor();
             } catch (err) {
-                console.error("Error al guardar reseña del tutor:", {
-                    message: err?.message, code: err?.code, details: err?.details, hint: err?.hint
-                });
-                mostrarNotificacion(
-                    err?.message ? "No se pudo guardar la calificación: " + err.message : "No se pudo guardar la calificación.",
-                    "error"
-                );
+                const detalleError = [
+                    'Código: ' + (err?.code || 'sin código'),
+                    'Mensaje: ' + (err?.message || 'desconocido'),
+                    err?.details ? 'Detalles: ' + err.details : '',
+                    err?.hint ? 'Sugerencia: ' + err.hint : ''
+                ].filter(Boolean).join(' | ');
+                console.error('Error al guardar reseña del tutor: ' + detalleError);
+                if (window.Swal) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'No se pudo guardar la calificación',
+                        text: detalleError,
+                        confirmButtonText: 'Entendido'
+                    });
+                } else {
+                    mostrarNotificacion('No se pudo guardar: ' + detalleError, 'error');
+                }
             }
         });
     }
