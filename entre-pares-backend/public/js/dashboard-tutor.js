@@ -698,9 +698,24 @@ function inicializarChat(supabaseClient, usuarioActualId) {
 function actualizarEstadoBotonHorarioChat() {
     const btn = document.getElementById('btnProponerHorarioChat');
     if (!btn) return;
-    btn.disabled = !destinatarioActivoId || !reservaChatActivaId || Boolean(reservaChatActivaFecha);
-    btn.style.opacity = btn.disabled ? '.65' : '1';
-    btn.title = !destinatarioActivoId ? 'Seleccioná una conversación.' : (!reservaChatActivaId ? 'No se detectó una tutoría aceptada.' : (reservaChatActivaFecha ? 'La reprogramación debe solicitarla el estudiante desde su chat.' : 'Proponer la primera fecha acordada.'));
+
+    const hayTutoriaActiva = Boolean(destinatarioActivoId && reservaChatActivaId);
+    btn.disabled = !hayTutoriaActiva;
+    btn.style.opacity = btn.disabled ? '0.65' : '1';
+
+    if (!destinatarioActivoId) {
+        btn.title = 'Seleccioná una conversación.';
+    } else if (!reservaChatActivaId) {
+        btn.title = 'Necesitás una tutoría aceptada para proponer horarios.';
+    } else if (reservaChatActivaFecha) {
+        btn.title = 'Proponer una nueva fecha para reprogramar la tutoría.';
+    } else {
+        btn.title = 'Proponer la primera fecha de la tutoría.';
+    }
+
+    btn.textContent = reservaChatActivaFecha
+        ? '📅 Solicitar reprogramación'
+        : '📅 Proponer fecha y hora';
 }
 
 async function proponerHorarioDesdeChat(client, miId) {
