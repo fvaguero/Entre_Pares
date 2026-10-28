@@ -834,7 +834,7 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
     }
 
     // Las propuestas vigentes se consultan únicamente en propuestas_horario_chat.
-    const idsPropuestas = [...new Set((mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]))];
+    const idsPropuestas = [...new Set((mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|/)).filter(Boolean).map(m => m[1]))];
     const { data: propuestas, error: errorPropuestas } = idsPropuestas.length
         ? await supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por,respondido_por,created_at,responded_at').in('id', idsPropuestas)
         : { data: [], error: null };
