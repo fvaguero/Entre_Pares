@@ -2,7 +2,12 @@
 (() => {
     const URL = 'https://uecwotydamsjstpovbzz.supabase.co';
     const KEY = 'sb_publishable_qLu0E5bBdmeplXPNfE2UhA_VOuGhyC2';
-    const client = window.supabase.createClient(URL, KEY);
+    // Reutilizar la sesión y el cliente del panel para no crear otro GoTrueClient.
+    const client = typeof supabaseClient !== 'undefined' ? supabaseClient : window.supabaseClient;
+    if (!client) {
+        console.error('No se encontró el cliente Supabase del panel para comprobantes.');
+        return;
+    }
     const PAGADOS = ['pagado','pagada','aprobado','aprobada','completado','completada','acreditado','acreditada','liquidado','liquidada'];
 
     const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
