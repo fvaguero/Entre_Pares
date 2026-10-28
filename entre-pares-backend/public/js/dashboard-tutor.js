@@ -422,30 +422,6 @@ async function cargarSolicitudesReprogramacionTutor() {
     }
 }
 
-async function resolverSolicitudReprogramacion(solicitudId, aceptar) {
-    // Las solicitudes históricas pertenecen a solicitudes_reprogramacion,
-    // no a propuestas_horario_chat. Usar su RPC correspondiente.
-    if (!usuarioActual) return;
-    try {
-        const { error } = await supabaseClient.rpc('responder_reprogramacion_reserva', {
-            p_solicitud_id: solicitudId,
-            p_aceptar: aceptar
-        });
-        if (error) throw error;
-        mostrarNotificacion(
-            aceptar ? 'Solicitud antigua aceptada. Verificá el horario en la agenda.' : 'Solicitud antigua rechazada.',
-            'exito'
-        );
-        if (destinatarioActivoId) {
-            await cargarHistorialChat(supabaseClient, usuarioActual.id, destinatarioActivoId);
-        }
-        await cargarSolicitudesYTutorias();
-    } catch (error) {
-        console.error('Error al responder solicitud antigua:', error);
-        mostrarNotificacion(error.message || 'No se pudo responder la solicitud antigua.', 'error');
-    }
-}
-
 async function cancelarReservaTutor(reservaId) {
     const reservaActual = (reservasTutorCache || []).find(r => String(r.id) === String(reservaId));
     if (reservaActual && ['finalizada','finalizado','completada','completado'].includes(String(reservaActual.estado || '').trim().toLowerCase())) {
@@ -857,18 +833,13 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
         return;
     }
 
-    const idsPropuestas = (mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
-    const idsReprogramaciones = (mensajes || []).map(m => String(m.contenido || '').match(/SOLICITUD DE REPROGRAMACIÓN\|([^|]+)\|/)).filter(Boolean).map(m => m[1]);
-    const [{ data: propuestas }, { data: solicitudesReprogramacion }] = await Promise.all([
-        idsPropuestas.length
-            ? supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por,respondido_por,created_at,responded_at').in('id', idsPropuestas)
-            : Promise.resolve({ data: [] }),
-        idsReprogramaciones.length
-            ? supabaseClient.from('solicitudes_reprogramacion').select('id,fecha_propuesta,fecha_original,estado,creada_por').in('id', idsReprogramaciones)
-            : Promise.resolve({ data: [] })
-    ]);
+    // Las propuestas vigentes se consultan únicamente en propuestas_horario_chat.
+    const idsPropuestas = [...new Set((mensajes || []).map(m => String(m.contenido || '').match(/^HORARIO_PROPUESTA\\|([^|]+)\\|/)).filter(Boolean).map(m => m[1]))];
+    const { data: propuestas, error: errorPropuestas } = idsPropuestas.length
+        ? await supabaseClient.from('propuestas_horario_chat').select('id,fecha_propuesta,fecha_anterior,tipo,estado,propuesto_por,respondido_por,created_at,responded_at').in('id', idsPropuestas)
+        : { data: [], error: null };
+    if (errorPropuestas) console.error('No se pudieron cargar las propuestas del chat:', errorPropuestas);
     const propuestasPorId = new Map((propuestas || []).map(p => [String(p.id), p]));
-    const reprogramacionesPorId = new Map((solicitudesReprogramacion || []).map(p => [String(p.id), p]));
 
     mensajes.forEach(msg => {
         // Detectar si el mensaje es del sistema/notificación o de un usuario
@@ -921,29 +892,10 @@ async function cargarHistorialChat(supabaseClient, miId, otroId) {
             const propuestaMatch = String(msg.contenido || '').match(/^HORARIO_PROPUESTA\|([^|]+)\|(.+)$/);
             const respuestaMatch = String(msg.contenido || '').match(/^HORARIO_RESPUESTA\|([^|]+)\|(ACEPTADA|RECHAZADA)(?:\|([^|]+))?$/);
             if (solicitudReprogramacionMatch) {
-                const solicitud = reprogramacionesPorId.get(solicitudReprogramacionMatch[1]);
-                const titulo = document.createElement('strong');
-                titulo.textContent = '🔁 El estudiante solicitó la reprogramación';
-                burbuja.appendChild(titulo);
-                const fecha = document.createElement('p');
-                fecha.style.margin = '.45rem 0';
-                fecha.textContent = solicitud ? 'El estudiante solicitó cambiar la tutoría para el: ' + new Date(solicitud.fecha_propuesta).toLocaleString('es-AR',{dateStyle:'full',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'}) : 'El estudiante solicitó reprogramar la tutoría.';
-                burbuja.appendChild(fecha);
-                const estado = document.createElement('p');
-                estado.style.fontWeight = '700';
-                estado.textContent = solicitud?.estado && solicitud.estado !== 'Pendiente' ? 'Estado: ' + solicitud.estado : 'Pendiente de respuesta del tutor';
-                burbuja.appendChild(estado);
-                if (solicitud?.estado === 'Pendiente' && solicitud.creada_por !== miId) {
-                    const acciones = document.createElement('div');
-                    acciones.style.display = 'flex'; acciones.style.gap = '.4rem'; acciones.style.marginTop = '.5rem';
-                    [['Aceptar nueva fecha',true],['Rechazar',false]].forEach(([label,aceptar]) => {
-                        const b = document.createElement('button'); b.type='button'; b.textContent=label;
-                        b.style.cssText='border:0;border-radius:6px;padding:.4rem .65rem;cursor:pointer;background:'+(aceptar?'#16a34a':'#fee2e2')+';color:'+(aceptar?'white':'#991b1b');
-                        b.addEventListener('click',()=>resolverSolicitudReprogramacion(solicitud.id,aceptar));
-                        acciones.appendChild(b);
-                    });
-                    burbuja.appendChild(acciones);
-                }
+                // Mensaje histórico: la tabla y RPC antiguas están deshabilitadas.
+                const avisoHistorico = document.createElement('div');
+                avisoHistorico.textContent = '🔁 Solicitud de reprogramación antigua (solo historial). Para coordinar una nueva fecha, usá Proponer fecha y hora en el chat.';
+                burbuja.appendChild(avisoHistorico);
             } else if (propuestaMatch) {
                 const propuesta = propuestasPorId.get(propuestaMatch[1]);
                 const titulo = document.createElement('strong');
