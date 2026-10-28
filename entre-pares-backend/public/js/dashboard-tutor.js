@@ -216,8 +216,13 @@ if (btnCerrarSesion) {
                 await cargarSolicitudesYTutorias();
     await cargarSolicitudesReprogramacionTutor();
             } catch (err) {
-                console.error("Error al guardar reseña del tutor:", err);
-                mostrarNotificacion("No se pudo guardar la calificación.", "error");
+                console.error("Error al guardar reseña del tutor:", {
+                    message: err?.message, code: err?.code, details: err?.details, hint: err?.hint
+                });
+                mostrarNotificacion(
+                    err?.message ? "No se pudo guardar la calificación: " + err.message : "No se pudo guardar la calificación.",
+                    "error"
+                );
             }
         });
     }
